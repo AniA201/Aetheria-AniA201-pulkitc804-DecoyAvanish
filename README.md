@@ -33,7 +33,15 @@ API keys and passwords the team shares (Gemini now; Vercel, Supabase, and others
    ```
 3. Run `npm run dev`. The dev server decrypts `.env.team` on start. Your own `.env.local` values, if any, take priority.
 
-To add or change a secret (it's encrypted as it's saved): `npm run secret:set -- SUPABASE_ANON_KEY "value"`. Then commit `.env.team`. To read one: `npm run secret:get -- SUPABASE_ANON_KEY`. Never give a secret a `VITE_` prefix: Vite puts `VITE_` values into the browser bundle.
+To add or change a secret (it's encrypted as it's saved): `npm run secret:set -- JWT_SECRET "value"`. Then commit `.env.team`. To read one: `npm run secret:get -- JWT_SECRET`.
+
+| Name | Used by |
+|---|---|
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | `npm run dev` (dev server only, never the browser). `GEMINI_MODEL` is a comma-separated list. Free-tier limits are per model (`gemini-3-flash-preview` allows only 20 requests a day), so when one model hits its limit the next is used. |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` | `npm run dev`, passed to the browser for Supabase sign-in |
+| `DATABASE_URL`, `JWT_SECRET`, `RESEARCHER_REGISTRATION_KEY` | `npm run api` (starts the FastAPI backend on port 8000 with these set) |
+
+Vite puts `VITE_` values into the browser bundle, so use that prefix only for publishable values. Never use it for a service-role key, database URL, password, or JWT secret. A `backend/.env` file, if present, still overrides the team values for the backend. The Supabase edge function's `SUPABASE_SERVICE_ROLE_KEY` belongs in the Supabase dashboard's function secrets, not here.
 
 ### Aetheria Guide (optional, Gemini free tier)
 
@@ -43,7 +51,7 @@ The team's Gemini key is already in `.env.team` (see above). To use your own key
 
 ```bash
 GEMINI_API_KEY=your-key
-GEMINI_MODEL=gemini-3-flash-preview
+GEMINI_MODEL=gemini-3.5-flash,gemini-3-flash-preview,gemini-flash-latest,gemini-3.1-flash-lite
 ```
 
 Restart `npm run dev`. The key is read by the dev server only and never reaches the browser. Guide questions and the matching passages go to Google, and Google may use free-tier data to improve its products. Dose, approval, and cure questions are refused before Gemini is called. Gemini may cite only passages its tools returned, and the quotation on screen is the stored passage. Gemini also runs Ask, Check, and the Summary question list.

@@ -1,8 +1,8 @@
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { Missing, RequireRole } from "./components/Chrome";
-import { Login, Register } from "./pages/Auth";
+import { ForgotPassword, Login, Register } from "./pages/Auth";
 import { Landing } from "./pages/Landing";
-import { Access, Ask, Explore, MyStudy, ParticipantHome, Summary, Teach } from "./pages/Participant";
+import { Ask, Explore, MyStudy, ParticipantHome, Summary, Teach } from "./pages/Participant";
 import { Documents, Insights, Integrity, Lab, Overview, Settings, Studio } from "./pages/Team";
 
 export function App() {
@@ -11,6 +11,7 @@ export function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
 
       <Route element={<RequireRole role="participant" />}>
         <Route path="/participant/home" element={<ParticipantHome />} />
@@ -20,7 +21,6 @@ export function App() {
         <Route path="/participant/ask" element={<Ask />} />
         <Route path="/participant/teach-back" element={<Teach />} />
         <Route path="/participant/summary" element={<Summary />} />
-        <Route path="/participant/accessibility" element={<Access />} />
       </Route>
 
       <Route element={<RequireRole role="researcher" />}>
@@ -38,7 +38,8 @@ export function App() {
       <Route path="/participant/explore" element={<Navigate to="/participant/explore-consent" replace />} />
       <Route path="/participant/explore/:sectionId" element={<SectionRedirect />} />
       <Route path="/participant/teach" element={<Navigate to="/participant/teach-back" replace />} />
-      <Route path="/participant/access" element={<Navigate to="/participant/accessibility" replace />} />
+      <Route path="/participant/access" element={<Navigate to="/participant/home" replace />} />
+      <Route path="/participant/accessibility" element={<Navigate to="/participant/home" replace />} />
       <Route path="/team" element={<Navigate to="/researcher/overview" replace />} />
       <Route path="/team/integrity" element={<Navigate to="/researcher/document-integrity" replace />} />
       <Route path="/team/insights" element={<Navigate to="/researcher/insights" replace />} />

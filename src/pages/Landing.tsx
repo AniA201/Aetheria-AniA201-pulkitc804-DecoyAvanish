@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { useTitle } from "../components/Chrome";
+import { AetheriaMark, useTitle } from "../components/Chrome";
 import { consentDoc, sections } from "../data/study";
 import { MedicalField } from "../scene/MedicalField";
 import { useSession } from "../state/Session";
@@ -91,15 +91,20 @@ export function Landing() {
             </a>
           ))}
         </nav>
-        <button
-          type="button"
-          className="folio-menu"
-          aria-expanded={menu}
-          aria-controls="folio-overlay"
-          onClick={() => setMenu((open) => !open)}
-        >
-          {menu ? "Close" : "Menu"}
-        </button>
+        <div className="folio-nav-end">
+          <Link to="/" className="corner-mark" aria-label="Aetheria">
+            <AetheriaMark />
+          </Link>
+          <button
+            type="button"
+            className="folio-menu"
+            aria-expanded={menu}
+            aria-controls="folio-overlay"
+            onClick={() => setMenu((open) => !open)}
+          >
+            {menu ? "Close" : "Menu"}
+          </button>
+        </div>
       </header>
 
       {menu && (
