@@ -1,5 +1,14 @@
+import { config as decryptEnv } from "@dotenvx/dotenvx";
 import { defineConfig, loadEnv, type Connect, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
+
+// Team secrets live encrypted in .env.team (committed). The decryption key is DOTENV_PRIVATE_KEY_TEAM,
+// read from the git-ignored .env.keys or the environment. Without it, values stay encrypted and are ignored.
+function teamSecrets(): Record<string, string> {
+  const values: Record<string, string> = {};
+  decryptEnv({ path: ".env.team", envKeysFile: ".env.keys", processEnv: values, quiet: true, ignore: ["MISSING_ENV_FILE", "MISSING_PRIVATE_KEY", "DECRYPTION_FAILED"] });
+  return Object.fromEntries(Object.entries(values).filter(([, value]) => !value.startsWith("encrypted:")));
+}
 
 const ollamaProxy = {
   "/ollama": {
@@ -63,7 +72,8 @@ function geminiProxy(key: string, model: string): Plugin {
 }
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
+  // .env.local (personal) wins over the shared .env.team.
+  const env = { ...teamSecrets(), ...Object.fromEntries(Object.entries(loadEnv(mode, process.cwd(), "")).filter(([, value]) => value)) };
   return {
     plugins: [react(), geminiProxy(env.GEMINI_API_KEY ?? "", env.GEMINI_MODEL || "gemini-3-flash-preview")],
     server: {

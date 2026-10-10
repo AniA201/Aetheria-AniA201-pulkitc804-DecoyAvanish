@@ -22,11 +22,24 @@ npm run dev -- --host 127.0.0.1 --port 5173
 
 Optional model settings live in `.env.example`. Copy it to `.env` only if you want a different local model.
 
+### Team secrets (`.env.team`)
+
+API keys and passwords the team shares (Gemini now; Vercel, Supabase, and others later) live in `.env.team`. The file is committed, but **every value is encrypted**, so anyone without the decryption key sees only `encrypted:…`.
+
+1. Ask Pulkit for the decryption key in a private message. Never post it in GitHub, an issue, or a group chat.
+2. Save it as a file named `.env.keys` in the repo root (git ignores it):
+   ```
+   DOTENV_PRIVATE_KEY_TEAM=the-key-you-were-sent
+   ```
+3. Run `npm run dev`. The dev server decrypts `.env.team` on start. Your own `.env.local` values, if any, take priority.
+
+To add or change a secret (it's encrypted as it's saved): `npm run secret:set -- SUPABASE_ANON_KEY "value"`. Then commit `.env.team`. To read one: `npm run secret:get -- SUPABASE_ANON_KEY`. Never give a secret a `VITE_` prefix: Vite puts `VITE_` values into the browser bundle.
+
 ### Aetheria Guide (optional, Gemini free tier)
 
 **Ask the Guide**, bottom right on every participant and research page, is an agent. It searches the form, checks a number someone heard, opens the right chapter, and saves a question for the coordinator. Researchers can use it to read the flags and run the plain-language check. It cannot change a review decision.
 
-To turn it on, get a free key at https://aistudio.google.com/apikey and put it in `.env.local`, which git ignores:
+The team's Gemini key is already in `.env.team` (see above). To use your own key instead, get a free one at https://aistudio.google.com/apikey and put it in `.env.local`, which git ignores:
 
 ```bash
 GEMINI_API_KEY=your-key
