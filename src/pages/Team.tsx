@@ -18,6 +18,7 @@ import { probeOllama, type OllamaProbe } from "../lib/ollama";
 import { auditNumbers, auditPlainText, longSentenceCount } from "../lib/plain";
 import { isOpenReview, reviewLabel } from "../lib/preflight";
 import { assessTeachback } from "../lib/teachback";
+import { ApprovedList, CompareWorkbook, PlainWorkbook, RegistryCard, VersionStanding } from "../components/SheetPanels";
 import { useSession, type ReviewState } from "../state/Session";
 import { useTitle } from "../components/Chrome";
 
@@ -152,6 +153,7 @@ export function Integrity() {
           );
         })}
       </div>
+      <CompareWorkbook />
     </div>
   );
 }
@@ -298,6 +300,7 @@ export function Studio() {
           Return to draft
         </button>
       </div>
+      {consent.hasProtocol ? <PlainWorkbook /> : null}
     </div>
   );
 }
@@ -450,7 +453,8 @@ export function Documents() {
           </li>
         ))}
       </ul>
-      <p className="fine">{consentDoc.statusNote}</p>
+      <VersionStanding version={consentDoc.version} />
+      <RegistryCard />
       <p className="pack-line">
         Write Once: v2.1 is the form in the reader. v2.0 is outdated and is not offered as the current
         consent. Shared facts that disagree stay on Document Integrity until a person reviews them.
@@ -521,6 +525,7 @@ export function Settings() {
           </p>
         </li>
       </ul>
+      <ApprovedList />
       <h2>Session actions</h2>
       {audit.length === 0 ? (
         <p className="empty">No review actions yet in this browser session.</p>

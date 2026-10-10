@@ -9,6 +9,7 @@ import { cachedGeminiStatus, type GeminiContent } from "../lib/gemini";
 import { type TeachResult } from "../lib/teachback";
 import { useSession } from "../state/Session";
 import { ListenButton, useTitle } from "../components/Chrome";
+import { VersionStanding } from "../components/SheetPanels";
 import { ConsentFile } from "../components/ConsentFile";
 import { ConsentSheet } from "../scene/ConsentSheet";
 
@@ -461,7 +462,7 @@ export function Teach() {
     const next = await assessTeachbackWithGemini(prompt, response, consent);
     setChecking(false);
     setResult(next);
-    recordTeach(next);
+    recordTeach({ ...next, response });
   };
 
   return (
@@ -470,6 +471,7 @@ export function Teach() {
         <p className="kicker">Check</p>
         <h1>Say it in your own words.</h1>
         <p className="lede dark">This is not a test and not a signature.</p>
+        <VersionStanding version={consent.version} />
       </header>
       <div className="check-layout">
       <form
@@ -527,6 +529,18 @@ export function Teach() {
             </ul>
           )}
           <p>You can change the words above and check again. This is not a pass or fail score.</p>
+          {result.label !== "Understands the key concept" && (
+            <button
+              type="button"
+              className="btn on-paper"
+              onClick={() => {
+                setResult(null);
+                document.getElementById("reply")?.focus();
+              }}
+            >
+              Try again
+            </button>
+          )}
           <p className="fine">
             {result.engine === "gemini"
               ? "Checked by Gemini. It reads for meaning, not exact words."
@@ -547,10 +561,7 @@ export function Summary() {
   const { reviewed, saved, teach, consent } = useSession();
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [writing, setWriting] = useState(false);
-  const openTopics = useMemo(
-    () => teach.filter((item) => item.label !== "Understands the key concept"),
-    [teach],
-  );
+  const openTopics = useMemo(() => teach, [teach]);
   if (!consent) return <NeedFile title="Summary" />;
 
   return (
@@ -558,6 +569,7 @@ export function Summary() {
       <header className="panel-head">
         <p className="kicker">Summary</p>
         <h1>What you have read.</h1>
+        <VersionStanding version={consent.version} />
         <p className="notice">This is not a signature.</p>
       </header>
       <div className="summary-grid">
@@ -638,15 +650,22 @@ export function Summary() {
         )}
       </section>
       <section>
-        <h2>Topics to discuss with the coordinator</h2>
+        <h2>Handoff for the coordinator</h2>
         {openTopics.length === 0 ? (
-          <p className="empty">No teach-back replies are waiting. You can still ask for a conversation.</p>
+          <p className="empty">No explanation has been checked yet. You can still ask for a conversation.</p>
         ) : (
           <ul className="stack">
             {openTopics.map((item) => (
               <li key={item.promptId}>
-                <strong>{item.label}</strong>
-                <p>{item.feedback}</p>
+                <strong>
+                  {item.label} · {consent.version}
+                </strong>
+                {item.response ? <p>Their words: {item.response}</p> : null}
+                <p>
+                  {item.label === "Understands the key concept"
+                    ? "No gap on this topic."
+                    : item.feedback}
+                </p>
               </li>
             ))}
           </ul>

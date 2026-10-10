@@ -16,6 +16,7 @@ export type TeachResult = {
   version: string;
   engine?: "gemini" | "ollama" | "local";
   note?: string;
+  response?: string;
 };
 
 function promptById(id: string): TeachPrompt {

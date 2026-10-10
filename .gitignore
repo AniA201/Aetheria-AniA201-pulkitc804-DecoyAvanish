@@ -8,3 +8,4 @@ dist
 !.env.example
 backend/*.db
 backend/.venv/
+__pycache__/

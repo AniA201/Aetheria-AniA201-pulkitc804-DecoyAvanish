@@ -10,7 +10,7 @@ export function useTitle(title: string) {
 }
 
 export function ListenButton({ text }: { text: string }) {
-  const { narrationRate } = useSession();
+  const { narrationRate, setLastSpoken } = useSession();
   const [state, setState] = useState<"idle" | "playing" | "unavailable">("idle");
 
   useEffect(() => {
@@ -25,7 +25,10 @@ export function ListenButton({ text }: { text: string }) {
       return;
     }
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    setLastSpoken(text);
+    const utterance = new SpeechSynthesisUtterance(
+      `This voice is automated. A person still holds the consent conversation. ${text}`,
+    );
     utterance.rate = narrationRate;
     utterance.onend = () => setState("idle");
     utterance.onerror = () => setState("unavailable");
@@ -50,6 +53,7 @@ export function ListenButton({ text }: { text: string }) {
         </button>
       )}
       {state === "unavailable" ? <p>Voice is off. The text stays on the page.</p> : null}
+      <p className="fine">Listen is an automated voice. It does not replace a person.</p>
     </div>
   );
 }
@@ -103,7 +107,7 @@ export function CornerMark() {
 }
 
 function TypeDock() {
-  const { fontScale, setFontScale, contrast, setContrast } = useSession();
+  const { fontScale, setFontScale, contrast, setContrast, narrationRate, setNarrationRate, lastSpoken } = useSession();
   const sizes = [
     ["md", "Default", "0.92rem"],
     ["lg", "Large", "1.12rem"],
@@ -135,6 +139,45 @@ function TypeDock() {
         onClick={() => setContrast(contrast === "high" ? "paper" : "high")}
       >
         <span aria-hidden="true" />
+      </button>
+      <div role="radiogroup" aria-label="Reading speed">
+        {(
+          [
+            [0.85, "Slower"],
+            [1, "Steady"],
+            [1.15, "Faster"],
+          ] as const
+        ).map(([rate, label]) => (
+          <button
+            key={rate}
+            type="button"
+            role="radio"
+            aria-label={label}
+            aria-checked={narrationRate === rate}
+            onClick={() => setNarrationRate(rate)}
+          >
+            {rate === 0.85 ? "S" : rate === 1 ? "M" : "F"}
+          </button>
+        ))}
+      </div>
+      <button type="button" disabled aria-label="English only. A reviewed translation is not loaded.">
+        EN
+      </button>
+      <button
+        type="button"
+        aria-label="Repeat the last reading"
+        disabled={!lastSpoken}
+        onClick={() => {
+          if (!lastSpoken || !window.speechSynthesis) return;
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(
+            `This voice is automated. A person still holds the consent conversation. ${lastSpoken}`,
+          );
+          utterance.rate = narrationRate;
+          window.speechSynthesis.speak(utterance);
+        }}
+      >
+        ↺
       </button>
     </div>
   );
