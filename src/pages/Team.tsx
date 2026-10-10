@@ -13,6 +13,7 @@ import {
 } from "../data/study";
 import { runChecks, type Check } from "../lib/checks";
 import { inspectText, rejectUpload } from "../lib/ingest";
+import { geminiStatus, type GeminiStatus } from "../lib/gemini";
 import { probeOllama, type OllamaProbe } from "../lib/ollama";
 import { auditNumbers, auditPlainText, longSentenceCount } from "../lib/plain";
 import { isOpenReview, reviewLabel } from "../lib/preflight";
@@ -463,11 +464,15 @@ export function Settings() {
   const { reset, audit } = useSession();
   const [cleared, setCleared] = useState(false);
   const [ollama, setOllama] = useState<OllamaProbe | null>(null);
+  const [gemini, setGemini] = useState<GeminiStatus | null>(null);
 
   useEffect(() => {
     let cancel = false;
     probeOllama().then((status) => {
       if (!cancel) setOllama(status);
+    });
+    geminiStatus().then((status) => {
+      if (!cancel) setGemini(status);
     });
     return () => {
       cancel = true;
@@ -487,12 +492,22 @@ export function Settings() {
           </p>
         </li>
         <li>
-          <strong>ElevenLabs</strong>
-          <p>Not connected. Listen uses the browser speech engine when it is available. Dictate fills the question box and does not send audio anywhere.</p>
+          <strong>Voice</strong>
+          <p>Listen uses the browser speech engine when it is available. Dictate fills the question box and does not send audio anywhere.</p>
         </li>
         <li>
           <strong>Language model</strong>
           <p>{ollama?.detail ?? "Checking for Ollama on this computer."}</p>
+        </li>
+        <li>
+          <strong>Aetheria Guide</strong>
+          <p>
+            {gemini === null
+              ? "Checking for Gemini."
+              : gemini.configured
+                ? `Connected to Google’s Gemini API (${gemini.model}, free tier). Guide questions and the matching passages are sent to Google, which may use free-tier data to improve its products. The key stays on this computer’s dev server.`
+                : "Not set up. Add GEMINI_API_KEY to .env.local to turn it on. Until then the Guide answers from the local rules."}
+          </p>
         </li>
         <li>
           <strong>Retention</strong>

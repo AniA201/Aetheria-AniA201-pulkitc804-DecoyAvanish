@@ -1,9 +1,12 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { promptsFor } from "../lib/consent";
 import { type Answer } from "../lib/answers";
-import { answerQuestionGrounded } from "../lib/grounded";
-import { assessTeachback, type TeachResult } from "../lib/teachback";
+import { runAgent, type AgentReply } from "../lib/agent";
+import { assessTeachbackWithGemini, localBriefing, writeBriefingWithGemini, type Briefing } from "../lib/coach";
+import type { SubmittedConsent } from "../lib/consent";
+import { cachedGeminiStatus, type GeminiContent } from "../lib/gemini";
+import { type TeachResult } from "../lib/teachback";
 import { useSession } from "../state/Session";
 import { ListenButton, useTitle } from "../components/Chrome";
 import { ConsentFile } from "../components/ConsentFile";
@@ -222,7 +225,42 @@ type ChatMessage = {
   text: string;
   question?: string;
   answer?: Answer;
+  steps?: string[];
+  note?: string;
+  links?: { to: string; label: string }[];
 };
+
+function useGeminiModel(): string | undefined {
+  const [model, setModel] = useState<string>();
+  useEffect(() => {
+    cachedGeminiStatus().then((status) => setModel(status.configured ? status.model : undefined));
+  }, []);
+  return model;
+}
+
+function toAnswer(reply: AgentReply, consent: SubmittedConsent, model?: string): Answer {
+  if (reply.fallbackAnswer) return reply.fallbackAnswer;
+  const quote = reply.quotes[0];
+  return {
+    supported: reply.supported && Boolean(quote),
+    answer: reply.answer,
+    sectionId: quote?.sectionId,
+    citation: quote?.citation,
+    quote: quote?.text,
+    page: quote?.page,
+    documentId: consent.documentId,
+    version: consent.version,
+    passageId: quote?.passageId,
+    engine: reply.engine === "gemini" ? "gemini" : "local-rules",
+    model,
+  };
+}
+
+function engineNote(answer: Answer, note?: string): string {
+  if (answer.engine === "gemini") return "Answered by Gemini from the form.";
+  if (note) return note;
+  return answer.engine === "ollama" ? "Answered on this computer." : "Answered from the form.";
+}
 
 type SpeechResult = {
   results: ArrayLike<ArrayLike<{ transcript: string }>>;
@@ -245,6 +283,8 @@ export function Ask() {
   const [dictateNote, setDictateNote] = useState("");
   const [savedId, setSavedId] = useState<string | null>(null);
   const request = useRef(0);
+  const history = useRef<GeminiContent[]>([]);
+  const model = useGeminiModel();
   if (!consent) return <NeedFile title="Ask" />;
 
   const ask = async (question: string) => {
@@ -260,15 +300,36 @@ export function Ask() {
     ]);
     setDraft("");
     setSavedId(null);
-    const answer = await answerQuestionGrounded(clean, {
-      passages: consent.passages,
-      demoRules: consent.source === "demo",
-      documentId: consent.documentId,
-      version: consent.version,
-    });
+    const links: { to: string; label: string }[] = [];
+    const reply = await runAgent(
+      clean,
+      {
+        role: "participant",
+        consent,
+        reviews: {},
+        model,
+        // On this page the agent suggests a chapter instead of leaving the conversation.
+        navigate: (to) =>
+          links.push({ to, label: to.endsWith("teach-back") ? "Practice this in Check" : "Open this part" }),
+        saveQuestion: (saved, answer) =>
+          saveQuestion({ question: saved, answer, supported: false, documentId: consent.documentId, version: consent.version, followUp: true }),
+      },
+      history.current,
+    );
     if (request.current !== ticket) return;
+    history.current = [
+      ...history.current,
+      { role: "user", parts: [{ text: clean }] },
+      { role: "model", parts: [{ text: reply.answer }] },
+    ];
+    const answer = toAnswer(reply, consent, model);
+    const extra = links.filter((link) => !link.to.endsWith(`/${answer.sectionId}`));
     setMessages((current) =>
-      current.map((item) => (item.id === botId ? { ...item, text: answer.answer, answer, question: clean } : item)),
+      current.map((item) =>
+        item.id === botId
+          ? { ...item, text: answer.answer, answer, question: clean, steps: reply.steps.map((step) => step.summary), note: reply.note, links: extra }
+          : item,
+      ),
     );
   };
 
@@ -311,6 +372,7 @@ export function Ask() {
         {messages.length === 0 && <p className="empty">Choose a suggested question, or write your own.</p>}
         {messages.map((message) => (
           <article key={message.id} className={`bubble ${message.role}`}>
+            {message.steps && message.steps.length > 0 ? <small>{message.steps.join(" · ")}</small> : null}
             <p>{message.text}</p>
             {message.answer?.supported && message.answer.sectionId && (
               <div className="cite-card">
@@ -323,9 +385,13 @@ export function Ask() {
             )}
             {message.answer && (
               <>
+                {message.links?.map((link) => (
+                  <Link key={link.to} to={link.to}>
+                    {link.label}
+                  </Link>
+                ))}
                 <small>
-                  {message.answer.engine === "ollama" ? "Answered on this computer." : "Answered from the form."}{" "}
-                  {message.answer.citation}
+                  {engineNote(message.answer, message.note)} {message.answer.citation}
                 </small>
                 <ListenButton text={message.text} />
                 <button
@@ -385,11 +451,15 @@ export function Teach() {
   const [promptId, setPromptId] = useState(prompts[0]?.id ?? "");
   const [response, setResponse] = useState("");
   const [result, setResult] = useState<TeachResult | null>(null);
+  const [checking, setChecking] = useState(false);
   if (!consent || prompts.length === 0) return <NeedFile title="Check" />;
   const prompt = prompts.find((item) => item.id === promptId) ?? prompts[0];
 
-  const submit = () => {
-    const next = assessTeachback(prompt.id, response, prompts);
+  const submit = async () => {
+    if (checking) return;
+    setChecking(true);
+    const next = await assessTeachbackWithGemini(prompt, response, consent);
+    setChecking(false);
     setResult(next);
     recordTeach(next);
   };
@@ -434,8 +504,8 @@ export function Teach() {
           onChange={(event) => setResponse(event.target.value)}
           placeholder="Write what you understood. A short yes is not enough."
         />
-        <button className="btn solid dark" type="submit">
-          Check this explanation
+        <button className="btn solid dark" type="submit" disabled={checking}>
+          {checking ? "Checking…" : "Check this explanation"}
         </button>
       </form>
       {result && (
@@ -457,6 +527,13 @@ export function Teach() {
             </ul>
           )}
           <p>You can change the words above and check again. This is not a pass or fail score.</p>
+          <p className="fine">
+            {result.engine === "gemini"
+              ? "Checked by Gemini. It reads for meaning, not exact words."
+              : result.engine === "ollama"
+                ? "Checked on this computer. It reads for meaning, not exact words."
+                : (result.note ?? "Checked against the form’s key ideas.")}
+          </p>
           <Link to={`/participant/explore-consent/${prompt.sectionId}`}>Reread {prompt.topic.toLowerCase()}</Link>
         </article>
       )}
@@ -468,6 +545,8 @@ export function Teach() {
 export function Summary() {
   useTitle("My Summary");
   const { reviewed, saved, teach, consent } = useSession();
+  const [briefing, setBriefing] = useState<Briefing | null>(null);
+  const [writing, setWriting] = useState(false);
   const openTopics = useMemo(
     () => teach.filter((item) => item.label !== "Understands the key concept"),
     [teach],
@@ -482,6 +561,49 @@ export function Summary() {
         <p className="notice">This is not a signature.</p>
       </header>
       <div className="summary-grid">
+      <section>
+        <h2>For your coordinator</h2>
+        {briefing ? (
+          <>
+            <p>{briefing.summary}</p>
+            {briefing.questions.length === 0 ? (
+              <p className="empty">Nothing is waiting. You can still ask for a conversation.</p>
+            ) : (
+              <ol className="stack">
+                {briefing.questions.map((item) => (
+                  <li key={item.text}>
+                    <strong>{item.text}</strong>
+                    <p>{item.reason}</p>
+                  </li>
+                ))}
+              </ol>
+            )}
+            <p className="fine">
+              {briefing.engine === "gemini"
+                ? "Written by Gemini from this session. It adds no study facts."
+                : briefing.engine === "ollama"
+                  ? "Written on this computer from this session."
+                  : (briefing.note ?? "Built from this session.")}
+            </p>
+            <ListenButton text={[briefing.summary, ...briefing.questions.map((item) => item.text)].join(" ")} />
+          </>
+        ) : (
+          <p className="empty">Turn your saved questions and checks into a short list to bring.</p>
+        )}
+        <button
+          type="button"
+          className="btn on-paper"
+          disabled={writing}
+          onClick={async () => {
+            setWriting(true);
+            const input = { consent, reviewed, saved, teach };
+            setBriefing(await writeBriefingWithGemini(input).catch(() => localBriefing(input)));
+            setWriting(false);
+          }}
+        >
+          {writing ? "Writing…" : briefing ? "Write again" : "Write my questions"}
+        </button>
+      </section>
       <section>
         <h2>Sections marked as read</h2>
         <ul className="plain-list">

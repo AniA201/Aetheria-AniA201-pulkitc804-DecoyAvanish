@@ -20,7 +20,28 @@ The dev server proxies local Ollama at `/ollama`. Inside some sandboxes, bind th
 npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
-Optional model settings live in `.env.example`. Copy it to `.env` only if you want a different local model. Do not put a cloud API key in the app. None is required.
+Optional model settings live in `.env.example`. Copy it to `.env` only if you want a different local model.
+
+### Aetheria Guide (optional, Gemini free tier)
+
+**Ask the Guide**, bottom right on every participant and research page, is an agent. It searches the form, checks a number someone heard, opens the right chapter, and saves a question for the coordinator. Researchers can use it to read the flags and run the plain-language check. It cannot change a review decision.
+
+To turn it on, get a free key at https://aistudio.google.com/apikey and put it in `.env.local`, which git ignores:
+
+```bash
+GEMINI_API_KEY=your-key
+GEMINI_MODEL=gemini-3-flash-preview
+```
+
+Restart `npm run dev`. The key is read by the dev server only and never reaches the browser. Guide questions and the matching passages go to Google, and Google may use free-tier data to improve its products. Dose, approval, and cure questions are refused before Gemini is called. Gemini may cite only passages its tools returned, and the quotation on screen is the stored passage. Gemini also runs Ask, Check, and the Summary question list.
+
+If Gemini can't answer, the next engine takes over, and the screen says which one answered:
+
+1. **Gemini** (free tier), when a key is set.
+2. **Local RAG on this computer.** Passage retrieval plus Ollama (`llama3.2:3b` by default).
+3. **The built-in consent rules.**
+
+When Gemini hits its free limit, it pauses for 60 seconds, and questions go straight to the local engines. Every engine's answer passes the same checks, so a fallback is never less safe.
 
 ```bash
 # Ollama, on this computer, optional
@@ -49,7 +70,7 @@ If Ollama is not running, Ask Aetheria still answers from the local consent rule
 
 The supplied Regeneron pack contains many sheets. This app uses the four that match the consent product. The others describe different jobs and are not implemented.
 
-- **Teach It Back.** Explore Consent, Ask Aetheria, Teach-Back, and My Summary. Answers and teach-back concepts come from the selected consent. A yes is not understanding. The summary is a handoff, not a signature. Outdated consent v2.0 is stored and is not used for answers. Voice is the browser speech engine. Dictate types into the question box and does not submit by itself. ElevenLabs is not connected.
+- **Teach It Back.** Explore Consent, Ask Aetheria, Teach-Back, and My Summary. Answers and teach-back concepts come from the selected consent. A yes is not understanding. The summary is a handoff, not a signature. Outdated consent v2.0 is stored and is not used for answers. Voice is the browser speech engine. Dictate types into the question box and does not submit by itself.
 - **Say It Plainly.** Explore Consent and Plain Language Studio. The shorter reading keeps 6 times, about 16 weeks, and $50. It must not import 8 visits, 24 weeks, or $80. The word count is a count, not a reader test. Promotional wording is flagged. A person accepts or rejects the draft. The source clause stays in the file.
 - **Write Once.** The consent sections and protocol sentences live in `demo/synthetic/`. Explanations, answers, teach-back, and the comparison read those passages. Shared facts are listed on Documents & Versions. A change is not copied into the other document from the screen.
 - **Protocol Pre-Flight.** Document Integrity compares the synthetic protocol with the consent. Each planted mismatch is a confirmed textual difference, with both sentences, where they are, and why a person should look. Matching blood volume and record retention stay unflagged. Review states are Open, Under review, Resolved, and Not a discrepancy. There is no approval score. This is not a full SPIRIT or ICH M11 checklist.
@@ -69,7 +90,7 @@ The supplied Regeneron pack contains many sheets. This app uses the four that ma
 | Consent file | PDF text is extracted page by page. `.txt` and `.md` still work. A scanned PDF is not indexed as empty. DOCX is not read |
 | Audit trail | Working in this browser session |
 | Test Lab | Working. Counts a real run |
-| ClinicalTrials.gov, PDF OCR, ElevenLabs, phone calls | Not connected. A PDF must already contain text |
+| ClinicalTrials.gov, PDF OCR, phone calls | Not connected. A PDF must already contain text |
 | Pre-flight score or protocol approval | Intentionally absent |
 
 ## Data and privacy

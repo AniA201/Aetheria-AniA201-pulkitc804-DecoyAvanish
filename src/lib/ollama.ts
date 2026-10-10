@@ -117,3 +117,41 @@ function leaksFigure(answer: string, source: string): boolean {
   const figures = answer.match(/\$\d+|\b\d+\s*(?:visits|weeks|years|teaspoons)\b/gi) ?? [];
   return figures.some((figure) => !source.includes(figure.toLowerCase()));
 }
+
+type SchemaNode = { type: string; nullable?: boolean; properties?: Record<string, SchemaNode>; items?: SchemaNode; [key: string]: unknown };
+
+function toJsonSchema(node: SchemaNode): Record<string, unknown> {
+  const { nullable, properties, items, ...rest } = node;
+  return {
+    ...rest,
+    type: nullable ? [node.type, "null"] : node.type,
+    ...(properties ? { properties: Object.fromEntries(Object.entries(properties).map(([key, value]) => [key, toJsonSchema(value)])) } : {}),
+    ...(items ? { items: toJsonSchema(items) } : {}),
+  };
+}
+
+/** Structured reply from the local model, used when Gemini cannot answer. */
+export async function completeJson(request: { system: string; prompt: string; schema: SchemaNode }): Promise<unknown | null> {
+  try {
+    const response = await fetch(`${ollamaBase}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(20000),
+      body: JSON.stringify({
+        model: ollamaModel,
+        stream: false,
+        format: toJsonSchema(request.schema),
+        options: { temperature: 0, num_predict: 500 },
+        messages: [
+          { role: "system", content: request.system },
+          { role: "user", content: request.prompt },
+        ],
+      }),
+    });
+    if (!response.ok) return null;
+    const body = (await response.json()) as { message?: { content?: string } };
+    return body.message?.content ? JSON.parse(body.message.content) : null;
+  } catch {
+    return null;
+  }
+}
