@@ -466,8 +466,12 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
 .folio-hero {
   position: relative;
   min-height: 100vh;
-  padding: 18vh 7vw 18vh;
+  width: min(34rem, 48vw);
+  padding: 18vh 0 8vh 7vw;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 .folio-kicker, .folio-vertical, .folio-index, .folio-facts span, .folio-chapters li span, .folio-close h3 {
   font-size: 11px;
@@ -482,8 +486,8 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   margin: 0.7rem 0 0;
 }
 .folio-hero h1 {
-  max-width: 6.6em;
-  font-size: clamp(2.8rem, 4.7vw, 4.7rem);
+  max-width: 7.2em;
+  font-size: clamp(2.5rem, 4vw, 4.1rem);
 }
 .folio-lede {
   max-width: 22rem;
@@ -495,23 +499,22 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
 .folio-word {
   position: absolute;
   left: -0.06em;
-  top: 80vh;
+  top: 112vh;
   margin: 0;
   z-index: 0;
   font-size: 22vw;
   line-height: 0.76;
   letter-spacing: -0.06em;
   font-weight: 500;
-  color: rgba(0, 0, 0, 1);
+  color: rgba(0, 0, 0, 0.08);
   pointer-events: none;
   white-space: nowrap;
 }
 .folio-vertical { display: none; }
 .folio-preview {
-  position: absolute;
-  right: 28px;
-  bottom: 24px;
+  position: relative;
   z-index: 3;
+  margin-top: 1.6rem;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -536,14 +539,13 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
     #f4f1e8;
 }
 .folio-index {
-  position: absolute;
-  left: 7vw;
-  top: 69vh;
-  bottom: auto;
+  position: relative;
   z-index: 2;
   display: flex;
-  gap: 1.6rem;
-  margin: 0;
+  flex-wrap: wrap;
+  gap: 1.15rem 1.7rem;
+  margin: auto 0 0;
+  padding-top: 2.4rem;
 }
 .folio-index a {
   color: rgba(0, 0, 0, 1);
@@ -567,7 +569,7 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
 }
 .folio-split {
   display: grid;
-  grid-template-columns: minmax(0, 32rem);
+  grid-template-columns: minmax(0, 26rem);
   align-content: end;
   gap: 1.25rem;
 }
@@ -576,11 +578,10 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   max-width: 12ch;
 }
 .folio-split p, .folio-review p, .folio-chapters .folio-chapter-head p {
-  max-width: 26rem;
   color: rgba(0, 0, 0, 1);
   font-size: 1.05rem;
   line-height: 1.5;
-  max-width: 34rem;
+  max-width: 26rem;
 }
 .folio-link, .folio-pill {
   color: inherit;
@@ -963,12 +964,13 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   .folio-nav { grid-template-columns: 1fr auto; padding: 16px 18px; }
   .folio-nav nav, .folio-vertical, .folio-preview { display: none; }
   .folio-hero, .folio-split, .folio-chapters, .folio-review, .folio-close { padding-left: 22px; padding-right: 22px; }
+  .folio-hero { width: auto; padding-right: 22px; }
   .folio-hero h1 { font-size: clamp(2.6rem, 12vw, 4rem); }
   .folio-word { font-size: 22vw; }
   .folio-split, .folio-chapter-head, .folio-facts, .folio-chapters ol, .folio-close footer {
     grid-template-columns: 1fr;
   }
-  .folio-index { position: static; margin-top: 28vh; flex-wrap: wrap; }
+  .folio-index { margin-top: 2rem; }
   .folio-facts { margin-left: 22px; margin-right: 22px; }
   .folio-review dl div { grid-template-columns: 1fr; gap: 0.2rem; }
   #overlay-panel { top: 12px; right: 12px; bottom: 12px; left: 12px; }

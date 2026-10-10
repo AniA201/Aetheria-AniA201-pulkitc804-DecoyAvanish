@@ -180,7 +180,7 @@ function makePage(texture: THREE.Texture, width: number, height: number) {
   const group = new THREE.Group();
   const face = new THREE.Mesh(
     new THREE.PlaneGeometry(width, height),
-    new THREE.MeshBasicMaterial({ map: texture, toneMapped: false }),
+    new THREE.MeshBasicMaterial({ map: texture, color: "#ffffff", toneMapped: false, side: THREE.DoubleSide }),
   );
   face.position.z = 0.02;
   const edge = new THREE.Mesh(
@@ -273,14 +273,6 @@ export function MedicalField({
       return mesh;
     });
 
-    const placeShadow = (mesh: THREE.Mesh, page: THREE.Group, opacity: number) => {
-      mesh.position.x = page.position.x + Math.sin(page.rotation.y) * 0.28;
-      mesh.position.z = page.position.z * 0.4;
-      mesh.position.y = -1.08;
-      mesh.scale.set(0.78, 0.18, 1);
-      (mesh.material as THREE.MeshBasicMaterial).opacity = opacity;
-    };
-
     const redraw = () => {
       paintSheet(consentSheet.context, "consent", consentSheet.canvas.width, consentSheet.canvas.height);
       paintSheet(protocolSheet.context, "protocol", protocolSheet.canvas.width, protocolSheet.canvas.height);
@@ -321,43 +313,49 @@ export function MedicalField({
       if (disposed) return;
       const elapsed = reducedMotion ? 0 : clock.getElapsedTime();
       const progress = Math.min(1, Math.max(0, progressRef.current ?? 0));
-      const open = smoothstep((progress - 0.08) / 0.5);
-      const settle = smoothstep((progress - 0.58) / 0.28);
       sway.x += ((reducedMotion ? 0 : pointer.x) * 0.12 - sway.x) * 0.05;
       sway.y += ((reducedMotion ? 0 : pointer.y) * 0.06 - sway.y) * 0.05;
 
-      folio.position.set(0.7 + open * 0.22, -0.18 + open * 0.08 + Math.sin(elapsed * 0.35) * 0.012, 0);
-      folio.scale.setScalar(0.94 - open * 0.04);
-      folio.rotation.set(sway.y * 0.08, sway.x * 0.1, 0);
+      const turn = reducedMotion ? 1 : smoothstep(progress / 0.32);
+      const fan = smoothstep((progress - 0.28) / 0.42);
+      const yaw = -0.95 + turn * 0.8;
 
-      const yaw = -0.16 + open * 0.06 + elapsed * 0.006;
-      const fan = smoothstep((progress - 0.4) / 0.3);
-      consent.group.position.set(-0.42 + settle * 0.04, 0, 0.08);
-      consent.group.rotation.set(-0.02, yaw, 0.008);
+      folio.position.set(0.85 - turn * 0.2, -0.02 + Math.sin(elapsed * 0.35) * 0.01, 0);
+      folio.scale.setScalar(0.92);
+      folio.rotation.set(sway.y * 0.04, yaw + sway.x * 0.06, 0);
+
+      consent.group.position.set(0, 0, 0.1);
+      consent.group.rotation.set(0, 0, 0);
       consent.group.scale.setScalar(1);
 
-      const revealed = [
-        { x: -0.78, y: 0.012, z: 0.035, yaw: 0.02, scale: 1 },
-        { x: -1.08, y: 0.02, z: -0.01, yaw: 0.1, scale: 0.995 },
-        { x: -0.58, y: 0.018, z: -0.02, yaw: -0.05, scale: 0.995 },
-        { x: -1.32, y: 0.028, z: -0.045, yaw: 0.16, scale: 0.99 },
+      const lanes = [
+        { restX: -0.028, restZ: 0.055, outX: -0.58, outZ: 0.04 },
+        { restX: -0.052, restZ: 0.01, outX: -1.02, outZ: -0.01 },
+        { restX: -0.076, restZ: -0.035, outX: -1.4, outZ: -0.055 },
+        { restX: -0.1, restZ: -0.08, outX: -1.72, outZ: -0.1 },
       ];
       behind.forEach((page, index) => {
-        const reveal = revealed[index];
-        const t = smoothstep(Math.min(1, Math.max(0, (fan - index * 0.08) / 0.78)));
+        const lane = lanes[index];
+        const t = smoothstep(Math.min(1, Math.max(0, (fan - index * 0.06) / 0.82)));
         page.group.position.set(
-          0.04 + (reveal.x - 0.04) * t,
-          reveal.y * t,
-          -0.05 - index * 0.012 + (reveal.z + 0.05) * t,
+          lane.restX + (lane.outX - lane.restX) * t,
+          0,
+          lane.restZ + (lane.outZ - lane.restZ) * t,
         );
-        page.group.rotation.set(-0.02, yaw + reveal.yaw * t, index === 0 ? 0 : -0.01 * t);
-        page.group.scale.setScalar(1 + (reveal.scale - 1) * t);
-        placeShadow(shadows[index], page.group, index === 0 ? 0.26 : 0.2);
+        page.group.rotation.set(0, 0, 0);
+        page.group.scale.setScalar(1);
       });
-      placeShadow(shadows[behind.length], consent.group, 0.3);
 
-      camera.position.set(0.2 + sway.x * 0.25, 0.08 - sway.y * 0.12, 7.15 - open * 0.85 + settle * 0.35);
-      camera.lookAt(0.05, -0.15, 0);
+      const facing = 0.34 + turn * 0.66;
+      pages.forEach((page, index) => {
+        const shadow = shadows[index];
+        shadow.position.set(page.group.position.x, -1.12, page.group.position.z + 0.04);
+        shadow.scale.set(facing, 0.16, 1);
+        (shadow.material as THREE.MeshBasicMaterial).opacity = index === pages.length - 1 ? 0.32 : 0.22;
+      });
+
+      camera.position.set(0.15 + sway.x * 0.2, 0.06 - sway.y * 0.08, 7.35 - turn * 0.35);
+      camera.lookAt(0.35, -0.05, 0);
       renderer.render(scene, camera);
       frame = requestAnimationFrame(render);
     };
