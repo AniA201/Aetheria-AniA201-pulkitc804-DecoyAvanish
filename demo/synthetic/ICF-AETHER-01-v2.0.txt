@@ -1,0 +1,23 @@
+document-id: ICF-AETHER-01
+version: v2.0
+date: 18 February 2026
+study: AETHER-01
+kind: consent
+status: Outdated
+usable: no
+
+---
+section: procedures
+heading: Study procedures and time commitment
+page: p. 4
+citation: Consent §4.1 Procedures
+
+You will come to the study clinic 8 times over 24 weeks. Each visit lasts about 2 hours. This outdated draft is not the form opened in the reader.
+
+---
+section: costs
+heading: Costs and compensation
+page: p. 8
+citation: Consent §7.1 Costs and payments
+
+You will receive $80 for each completed clinic visit. This outdated draft is not the form opened in the reader.

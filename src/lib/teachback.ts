@@ -1,4 +1,4 @@
-import { teachPrompts, type TeachPrompt } from "../data/study";
+import { consentDoc, teachPrompts, type TeachPrompt } from "../data/study";
 
 export type Understanding =
   | "Understands the key concept"
@@ -12,6 +12,8 @@ export type TeachResult = {
   matched: string[];
   missing: string[];
   feedback: string;
+  documentId: string;
+  version: string;
 };
 
 function promptById(id: string): TeachPrompt {
@@ -22,8 +24,8 @@ function promptById(id: string): TeachPrompt {
   return prompt;
 }
 
-export function assessTeachback(promptId: string, response: string): TeachResult {
-  const prompt = promptById(promptId);
+export function assessTeachback(promptId: string, response: string, prompts: TeachPrompt[] = teachPrompts): TeachResult {
+  const prompt = prompts.find((item) => item.id === promptId) ?? promptById(promptId);
   const text = response.trim().toLowerCase();
   const unsure = /^(i don'?t know|do not know|not sure|no idea|idk)\.?$/i.test(response.trim());
   const emptyGesture = /^(yes|ok|okay|i understand|i consent|i agree|sure)\.?$/i.test(response.trim());
@@ -36,6 +38,8 @@ export function assessTeachback(promptId: string, response: string): TeachResult
       missing: prompt.concepts.map((concept) => concept.label),
       feedback:
         "That is a good moment to talk with the research coordinator. There is no score to pass. The ideas to cover are listed here if you want to try again.",
+      documentId: consentDoc.id,
+      version: consentDoc.version,
     };
   }
 
@@ -51,6 +55,8 @@ export function assessTeachback(promptId: string, response: string): TeachResult
       matched: [],
       missing: prompt.concepts.map((concept) => concept.label),
       feedback: `A short yes does not have to stand in for the details. ${prompt.reexplain}`,
+      documentId: consentDoc.id,
+      version: consentDoc.version,
     };
   }
 
@@ -62,6 +68,8 @@ export function assessTeachback(promptId: string, response: string): TeachResult
       missing: [],
       feedback:
         "Your words cover the ideas this question is looking for. You can still ask the coordinator to walk through it with you.",
+      documentId: consentDoc.id,
+      version: consentDoc.version,
     };
   }
 
@@ -73,5 +81,7 @@ export function assessTeachback(promptId: string, response: string): TeachResult
     feedback: `You covered part of it. Still worth naming: ${missing
       .map((concept) => concept.label.toLowerCase())
       .join("; ")}. ${prompt.reexplain}`,
+    documentId: consentDoc.id,
+    version: consentDoc.version,
   };
 }

@@ -51,7 +51,7 @@ export function ListenButton({ text }: { text: string }) {
       <p>
         {state === "unavailable"
           ? "Voice is unavailable in this browser. The written explanation stays on the page."
-          : "Preview voice uses this browser’s speech engine. ElevenLabs is not connected, and the writing stays visible."}
+          : "Listen uses this browser’s speech engine. ElevenLabs is not connected, and the writing stays visible."}
       </p>
     </div>
   );
@@ -145,7 +145,7 @@ export function Shell({ mode }: { mode: Role }) {
       </aside>
       <div className="workspace">
         <p className="demo-banner">
-          Synthetic demo. Not medical advice, not a consent decision, and not a signed form.
+          Not medical advice, not a consent decision, and not a signed form.
         </p>
         <main id="content" tabIndex={-1}>
           <Outlet />
@@ -160,7 +160,7 @@ export function Missing() {
   return (
     <main className="missing" id="content">
       <p className="kicker">Aetheria</p>
-      <h1>That page is not part of the demo.</h1>
+      <h1>That page is not in Aetheria.</h1>
       <NavLink to="/" className="btn solid">
         Back to the start
       </NavLink>

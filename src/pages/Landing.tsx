@@ -112,7 +112,7 @@ export function Landing() {
               </a>
             ))}
             <Link to="/login?as=participant" onClick={() => setMenu(false)}>
-              Explore demo
+              Start reading
             </Link>
             <Link to="/login?as=researcher" onClick={() => setMenu(false)}>
               Researcher login
@@ -138,15 +138,15 @@ export function Landing() {
           <p className="folio-kicker">Chapter 00 — The form</p>
           <h1>Understand the consent before you decide.</h1>
           <p className="folio-lede">
-            A synthetic consent, read with the original wording still in view. It explains, answers,
-            and checks understanding. It does not sign.
+            Submit a consent form and read it with the original wording still in view. Aetheria explains,
+            answers, and checks understanding. It does not sign.
           </p>
           <p className="folio-vertical">ICF-AETHER-01</p>
           <Link className="folio-preview" to="/login?as=participant">
             <span className="folio-preview-sheet" aria-hidden="true" />
             <span>
-              Preview
-              <em>v2.1, unsigned</em>
+              Start
+              <em>Submit a form</em>
             </span>
           </Link>
           <nav className="folio-index" aria-label="Chapters">
@@ -189,7 +189,7 @@ export function Landing() {
           </article>
           <article>
             <b>{consentDoc.status}</b>
-            <span>No approval list in this preview</span>
+            <span>Unverified without an approval list</span>
           </article>
         </section>
 
@@ -232,8 +232,9 @@ export function Landing() {
         <section className="folio-review" id="review">
           <h2>Both sentences, side by side.</h2>
           <p>
-            The synthetic protocol and consent disagree on purpose. Aetheria shows both passages. It
-            does not decide which document is right.
+            When the included sample is loaded, its protocol and consent disagree on visits, duration,
+            and payment. Aetheria shows both passages and does not decide which one is right. A consent
+            submitted without a protocol is not given invented flags.
           </p>
           <dl>
             <div>
@@ -260,8 +261,8 @@ export function Landing() {
             Begin the reading
           </Link>
           <p>
-            AETHER-01, Aetherol, and Northwind Clinical Research are fictional. This is not medical
-            advice, and it is not a signed consent.
+            The included sample uses fictional names. This is not medical advice, and it is not a signed
+            consent.
           </p>
           <footer>
             <div>
@@ -285,7 +286,7 @@ export function Landing() {
               <h3>Enter</h3>
               <ul>
                 <li>
-                  <Link to="/login?as=participant">Explore demo</Link>
+                  <Link to="/login?as=participant">Start reading</Link>
                 </li>
                 <li>
                   <Link to="/login?as=researcher">Researcher login</Link>

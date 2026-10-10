@@ -1,3 +1,5 @@
+import { passageBy } from "./documents";
+
 export type SectionId =
   | "procedures"
   | "risks"
@@ -23,9 +25,12 @@ export type Section = {
   ask: string;
 };
 
+export type FactKind = "confirmed-textual-difference" | "consistent";
+
 export type Fact = {
   id: string;
   label: string;
+  kind: FactKind;
   protocolValue: string;
   consentValue: string;
   protocolQuote: string;
@@ -35,6 +40,14 @@ export type Fact = {
   why: string;
 };
 
+function consentPassage(sectionId: string) {
+  return passageBy("ICF-AETHER-01", "v2.1", sectionId);
+}
+
+function protocolPassage(sectionId: string) {
+  return passageBy("PROT-AETHER-01", "v3.0", sectionId);
+}
+
 export type TeachConcept = {
   id: string;
   label: string;
@@ -43,7 +56,7 @@ export type TeachConcept = {
 
 export type TeachPrompt = {
   id: string;
-  sectionId: SectionId;
+  sectionId: string;
   topic: string;
   question: string;
   concepts: TeachConcept[];
@@ -68,7 +81,7 @@ export const consentDoc = {
   status: "Unverified" as const,
   statusNote:
     "This preview has no authorized approval list, so the consent version is marked unverified.",
-  filename: "synthetic-consent-aether-01-v2.1.pdf",
+  filename: "ICF-AETHER-01-v2.1.txt",
 };
 
 export const protocolDoc = {
@@ -76,7 +89,7 @@ export const protocolDoc = {
   version: "v3.0",
   date: "2 March 2026",
   status: "Unverified" as const,
-  filename: "synthetic-protocol-aether-01-v3.0.pdf",
+  filename: "PROT-AETHER-01-v3.0.txt",
 };
 
 export const sections: Section[] = [
@@ -85,12 +98,11 @@ export const sections: Section[] = [
     index: "01",
     title: "Study procedures and time commitment",
     short: "Visits, time, and how assignment works",
-    original:
-      "You will come to the study clinic 6 times over about 16 weeks. Each visit lasts about 2 hours. Visits include a headache diary review and vital signs. A blood sample of about 2 teaspoons is taken at visits 1, 3, and 6. You will be assigned by chance to Aetherol or placebo. Neither you nor the study doctor will know which one you receive during the study.",
+    original: consentPassage("procedures").text,
     plain:
       "The clinic asks you to come in 6 times across about 16 weeks. A visit takes about 2 hours. Some visits include a small blood draw of about 2 teaspoons. A chance process assigns you to Aetherol or placebo. You and the study doctor are not told which one you receive while the study is going on.",
-    citation: "Consent §4.1 Procedures",
-    page: "p. 4",
+    citation: consentPassage("procedures").citation,
+    page: consentPassage("procedures").page,
     terms: [
       {
         word: "Placebo",
@@ -109,12 +121,11 @@ export const sections: Section[] = [
     index: "02",
     title: "Risks and possible benefits",
     short: "What the form says could happen",
-    original:
-      "Aetherol may cause nausea, dizziness, or fatigue. In earlier studies described in this form, about 1 in 10 people reported nausea. Rare allergic reactions are possible. Placebo has no active drug, but blood draws can cause bruising. This study may not help your migraines. There is no promise of benefit.",
+    original: consentPassage("risks").text,
     plain:
       "Aetherol can cause nausea, dizziness, or tiredness. This form says about 1 in 10 people in earlier studies felt nausea. Allergic reactions are described as rare. Blood draws can bruise. The form does not promise that the study will help your migraines.",
-    citation: "Consent §5.2 Risks and benefits",
-    page: "p. 6",
+    citation: consentPassage("risks").citation,
+    page: consentPassage("risks").page,
     terms: [
       {
         word: "Fatigue",
@@ -132,12 +143,11 @@ export const sections: Section[] = [
     index: "03",
     title: "Participant rights and withdrawal",
     short: "You can leave",
-    original:
-      "Taking part is voluntary. You may leave the study at any time. Leaving will not change the medical care you otherwise receive from your own doctor. If you leave, the study team may ask to keep safety information already recorded. You will be told about new information that could affect your choice to stay.",
+    original: consentPassage("rights").text,
     plain:
       "You can say no, and you can leave later. Leaving does not take away regular care from your own doctor. The team may keep safety information already collected. They must tell you about new information that could change your decision to stay.",
-    citation: "Consent §6.1 Voluntary participation",
-    page: "p. 7",
+    citation: consentPassage("rights").citation,
+    page: consentPassage("rights").page,
     terms: [
       {
         word: "Voluntary",
@@ -151,12 +161,11 @@ export const sections: Section[] = [
     index: "04",
     title: "Costs and compensation",
     short: "What you pay and what you receive",
-    original:
-      "The study drug, placebo, and study-required visits are provided at no cost to you. You will receive $50 for each completed clinic visit, paid after the visit. The study does not pay for your usual migraine care or for travel beyond that visit payment.",
+    original: consentPassage("costs").text,
     plain:
       "You do not pay for the study drug or the required study visits. You receive $50 after each clinic visit you complete. That payment does not cover your usual migraine care or extra travel costs.",
-    citation: "Consent §7.1 Costs and payments",
-    page: "p. 8",
+    citation: consentPassage("costs").citation,
+    page: consentPassage("costs").page,
     terms: [
       {
         word: "Compensation",
@@ -170,12 +179,11 @@ export const sections: Section[] = [
     index: "05",
     title: "Privacy and use of data",
     short: "Who can see coded records",
-    original:
-      "Study records use a code instead of your name. The sponsor, the study doctor, and monitors may review coded records to check the study. Records may be kept for 15 years. Results may be shared in journals without your name. Your name is not placed in the public study listing.",
+    original: consentPassage("privacy").text,
     plain:
       "Your name is replaced with a code in study records. The sponsor and monitors can see coded records to check that the study was done as written. Records may be kept for 15 years. Published results and the public listing do not include your name.",
-    citation: "Consent §8.3 Confidentiality",
-    page: "p. 9",
+    citation: consentPassage("privacy").citation,
+    page: consentPassage("privacy").page,
     terms: [
       {
         word: "Coded records",
@@ -194,59 +202,62 @@ export const facts: Fact[] = [
   {
     id: "visits",
     label: "Clinic visits",
+    kind: "confirmed-textual-difference",
     protocolValue: "8 visits",
     consentValue: "6 visits",
-    protocolQuote:
-      "Participants complete 8 clinic visits during the 24-week treatment period.",
+    protocolQuote: protocolPassage("visits").text,
     consentQuote: "You will come to the study clinic 6 times over about 16 weeks.",
-    protocolSource: "Protocol §6.2 Schedule of assessments",
-    consentSource: "Consent §4.1 Procedures",
-    why: "The visit count is not the same number in the two synthetic documents.",
+    protocolSource: protocolPassage("visits").citation,
+    consentSource: consentPassage("procedures").citation,
+    why: "Confirmed textual difference: the visit count is not the same number in the two synthetic documents. This is not an inferred omission.",
   },
   {
     id: "duration",
     label: "Study duration",
+    kind: "confirmed-textual-difference",
     protocolValue: "24 weeks",
     consentValue: "about 16 weeks",
-    protocolQuote:
-      "The treatment period is 24 weeks, with the last clinic visit at week 24.",
+    protocolQuote: protocolPassage("duration").text,
     consentQuote: "You will come to the study clinic 6 times over about 16 weeks.",
-    protocolSource: "Protocol §6.1 Study design",
-    consentSource: "Consent §4.1 Procedures",
-    why: "The stated length of participation does not match.",
+    protocolSource: protocolPassage("duration").citation,
+    consentSource: consentPassage("procedures").citation,
+    why: "Confirmed textual difference: the stated length of participation does not match. A person has to decide which sentence should remain.",
   },
   {
     id: "pay",
     label: "Visit payment",
+    kind: "confirmed-textual-difference",
     protocolValue: "$80 per completed visit",
     consentValue: "$50 per completed visit",
-    protocolQuote: "Participants are compensated $80 for each completed clinic visit.",
+    protocolQuote: protocolPassage("pay").text,
     consentQuote: "You will receive $50 for each completed clinic visit, paid after the visit.",
-    protocolSource: "Protocol §11.4 Compensation",
-    consentSource: "Consent §7.1 Costs and payments",
-    why: "The payment amount for a completed visit is different.",
+    protocolSource: protocolPassage("pay").citation,
+    consentSource: consentPassage("costs").citation,
+    why: "Confirmed textual difference: the payment amount for a completed visit is different.",
   },
   {
     id: "blood",
     label: "Blood volume",
+    kind: "consistent",
     protocolValue: "about 2 teaspoons",
     consentValue: "about 2 teaspoons",
-    protocolQuote: "Each scheduled blood sample is approximately 10 mL, about 2 teaspoons.",
+    protocolQuote: protocolPassage("blood").text,
     consentQuote: "A blood sample of about 2 teaspoons is taken at visits 1, 3, and 6.",
-    protocolSource: "Protocol §6.4 Laboratory samples",
-    consentSource: "Consent §4.1 Procedures",
-    why: "The stated sample volume matches in this synthetic pair.",
+    protocolSource: protocolPassage("blood").citation,
+    consentSource: consentPassage("procedures").citation,
+    why: "The stated sample volume matches in this synthetic pair. Matching text is not marked as a discrepancy.",
   },
   {
     id: "retention",
     label: "Record retention",
+    kind: "consistent",
     protocolValue: "15 years",
     consentValue: "15 years",
-    protocolQuote: "Essential documents are retained for 15 years after study completion.",
+    protocolQuote: protocolPassage("retention").text,
     consentQuote: "Records may be kept for 15 years.",
-    protocolSource: "Protocol §12.2 Record retention",
-    consentSource: "Consent §8.3 Confidentiality",
-    why: "The retention period matches in this synthetic pair.",
+    protocolSource: protocolPassage("retention").citation,
+    consentSource: consentPassage("privacy").citation,
+    why: "The retention period matches in this synthetic pair. Matching text is not marked as a discrepancy.",
   },
 ];
 
@@ -262,6 +273,8 @@ export const plainDraft = {
     "You come to the clinic 6 times over about 16 weeks. After each visit you complete, you receive $50. You do not pay for the study drug or those required visits. The payment does not cover your usual migraine care.",
   mustKeep: ["6 times", "16 weeks", "$50"],
   mustNotAdd: ["8 visits", "24 weeks", "$80", "promise"],
+  reason:
+    "Shorter sentences. The consent’s own figures stay: 6 times, about 16 weeks, and $50. Protocol figures are not copied. Accepting this suggestion does not change the source clause.",
 };
 
 export const versions = [

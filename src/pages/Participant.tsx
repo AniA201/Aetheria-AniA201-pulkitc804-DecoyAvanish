@@ -1,35 +1,43 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
-import {
-  consentDoc,
-  sectionById,
-  sections,
-  study,
-  teachPrompts,
-  type SectionId,
-} from "../data/study";
-import { answerQuestion, suggestedQuestions, type Answer } from "../lib/answers";
+import { promptsFor } from "../lib/consent";
+import { type Answer } from "../lib/answers";
+import { answerQuestionGrounded } from "../lib/grounded";
 import { assessTeachback, type TeachResult } from "../lib/teachback";
 import { useSession } from "../state/Session";
 import { ListenButton, useTitle } from "../components/Chrome";
+import { ConsentFile } from "../components/ConsentFile";
 import { ConsentSheet } from "../scene/ConsentSheet";
 
 export function ParticipantHome() {
   useTitle("Home");
-  const { reviewed, saved, teach, displayName } = useSession();
-  const next = sections.find((section) => !reviewed.includes(section.id)) ?? sections[0];
+  const { reviewed, saved, teach, displayName, consent } = useSession();
+  if (!consent) {
+    return (
+      <div className="page">
+        <p className="kicker">Consent</p>
+        <h1>{displayName ? `${displayName}, submit the consent form.` : "Submit the consent form."}</h1>
+        <p className="lede dark">
+          Choose the file to read. After you submit it, the sections, questions, and teach-back use that
+          form. Aetheria does not sign it or decide that anyone consented.
+        </p>
+        <ConsentFile />
+      </div>
+    );
+  }
+  const next = consent.sections.find((section) => !reviewed.includes(section.id)) ?? consent.sections[0];
 
   return (
     <div className="page">
-      <p className="kicker">{study.label}</p>
-      <h1>{displayName ? `${displayName}, your study is ready.` : `Your place in ${study.id}.`}</h1>
+      <p className="kicker">{consent.sample ? "Included sample" : consent.documentId}</p>
+      <h1>{displayName ? `${displayName}, the form is ready.` : "The form is ready."}</h1>
       <p className="lede dark">
-        {study.purpose} You are reading consent {consentDoc.version}, marked {consentDoc.status.toLowerCase()}.
+        {consent.purpose} You are reading {consent.documentId} {consent.version}, marked {consent.status.toLowerCase()}.
       </p>
       <div className="stat-row">
         <article>
           <strong>
-            {reviewed.length}/{sections.length}
+            {reviewed.length}/{consent.sections.length}
           </strong>
           <span>Sections opened</span>
         </article>
@@ -56,38 +64,54 @@ export function ParticipantHome() {
 
 export function MyStudy() {
   useTitle("My Study");
+  const { consent } = useSession();
+  if (!consent) {
+    return (
+      <div className="page">
+        <p className="kicker">My Study</p>
+        <h1>No consent form yet.</h1>
+        <p className="lede dark">Submit a consent file to open the study reading.</p>
+        <ConsentFile />
+      </div>
+    );
+  }
   return (
     <div className="page">
-      <p className="kicker">{study.id}</p>
-      <h1>{study.name}</h1>
+      <p className="kicker">{consent.studyId}</p>
+      <h1>{consent.studyName}</h1>
       <dl className="meta-list">
         <div>
           <dt>Investigational product</dt>
-          <dd>{study.product}, a fictional name</dd>
+          <dd>{consent.product}</dd>
         </div>
         <div>
           <dt>Design</dt>
-          <dd>{study.phase}, described in the synthetic consent</dd>
+          <dd>{consent.phase}</dd>
         </div>
         <div>
           <dt>Sponsor</dt>
-          <dd>{study.sponsor}, fictional</dd>
+          <dd>{consent.sponsor}</dd>
         </div>
         <div>
           <dt>Consent</dt>
           <dd>
-            {consentDoc.id} {consentDoc.version} · {consentDoc.date}
+            {consent.documentId} {consent.version} · {consent.date}
           </dd>
         </div>
         <div>
           <dt>Approval status</dt>
           <dd>
-            {consentDoc.status}. {consentDoc.statusNote}
+            {consent.status}. {consent.statusNote}
           </dd>
         </div>
+        <div>
+          <dt>File</dt>
+          <dd>{consent.sample ? `${consent.filename} · included sample` : consent.filename}</dd>
+        </div>
       </dl>
+      <ConsentFile />
       <ol className="topic-index">
-        {sections.map((section) => (
+        {consent.sections.map((section) => (
           <li key={section.id}>
             <Link to={`/participant/explore-consent/${section.id}`}>
               <span>{section.index}</span>
@@ -104,13 +128,23 @@ export function MyStudy() {
 export function Explore() {
   useTitle("Explore Consent");
   const params = useParams();
-  const known = !params.sectionId || sections.some((section) => section.id === params.sectionId);
-  const requested = (known ? (params.sectionId as SectionId | undefined) : undefined) ?? sections[0].id;
-  const section = sectionById(requested);
-  const { textOnly, markReviewed, reviewed, reducedMotion } = useSession();
+  const { consent, textOnly, markReviewed, reviewed, reducedMotion } = useSession();
   const [showOriginal, setShowOriginal] = useState(false);
+  if (!consent) {
+    return (
+      <div className="page">
+        <p className="kicker">Explore Consent</p>
+        <h1>Submit a consent form first.</h1>
+        <ConsentFile />
+      </div>
+    );
+  }
+  const sections = consent.sections;
+  const known = !params.sectionId || sections.some((section) => section.id === params.sectionId);
+  const requested = (known ? params.sectionId : undefined) ?? sections[0].id;
+  const section = sections.find((item) => item.id === requested) ?? sections[0];
   if (!known) {
-    return <Navigate to="/participant/explore-consent/procedures" replace />;
+    return <Navigate to={`/participant/explore-consent/${sections[0].id}`} replace />;
   }
   const index = sections.findIndex((item) => item.id === section.id);
   const previous = sections[index - 1];
@@ -142,11 +176,11 @@ export function Explore() {
       )}
       <article className="reading">
         <p className="kicker">
-          {section.index} / {sections.length} · {consentDoc.version}
+          {section.index} / {sections.length} · {consent.version}
         </p>
         <h1>{section.title}</h1>
         <p className="pack-line">
-          Teach It Back reads this chapter from {consentDoc.id} {consentDoc.version}. Say It Plainly
+          Teach It Back reads this chapter from {consent.documentId} {consent.version}. Say It Plainly
           keeps the original clause next to the shorter reading.
         </p>
         <div className="reading-tools">
@@ -211,29 +245,85 @@ type ChatMessage = {
   id: string;
   role: "person" | "aetheria";
   text: string;
+  question?: string;
   answer?: Answer;
+};
+
+type SpeechResult = {
+  results: ArrayLike<ArrayLike<{ transcript: string }>>;
+};
+
+type SpeechRecognizer = {
+  lang: string;
+  onresult: ((event: SpeechResult) => void) | null;
+  onerror: (() => void) | null;
+  start: () => void;
 };
 
 export function Ask() {
   useTitle("Ask Aetheria");
+  const { consent, saveQuestion } = useSession();
   const [params] = useSearchParams();
   const starter = params.get("q") ?? "";
   const [draft, setDraft] = useState(starter);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const { saveQuestion } = useSession();
+  const [dictateNote, setDictateNote] = useState("");
   const [savedId, setSavedId] = useState<string | null>(null);
+  const request = useRef(0);
+  if (!consent) {
+    return (
+      <div className="page">
+        <p className="kicker">Ask Aetheria</p>
+        <h1>Submit a consent form first.</h1>
+        <ConsentFile />
+      </div>
+    );
+  }
 
-  const ask = (question: string) => {
+  const ask = async (question: string) => {
     const clean = question.trim();
     if (!clean) return;
-    const answer = answerQuestion(clean);
+    const ticket = request.current + 1;
+    request.current = ticket;
+    const botId = crypto.randomUUID();
     setMessages((current) => [
       ...current,
       { id: crypto.randomUUID(), role: "person", text: clean },
-      { id: crypto.randomUUID(), role: "aetheria", text: answer.answer, answer },
+      { id: botId, role: "aetheria", text: "Looking in the selected consent form.", question: clean },
     ]);
     setDraft("");
     setSavedId(null);
+    const answer = await answerQuestionGrounded(clean, {
+      passages: consent.passages,
+      demoRules: consent.source === "demo",
+      documentId: consent.documentId,
+      version: consent.version,
+    });
+    if (request.current !== ticket) return;
+    setMessages((current) =>
+      current.map((item) => (item.id === botId ? { ...item, text: answer.answer, answer, question: clean } : item)),
+    );
+  };
+
+  const dictate = () => {
+    const host = window as Window & {
+      SpeechRecognition?: new () => SpeechRecognizer;
+      webkitSpeechRecognition?: new () => SpeechRecognizer;
+    };
+    const Recognizer = host.SpeechRecognition ?? host.webkitSpeechRecognition;
+    if (!Recognizer) {
+      setDictateNote("Dictation is unavailable in this browser. Type the question instead.");
+      return;
+    }
+    const recognition = new Recognizer();
+    recognition.lang = "en-US";
+    recognition.onresult = (event) => {
+      const transcript = event.results[0]?.[0]?.transcript ?? "";
+      if (transcript) setDraft(transcript);
+      setDictateNote("The transcript is in the box. It is not sent until you press Ask.");
+    };
+    recognition.onerror = () => setDictateNote("Dictation stopped. Type the question instead.");
+    recognition.start();
   };
 
   return (
@@ -241,13 +331,13 @@ export function Ask() {
       <p className="kicker">Source-grounded</p>
       <h1>Ask from the consent form.</h1>
       <p className="lede dark">
-        Answers use the selected synthetic consent, {consentDoc.id} {consentDoc.version}. If the form
-        does not say, the reply stops there.
+        Answers use {consent.documentId} {consent.version}, the form you submitted. If that form does
+        not say, the reply stops there.
       </p>
       <div className="suggestions">
-        {suggestedQuestions.map((item) => (
-          <button key={item.id} type="button" className="chip" onClick={() => ask(item.text)}>
-            {item.text}
+        {consent.sections.map((item) => (
+          <button key={item.id} type="button" className="chip" onClick={() => ask(item.ask)}>
+            {item.ask}
           </button>
         ))}
       </div>
@@ -266,21 +356,33 @@ export function Ask() {
               </div>
             )}
             {message.answer && (
-              <button
-                type="button"
-                className="text-button"
-                onClick={() => {
-                  saveQuestion({
-                    question: messages[messages.indexOf(message) - 1]?.text ?? message.text,
-                    answer: message.answer!.answer,
-                    supported: message.answer!.supported,
-                    citation: message.answer!.citation,
-                  });
-                  setSavedId(message.id);
-                }}
-              >
-                {savedId === message.id ? "Saved for the coordinator" : "Save for the coordinator"}
-              </button>
+              <>
+                <small>
+                  {message.answer.engine === "ollama"
+                    ? `Local model ${message.answer.model}. The quotation is the retrieved passage, not a model-written quote.`
+                    : "Local rules answered this. Ollama did not produce this reply."}{" "}
+                  {message.answer.documentId} {message.answer.version}
+                </small>
+                <ListenButton text={message.text} />
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => {
+                    saveQuestion({
+                      question: message.question ?? message.text,
+                      answer: message.answer!.answer,
+                      supported: message.answer!.supported,
+                      citation: message.answer!.citation,
+                      documentId: message.answer!.documentId,
+                      version: message.answer!.version,
+                      followUp: true,
+                    });
+                    setSavedId(message.id);
+                  }}
+                >
+                  {savedId === message.id ? "Saved for the coordinator" : "Save for the coordinator"}
+                </button>
+              </>
             )}
           </article>
         ))}
@@ -303,6 +405,10 @@ export function Ask() {
         <button className="btn solid dark" type="submit">
           Ask
         </button>
+        <button className="btn on-paper" type="button" onClick={dictate}>
+          Dictate
+        </button>
+        {dictateNote ? <p className="fine">{dictateNote}</p> : null}
       </form>
     </div>
   );
@@ -310,14 +416,24 @@ export function Ask() {
 
 export function Teach() {
   useTitle("Teach-Back");
-  const [promptId, setPromptId] = useState(teachPrompts[0].id);
+  const { consent, recordTeach } = useSession();
+  const prompts = consent ? promptsFor(consent) : [];
+  const [promptId, setPromptId] = useState(prompts[0]?.id ?? "");
   const [response, setResponse] = useState("");
   const [result, setResult] = useState<TeachResult | null>(null);
-  const { recordTeach } = useSession();
-  const prompt = teachPrompts.find((item) => item.id === promptId) ?? teachPrompts[0];
+  if (!consent || prompts.length === 0) {
+    return (
+      <div className="page">
+        <p className="kicker">Teach-Back</p>
+        <h1>Submit a consent form first.</h1>
+        <ConsentFile />
+      </div>
+    );
+  }
+  const prompt = prompts.find((item) => item.id === promptId) ?? prompts[0];
 
   const submit = () => {
-    const next = assessTeachback(prompt.id, response);
+    const next = assessTeachback(prompt.id, response, prompts);
     setResult(next);
     recordTeach(next);
   };
@@ -347,7 +463,7 @@ export function Teach() {
             setResponse("");
           }}
         >
-          {teachPrompts.map((item) => (
+          {prompts.map((item) => (
             <option key={item.id} value={item.id}>
               {item.topic}
             </option>
@@ -370,13 +486,21 @@ export function Teach() {
         <article className="result" aria-live="polite">
           <p className="kicker">{result.label}</p>
           <p>{result.feedback}</p>
-          {result.missing.length > 0 && (
+          {result.matched.length > 0 && (
             <ul>
-              {result.missing.map((item) => (
-                <li key={item}>{item}</li>
+              {result.matched.map((item) => (
+                <li key={item}>Covered: {item}</li>
               ))}
             </ul>
           )}
+          {result.missing.length > 0 && (
+            <ul>
+              {result.missing.map((item) => (
+                <li key={item}>Still to clarify: {item}</li>
+              ))}
+            </ul>
+          )}
+          <p>You can change the words above and check again. This is not a pass or fail score.</p>
           <Link to={`/participant/explore-consent/${prompt.sectionId}`}>Reread {prompt.topic.toLowerCase()}</Link>
         </article>
       )}
@@ -386,11 +510,20 @@ export function Teach() {
 
 export function Summary() {
   useTitle("My Summary");
-  const { reviewed, saved, teach } = useSession();
+  const { reviewed, saved, teach, consent } = useSession();
   const openTopics = useMemo(
     () => teach.filter((item) => item.label !== "Understands the key concept"),
     [teach],
   );
+  if (!consent) {
+    return (
+      <div className="page">
+        <p className="kicker">My Summary</p>
+        <h1>Submit a consent form first.</h1>
+        <ConsentFile />
+      </div>
+    );
+  }
 
   return (
     <div className="page">
@@ -402,7 +535,7 @@ export function Summary() {
       <section>
         <h2>Sections marked as read</h2>
         <ul className="plain-list">
-          {sections.map((section) => (
+          {consent.sections.map((section) => (
             <li key={section.id}>
               {section.title}
               <span>{reviewed.includes(section.id) ? "Read" : "Not marked"}</span>
@@ -420,7 +553,11 @@ export function Summary() {
               <li key={item.id}>
                 <strong>{item.question}</strong>
                 <p>{item.answer}</p>
-                <small>{item.supported ? item.citation : "Not answered from the form"}</small>
+                <small>
+                  {item.followUp ? "Marked for follow-up. " : ""}
+                  {item.supported ? item.citation : "Not answered from the form"}
+                  {item.version ? ` · ${item.version}` : ""}
+                </small>
               </li>
             ))}
           </ul>
@@ -442,7 +579,7 @@ export function Summary() {
         )}
       </section>
       <p className="fine">
-        Document used: {consentDoc.id} {consentDoc.version}, {consentDoc.date}. Status: {consentDoc.status}.
+        Document used: {consent.documentId} {consent.version}, {consent.date}. Status: {consent.status}. This summary is a handoff, not a signature.
       </p>
     </div>
   );
@@ -455,7 +592,7 @@ export function Access() {
   return (
     <div className="page">
       <p className="kicker">Reading preferences</p>
-      <h1>Make the demo easier to use.</h1>
+      <h1>Make the reading easier to use.</h1>
       <form className="prefs">
         <fieldset>
           <legend>Text size</legend>
@@ -545,8 +682,8 @@ export function Access() {
         </label>
       </form>
       <p className="fine">
-        English is the only reviewed language in this preview. Keyboard focus is visible, and every
-        consent passage is in the page text.
+        English is the only language available. Keyboard focus is visible, and every consent passage is
+        in the page text.
       </p>
     </div>
   );

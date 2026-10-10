@@ -1,0 +1,47 @@
+document-id: PROT-AETHER-01
+version: v3.0
+date: 2 March 2026
+study: AETHER-01
+kind: protocol
+status: Unverified
+usable: yes
+
+---
+section: visits
+heading: Schedule of assessments
+page: p. 14
+citation: Protocol §6.2 Schedule of assessments
+
+Participants complete 8 clinic visits during the 24-week treatment period.
+
+---
+section: duration
+heading: Study design
+page: p. 11
+citation: Protocol §6.1 Study design
+
+The treatment period is 24 weeks, with the last clinic visit at week 24.
+
+---
+section: pay
+heading: Compensation
+page: p. 40
+citation: Protocol §11.4 Compensation
+
+Participants are compensated $80 for each completed clinic visit.
+
+---
+section: blood
+heading: Laboratory samples
+page: p. 16
+citation: Protocol §6.4 Laboratory samples
+
+Each scheduled blood sample is approximately 10 mL, about 2 teaspoons.
+
+---
+section: retention
+heading: Record retention
+page: p. 44
+citation: Protocol §12.2 Record retention
+
+Essential documents are retained for 15 years after study completion.

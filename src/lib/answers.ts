@@ -1,12 +1,23 @@
-import { sectionById, sections, type SectionId } from "../data/study";
+import { consentDoc, factFlagged, facts, sectionById, sections, type SectionId } from "../data/study";
+
+export type AnswerScope = {
+  demoRules?: boolean;
+  documentId?: string;
+  version?: string;
+};
 
 export type Answer = {
   supported: boolean;
   answer: string;
-  sectionId?: SectionId;
+  sectionId?: string;
   citation?: string;
   quote?: string;
   page?: string;
+  documentId: string;
+  version: string;
+  passageId?: string;
+  engine: "local-rules" | "ollama";
+  model?: string;
 };
 
 type Rule = {
@@ -20,7 +31,23 @@ function has(text: string, pattern: RegExp): boolean {
   return pattern.test(text);
 }
 
+const disagreementAnswer = `${facts
+  .filter(factFlagged)
+  .map(
+    (fact) =>
+      `${fact.label}: the protocol says “${fact.protocolQuote}” (${fact.protocolSource}). The consent says “${fact.consentQuote}” (${fact.consentSource}).`,
+  )
+  .join(" ")} Aetheria does not choose which sentence is right.`;
+
 const rules: Rule[] = [
+  {
+    id: "disagreement",
+    sectionId: "procedures",
+    match: (text) =>
+      /disagree|do not match|does not match|doesn't match|mismatch/.test(text) ||
+      (/protocol/.test(text) && /consent|form/.test(text)),
+    answer: disagreementAnswer,
+  },
   {
     id: "visits",
     sectionId: "procedures",
@@ -106,41 +133,60 @@ export const suggestedQuestions: { id: string; text: string; topic: SectionId }[
   },
 ];
 
-export function answerQuestion(input: string): Answer {
-  const text = input.trim().toLowerCase();
-  if (!text) {
-    return {
-      supported: false,
-      answer: "Ask a question about the selected consent form.",
-    };
-  }
+function unanswered(answer: string, scope?: AnswerScope): Answer {
+  return {
+    supported: false,
+    answer,
+    documentId: scope?.documentId ?? consentDoc.id,
+    version: scope?.version ?? consentDoc.version,
+    engine: "local-rules",
+  };
+}
 
-  if (unsupported.test(text)) {
-    return {
-      supported: false,
-      answer:
-        "The selected consent form does not answer that. Aetheria will not guess a dose, a personal treatment decision, an approval status, or a cure. Please ask the research coordinator.",
-    };
-  }
-
-  const rule = rules.find((item) => item.match(text));
-  if (!rule) {
-    return {
-      supported: false,
-      answer:
-        "I cannot find that in the selected consent form. I will not fill the gap with a guess. Save the question for the research coordinator.",
-    };
-  }
-
-  const section = sectionById(rule.sectionId);
+function cited(sectionId: SectionId, answer: string): Answer {
+  const section = sectionById(sectionId);
   return {
     supported: true,
-    answer: rule.answer,
+    answer,
     sectionId: section.id,
     citation: section.citation,
     quote: section.original,
     page: section.page,
+    documentId: consentDoc.id,
+    version: consentDoc.version,
+    passageId: `${consentDoc.id}:${consentDoc.version}:${section.id}`,
+    engine: "local-rules",
   };
+}
+
+export function answerQuestion(input: string, scope?: AnswerScope): Answer {
+  const text = input.trim().toLowerCase();
+  const demoRules = scope?.demoRules !== false;
+  if (!text) return unanswered("Ask a question about the consent form you submitted.", scope);
+
+  if (unsupported.test(text)) {
+    return unanswered(
+      "The consent form does not answer that. Aetheria will not guess a dose, a personal treatment decision, an approval status, or a cure. Please ask the research coordinator.",
+      scope,
+    );
+  }
+
+  if (!demoRules) {
+    return unanswered(
+      "I cannot find that in the consent form you submitted. I will not fill the gap with a guess. Save the question for the research coordinator.",
+      scope,
+    );
+  }
+
+  const rule = rules.find((item) => item.match(text));
+  if (!rule) {
+    return unanswered(
+      "I cannot find that in the consent form you submitted. I will not fill the gap with a guess. Save the question for the research coordinator.",
+      scope,
+    );
+  }
+
+  return cited(rule.sectionId, rule.answer);
 }
 
 export function knownSectionIds(): SectionId[] {

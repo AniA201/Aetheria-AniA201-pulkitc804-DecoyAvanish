@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   consentDoc,
@@ -9,9 +9,14 @@ import {
   study,
   teachFixtures,
   teachPrompts,
+  sectionById,
   versions,
 } from "../data/study";
-import { auditPlainDraft, runChecks, type Check } from "../lib/checks";
+import { runChecks, type Check } from "../lib/checks";
+import { inspectText, rejectUpload } from "../lib/ingest";
+import { probeOllama, type OllamaProbe } from "../lib/ollama";
+import { auditNumbers, auditPlainText, longSentenceCount } from "../lib/plain";
+import { isOpenReview, reviewLabel } from "../lib/preflight";
 import { assessTeachback } from "../lib/teachback";
 import { useSession, type ReviewState } from "../state/Session";
 import { useTitle } from "../components/Chrome";
@@ -26,16 +31,18 @@ function pace(text: string) {
 
 export function Overview() {
   useTitle("Overview");
-  const { reviews, saved, teach, draft } = useSession();
-  const openFlags = facts.filter((fact) => factFlagged(fact) && (reviews[fact.id] ?? "open") === "open");
+  const { reviews, saved, teach, draft, consent } = useSession();
+  const openFlags = consent?.hasProtocol
+    ? facts.filter((fact) => factFlagged(fact) && isOpenReview(reviews[fact.id] ?? "open"))
+    : [];
 
   return (
     <div className="page">
       <p className="kicker">Research team · {study.label}</p>
       <h1>{study.id} needs a human look.</h1>
       <p className="lede dark">
-        Counts on this page come from the synthetic documents and from actions in this browser session.
-        They are not enrollment or outcome results.
+        Counts come from the consent submitted in this browser and from actions in this session. They are
+        not enrollment or outcome results.
       </p>
       <div className="stat-row">
         <article>
@@ -67,7 +74,7 @@ export function Overview() {
         Reader document: {consentDoc.id} {consentDoc.version}, status {consentDoc.status}. Protocol:{" "}
         {protocolDoc.id} {protocolDoc.version}, status {protocolDoc.status}.
       </p>
-      <h2>Starter sheets in this demo</h2>
+      <h2>Starter sheets in this product</h2>
       <ul className="pack-list">
         {packs.map((pack) => (
           <li key={pack.id}>
@@ -83,16 +90,37 @@ export function Overview() {
 
 export function Integrity() {
   useTitle("Document Integrity");
-  const { reviews, setReview } = useSession();
+  const { reviews, setReview, reviewNotes, setReviewNote, consent } = useSession();
+  if (!consent) {
+    return (
+      <div className="page">
+        <p className="kicker">Evidence</p>
+        <h1>Protocol against consent.</h1>
+        <p className="lede dark">No consent form has been submitted in this browser yet.</p>
+      </div>
+    );
+  }
+  if (!consent.hasProtocol) {
+    return (
+      <div className="page">
+        <p className="kicker">Evidence</p>
+        <h1>Protocol against consent.</h1>
+        <p className="lede dark">
+          {consent.documentId} {consent.version} has no paired research protocol. The comparison needs
+          that protocol. Aetheria will not invent one, and it will not add flags from another study.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="page">
       <p className="kicker">Evidence</p>
       <h1>Protocol against consent.</h1>
       <p className="lede dark">
-        Protocol Pre-Flight checks this synthetic pair for disagreements. Write Once keeps each shared
-        fact in both documents until a person reviews it. Aetheria does not decide which sentence is
-        right, and it does not approve the protocol.
+        Protocol Pre-Flight checks the included sample, where a protocol is paired with the consent.
+        Write Once keeps each shared fact visible until a person reviews it. Aetheria does not decide
+        which sentence is right, and it does not approve the protocol.
       </p>
       <div className="fact-list">
         {facts.map((fact) => {
@@ -102,7 +130,9 @@ export function Integrity() {
             <article key={fact.id} className={flagged ? "fact flagged" : "fact"}>
               <header>
                 <h2>{fact.label}</h2>
-                <p className="flag">{flagged ? `Seeded mismatch · ${state}` : "Consistent in this pair"}</p>
+                <p className="flag">
+                  {flagged ? `Confirmed textual difference · ${reviewLabel(state)}` : "Consistent in this pair"}
+                </p>
               </header>
               <div className="split">
                 <div>
@@ -119,17 +149,29 @@ export function Integrity() {
               <p>{fact.why}</p>
               <p>Next step: a person compares the two sentences. Neither document is edited from this screen.</p>
               {flagged && (
-                <div className="action-row">
-                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "resolved")}>
-                    Mark reviewed
-                  </button>
-                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "dismissed")}>
-                    Dismiss for this demo
-                  </button>
-                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "open")}>
-                    Reopen
-                  </button>
-                </div>
+                <>
+                  <label htmlFor={`note-${fact.id}`}>Review note</label>
+                  <textarea
+                    id={`note-${fact.id}`}
+                    rows={2}
+                    value={reviewNotes[fact.id] ?? ""}
+                    onChange={(event) => setReviewNote(fact.id, event.target.value)}
+                  />
+                  <div className="action-row">
+                    <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "under-review")}>
+                      Mark under review
+                    </button>
+                    <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "resolved")}>
+                      Mark reviewed
+                    </button>
+                    <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "dismissed")}>
+                      Not a discrepancy
+                    </button>
+                    <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "open")}>
+                      Reopen
+                    </button>
+                  </div>
+                </>
               )}
             </article>
           );
@@ -157,8 +199,8 @@ export function Insights() {
       <p className="kicker">Synthetic cases</p>
       <h1>Where the fixed examples get stuck.</h1>
       <p className="lede dark">
-        These four replies are written into the demo. They are not real participants. The labels come
-        from the same rubric the teach-back screen uses.
+        These four replies are examples written for the sample form. They are not people in this
+        browser. The labels come from the same rubric the teach-back screen uses.
       </p>
       <div className="stat-row">
         {Object.entries(counts).map(([label, count]) => (
@@ -204,29 +246,65 @@ export function Insights() {
 
 export function Studio() {
   useTitle("Plain Language Studio");
-  const { draft, setDraft } = useSession();
-  const audit = auditPlainDraft();
+  const { draft, setDraft, draftText, setDraftText, consent } = useSession();
+  if (!consent) {
+    return (
+      <div className="page">
+        <p className="kicker">Plain language studio</p>
+        <h1>Submit a consent form first.</h1>
+        <p className="lede dark">A shorter reading is reviewed beside the submitted clause. Accepting it does not change the source.</p>
+      </div>
+    );
+  }
+  const uploaded = consent.source === "upload" ? consent.sections[0] : null;
+  const original = uploaded?.original ?? plainDraft.original;
+  const seeded = uploaded?.plain ?? plainDraft.draft;
+  const title = uploaded?.title ?? plainDraft.title;
+  const reading = draftText.trim() ? draftText : seeded;
+  const audit = uploaded ? auditNumbers(original, reading) : auditPlainText(reading);
+  const costs = uploaded ? uploaded.terms : sectionById("costs").terms;
 
   return (
     <div className="page">
       <p className="kicker">Plain language studio</p>
-      <h1>{plainDraft.title}</h1>
+      <h1>{title}</h1>
       <p className="lede dark">
-        Say It Plainly: the shorter reading has to keep the consent’s own numbers. It must not pick up
-        the protocol’s visits, weeks, or payment. Accepting a draft does not change the source.
+        {uploaded
+          ? "Say It Plainly keeps the submitted clause beside a shorter reading. Accepting that reading does not change the source."
+          : "Say It Plainly: the shorter reading has to keep the consent’s own numbers. It must not pick up the protocol’s visits, weeks, or payment. Accepting a draft does not change the source."}
       </p>
       <p className="fine">
-        Original: {pace(plainDraft.original)} Draft: {pace(plainDraft.draft)} This is a word count, not
-        a test with a reader.
+        {uploaded
+          ? "Figures in the source clause have to remain in the suggestion."
+          : plainDraft.reason}
+      </p>
+      <p className="fine">
+        Original: {pace(original)} Draft: {pace(reading)} Sentences longer than 25 words:{" "}
+        {longSentenceCount(original)} in the original, {longSentenceCount(reading)} in the draft. This
+        is a word count, not a test with a reader.
       </p>
       <div className="split studio">
         <article>
           <h2>Original clause</h2>
-          <p>{plainDraft.original}</p>
+          <p>{original}</p>
+          <dl className="terms">
+            {costs.map((term) => (
+              <div key={term.word}>
+                <dt>{term.word}</dt>
+                <dd>{term.meaning}</dd>
+              </div>
+            ))}
+          </dl>
         </article>
         <article>
           <h2>Proposed reading · {draft}</h2>
-          <p>{plainDraft.draft}</p>
+          <label htmlFor="plain-draft">Edit the suggestion</label>
+          <textarea
+            id="plain-draft"
+            rows={6}
+            value={reading}
+            onChange={(event) => setDraftText(event.target.value)}
+          />
         </article>
       </div>
       <ul className="plain-list">
@@ -260,7 +338,7 @@ export function Lab() {
   return (
     <div className="page">
       <p className="kicker">Reproducible checks</p>
-      <h1>Run the demo checks.</h1>
+      <h1>Run the checks.</h1>
       <p className="lede dark">
         This button executes the citation, fallback, teach-back, mismatch, and wording checks in the
         browser. The result is counted from that run.
@@ -291,12 +369,64 @@ export function Lab() {
 
 export function Documents() {
   useTitle("Documents & Versions");
+  const { imports, addImport, consent } = useSession();
+  const [note, setNote] = useState("");
+
+  const onFile = async (file: File | undefined) => {
+    if (!file) return;
+    const rejected = rejectUpload({ name: file.name, type: file.type, size: file.size });
+    if (rejected) {
+      setNote(rejected);
+      return;
+    }
+    const parsed = inspectText(file.name, await file.text());
+    if (!parsed.ok) {
+      setNote(parsed.error);
+      return;
+    }
+    const first = parsed.passages[0];
+    addImport({
+      id: crypto.randomUUID(),
+      filename: file.name,
+      studyId: first.studyId,
+      documentId: first.documentId,
+      version: first.version,
+      usable: first.usable,
+      passageCount: parsed.passages.length,
+      passages: parsed.passages,
+    });
+    setNote(
+      first.usable
+        ? `Indexed ${parsed.passages.length} sections from ${file.name}. Participant answers still use the submitted consent.`
+        : `Stored ${file.name}, but it is not used for participant answers.`,
+    );
+  };
+
   return (
     <div className="page">
       <p className="kicker">Versions</p>
-      <h1>What this preview is reading.</h1>
+      <h1>What this workspace is reading.</h1>
+      {consent ? (
+        <p className="fine">
+          Answers and citations use {consent.documentId} {consent.version}
+          {consent.sample ? ", the included sample." : ", the file that was submitted."}
+        </p>
+      ) : (
+        <p className="fine">No consent form has been submitted yet. The list below is the included sample set, not the active reading.</p>
+      )}
       <ul className="stack">
-        {versions.map((item) => (
+        {consent && (
+          <li>
+            <strong>
+              Submitted · {consent.documentId} {consent.version}
+            </strong>
+            <p>
+              {consent.filename} · {consent.status}
+            </p>
+            <small>This is the version behind answers and citations.</small>
+          </li>
+        )}
+        {(!consent || consent.hasProtocol) && versions.map((item) => (
           <li key={`${item.id}-${item.version}`}>
             <strong>
               {item.kind} · {item.id} {item.version}
@@ -305,6 +435,44 @@ export function Documents() {
               {item.date} · {item.status}
             </p>
             <small>{item.note}</small>
+          </li>
+        ))}
+        {imports.map((item) => (
+          <li key={item.id}>
+            <strong>
+              Imported · {item.documentId} {item.version}
+            </strong>
+            <p>
+              {item.filename} · {item.usable ? "Stored" : "Not used for answers"}
+            </p>
+            <small>
+              {item.passageCount} sections · study {item.studyId}
+            </small>
+          </li>
+        ))}
+      </ul>
+      <label htmlFor="import-doc">Import a .txt or .md document for {study.id}</label>
+      <input
+        id="import-doc"
+        type="file"
+        accept=".txt,.md,text/plain"
+        onChange={(event) => {
+          void onFile(event.target.files?.[0]);
+          event.target.value = "";
+        }}
+      />
+      {note ? <p className="fine">{note}</p> : null}
+      <h2>Shared facts</h2>
+      <ul className="stack">
+        {facts.map((fact) => (
+          <li key={fact.id}>
+            <strong>{fact.label}</strong>
+            <p>
+              Protocol: {fact.protocolValue}. Consent: {fact.consentValue}.
+            </p>
+            <small>
+              {fact.protocolSource} · {fact.consentSource}
+            </small>
           </li>
         ))}
       </ul>
@@ -319,8 +487,19 @@ export function Documents() {
 
 export function Settings() {
   useTitle("Settings & Audit");
-  const { reset } = useSession();
+  const { reset, audit } = useSession();
   const [cleared, setCleared] = useState(false);
+  const [ollama, setOllama] = useState<OllamaProbe | null>(null);
+
+  useEffect(() => {
+    let cancel = false;
+    probeOllama().then((status) => {
+      if (!cancel) setOllama(status);
+    });
+    return () => {
+      cancel = true;
+    };
+  }, []);
 
   return (
     <div className="page">
@@ -329,15 +508,18 @@ export function Settings() {
       <ul className="stack">
         <li>
           <strong>Demo answers</strong>
-          <p>On. Questions use the local consent rules, not an outside model.</p>
+          <p>
+            On. If Ollama is running, a question is answered from the retrieved consent passages. Otherwise the
+            local consent rules answer, and the reply says so.
+          </p>
         </li>
         <li>
           <strong>ElevenLabs</strong>
-          <p>Not connected. Listen uses the browser speech engine when it is available.</p>
+          <p>Not connected. Listen uses the browser speech engine when it is available. Dictate fills the question box and does not send audio anywhere.</p>
         </li>
         <li>
-          <strong>Language model key</strong>
-          <p>Not configured. No study text is sent off this page.</p>
+          <strong>Language model</strong>
+          <p>{ollama?.detail ?? "Checking for Ollama on this computer."}</p>
         </li>
         <li>
           <strong>Retention</strong>
@@ -346,11 +528,26 @@ export function Settings() {
         <li>
           <strong>Roles</strong>
           <p>
-            Participant entry and the approved demo phrase are stored in this browser only. A
+            Participant entry and the approved access phrase are stored in this browser only. A
             participant cannot open this workspace, and a research request does not grant it.
           </p>
         </li>
       </ul>
+      <h2>Session actions</h2>
+      {audit.length === 0 ? (
+        <p className="empty">No review actions yet in this browser session.</p>
+      ) : (
+        <ul className="stack">
+          {audit.map((event) => (
+            <li key={event.id}>
+              <strong>
+                {event.action} · {event.at}
+              </strong>
+              <p>{event.detail}</p>
+            </li>
+          ))}
+        </ul>
+      )}
       <button
         type="button"
         className="btn on-paper"

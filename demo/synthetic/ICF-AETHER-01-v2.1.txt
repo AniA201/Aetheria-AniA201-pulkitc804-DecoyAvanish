@@ -1,0 +1,47 @@
+document-id: ICF-AETHER-01
+version: v2.1
+date: 12 March 2026
+study: AETHER-01
+kind: consent
+status: Unverified
+usable: yes
+
+---
+section: procedures
+heading: Study procedures and time commitment
+page: p. 4
+citation: Consent §4.1 Procedures
+
+You will come to the study clinic 6 times over about 16 weeks. Each visit lasts about 2 hours. Visits include a headache diary review and vital signs. A blood sample of about 2 teaspoons is taken at visits 1, 3, and 6. You will be assigned by chance to Aetherol or placebo. Neither you nor the study doctor will know which one you receive during the study.
+
+---
+section: risks
+heading: Risks and possible benefits
+page: p. 6
+citation: Consent §5.2 Risks and benefits
+
+Aetherol may cause nausea, dizziness, or fatigue. In earlier studies described in this form, about 1 in 10 people reported nausea. Rare allergic reactions are possible. Placebo has no active drug, but blood draws can cause bruising. This study may not help your migraines. There is no promise of benefit.
+
+---
+section: rights
+heading: Participant rights and withdrawal
+page: p. 7
+citation: Consent §6.1 Voluntary participation
+
+Taking part is voluntary. You may leave the study at any time. Leaving will not change the medical care you otherwise receive from your own doctor. If you leave, the study team may ask to keep safety information already recorded. You will be told about new information that could affect your choice to stay.
+
+---
+section: costs
+heading: Costs and compensation
+page: p. 8
+citation: Consent §7.1 Costs and payments
+
+The study drug, placebo, and study-required visits are provided at no cost to you. You will receive $50 for each completed clinic visit, paid after the visit. The study does not pay for your usual migraine care or for travel beyond that visit payment.
+
+---
+section: privacy
+heading: Privacy and use of data
+page: p. 9
+citation: Consent §8.3 Confidentiality
+
+Study records use a code instead of your name. The sponsor, the study doctor, and monitors may review coded records to check the study. Records may be kept for 15 years. Results may be shared in journals without your name. Your name is not placed in the public study listing.

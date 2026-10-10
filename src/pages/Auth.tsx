@@ -32,7 +32,7 @@ export function Login() {
 
   const enter = (nextRole: Role) => {
     if (nextRole === "researcher" && phrase.trim().toUpperCase() !== demoPhrase) {
-      setError("That phrase is not the approved demo access phrase. Research access stays closed.");
+      setError("That phrase is not the approved access phrase. Research access stays closed.");
       return;
     }
     setRole(nextRole);
@@ -102,7 +102,7 @@ export function Login() {
           }}
         >
           <p className="role-copy">
-            Research access is not self-assigned. For this preview the phrase is {demoPhrase}.
+            Research access is not self-assigned. The access phrase is {demoPhrase}.
           </p>
           <label>
             Access phrase
@@ -187,7 +187,7 @@ export function Register() {
         </form>
       </div>
       <p className="fine">
-        Already have the demo phrase? <Link to="/login?as=researcher">Researcher login</Link>
+        Already have the access phrase? <Link to="/login?as=researcher">Researcher login</Link>
       </p>
       <p className="fine">
         <Link to="/">Back to the landing page</Link>
