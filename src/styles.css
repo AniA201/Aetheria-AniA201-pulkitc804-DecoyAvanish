@@ -165,16 +165,6 @@ a { color: inherit; }
   font: inherit;
 }
 .workspace { min-width: 0; }
-.demo-banner {
-  margin: 0;
-  padding: 1.5rem 7vw 0;
-  background: transparent;
-  color: rgba(0, 0, 0, 1);
-  border: 0;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  font-size: 11px;
-}
 main { outline: none; }
 .page, .reader { padding: 2.4rem 7vw 5rem; }
 .page h1, .reading h1, .gate h1, .missing h1 {
@@ -1166,6 +1156,52 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
 }
 .shell.participant .terms div { grid-template-columns: minmax(5.5rem, 8.5rem) minmax(0, 1fr); }
 .shell.participant .pager { flex-wrap: wrap; }
+.shell.participant .size-card {
+  max-width: 28rem;
+  margin-top: 1.4rem;
+  padding: 1.15rem;
+  background: #f4f1e8;
+  color: #1a1d1c;
+  box-shadow: 0 16px 36px rgba(16, 43, 53, 0.09);
+}
+.shell.participant .size-choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+.shell.participant .size-choice {
+  appearance: none;
+  border: 1px solid rgba(26, 29, 28, 0.22);
+  background: transparent;
+  color: #1a1d1c;
+  min-height: 8.4rem;
+  padding: 0.85rem 0.4rem;
+  cursor: pointer;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.45rem;
+  font: inherit;
+  font-size: 0.92rem;
+}
+.shell.participant .size-choice[aria-checked="true"] {
+  background: #102b35;
+  color: #f4f1e8;
+  border-color: #102b35;
+}
+.shell.participant .size-sample {
+  font-family: var(--serif);
+  line-height: 1;
+}
+.shell.participant .size-md { font-size: 1.2rem; }
+.shell.participant .size-lg { font-size: 2rem; }
+.shell.participant .size-xl { font-size: 2.85rem; }
+.shell.participant .size-extras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+}
 @media (min-width: 1180px) {
   .shell.participant .ask-page { grid-template-columns: minmax(0, 1fr) minmax(270px, 330px); }
   .shell.participant .ask-page .panel-head { grid-column: 1; grid-row: 1; }
@@ -1218,4 +1254,39 @@ html[data-contrast="high"] .shell.participant .reading .passage,
 html[data-contrast="high"] .shell.participant .reading .citation {
   background: #fff;
   color: #000;
+}
+html[data-contrast="high"] .shell.participant .size-card {
+  background: #111;
+  color: #fff;
+  box-shadow: none;
+}
+html[data-contrast="high"] .shell.participant .size-choice {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.45);
+  background: transparent;
+}
+html[data-contrast="high"] .shell.participant .size-choice[aria-checked="true"] {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+}
+html[data-contrast="high"] .shell.participant .size-extras .btn {
+  color: #fff;
+  border-color: #fff;
+  background: transparent;
+}
+html[data-contrast="high"] .shell.participant .size-extras .btn[aria-pressed="true"] {
+  background: #fff;
+  color: #000;
+}
+html[data-contrast="high"] .topbar {
+  background: #000;
+  color: #fff;
+  border-bottom-color: rgba(255, 255, 255, 0.4);
+}
+html[data-contrast="high"] .shell.participant .kicker,
+html[data-contrast="high"] .shell.participant .page h1,
+html[data-contrast="high"] .shell.participant .lede,
+html[data-contrast="high"] .shell.participant .lede.dark {
+  color: #fff;
 }

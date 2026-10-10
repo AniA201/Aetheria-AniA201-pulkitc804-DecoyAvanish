@@ -75,6 +75,7 @@ type SessionApi = SessionData & {
   setTextOnly: (value: boolean) => void;
   markReviewed: (id: string) => void;
   submitConsent: (consent: SubmittedConsent) => void;
+  clearConsent: () => void;
   saveQuestion: (entry: Omit<SavedQuestion, "id">) => void;
   recordTeach: (result: TeachResult) => void;
   setReview: (id: string, state: ReviewState) => void;
@@ -196,6 +197,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             "Consent submitted",
             `${consent.filename} · ${consent.documentId} ${consent.version}. ${consent.hasProtocol ? "Sample file includes a paired protocol." : "No paired protocol was submitted."}`,
           ),
+        })),
+      clearConsent: () =>
+        setData((current) => ({
+          ...current,
+          consent: null,
+          reviewed: [],
+          saved: [],
+          teach: [],
+          draft: "draft",
+          draftText: "",
+          reviews: {},
+          reviewNotes: {},
+          audit: pushAudit(current, "Consent removed", "The submitted form was cleared so another file can be checked."),
         })),
       saveQuestion: (entry) =>
         setData((current) => ({

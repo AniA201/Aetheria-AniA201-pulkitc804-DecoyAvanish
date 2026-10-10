@@ -34,7 +34,7 @@ function PassageText({ text }: { text: string }) {
 
 export function ParticipantHome() {
   useTitle("Home");
-  const { reviewed, saved, teach, displayName, consent } = useSession();
+  const { reviewed, saved, teach, displayName, consent, clearConsent } = useSession();
   if (!consent) {
     return (
       <div className="page">
@@ -51,7 +51,7 @@ export function ParticipantHome() {
     <div className="page">
       <p className="kicker">{consent.sample ? "Practice form" : consent.filename}</p>
       <h1>{consent.studyName}</h1>
-      <p className="lede dark">{consent.sections.length} sections. Nothing here is a signature.</p>
+      <p className="lede dark">{consent.sections.length} sections.</p>
       <div className="stat-row">
         <article>
           <strong>
@@ -75,6 +75,9 @@ export function ParticipantHome() {
         <Link className="btn on-paper" to="/participant/ask">
           Ask a question
         </Link>
+        <button className="btn on-paper" type="button" onClick={clearConsent}>
+          Check another form
+        </button>
       </div>
     </div>
   );
@@ -536,105 +539,53 @@ export function Summary() {
 }
 
 export function Access() {
-  useTitle("Accessibility");
+  useTitle("Text size");
   const session = useSession();
+  const sizes = [
+    ["md", "Default"],
+    ["lg", "Large"],
+    ["xl", "Larger"],
+  ] as const;
 
   return (
     <div className="page">
-      <p className="kicker">Reading preferences</p>
-      <h1>Make the reading easier to use.</h1>
-      <form className="prefs">
-        <fieldset>
-          <legend>Text size</legend>
-          {(["md", "lg", "xl"] as const).map((size) => (
-            <label key={size} className="choice">
-              <input
-                type="radio"
-                name="font"
-                checked={session.fontScale === size}
-                onChange={() => session.setFontScale(size)}
-              />
-              {size === "md" ? "Default" : size === "lg" ? "Large" : "Larger"}
-            </label>
-          ))}
-        </fieldset>
-        <fieldset>
-          <legend>Contrast</legend>
-          <label className="choice">
-            <input
-              type="radio"
-              name="contrast"
-              checked={session.contrast === "paper"}
-              onChange={() => session.setContrast("paper")}
-            />
-            Warm paper
-          </label>
-          <label className="choice">
-            <input
-              type="radio"
-              name="contrast"
-              checked={session.contrast === "high"}
-              onChange={() => session.setContrast("high")}
-            />
-            Higher contrast
-          </label>
-        </fieldset>
-        <fieldset>
-          <legend>Narration speed</legend>
-          {(
-            [
-              [0.85, "Slower"],
-              [1, "Default"],
-              [1.15, "Faster"],
-            ] as const
-          ).map(([rate, label]) => (
-            <label key={rate} className="choice">
-              <input
-                type="radio"
-                name="rate"
-                checked={session.narrationRate === rate}
-                onChange={() => session.setNarrationRate(rate)}
-              />
+      <p className="kicker">Text size</p>
+      <h1>Choose a size.</h1>
+      <div className="size-card">
+        <div className="size-choices" role="radiogroup" aria-label="Text size">
+          {sizes.map(([size, label]) => (
+            <button
+              key={size}
+              type="button"
+              className="size-choice"
+              role="radio"
+              aria-checked={session.fontScale === size}
+              onClick={() => session.setFontScale(size)}
+            >
+              <span className={`size-sample size-${size}`}>Aa</span>
               {label}
-            </label>
+            </button>
           ))}
-        </fieldset>
-        <fieldset>
-          <legend>Language</legend>
-          <label className="choice">
-            <input type="radio" name="language" checked readOnly />
-            English
-          </label>
-          <p className="fine">Other languages stay off until a reviewed translation exists.</p>
-        </fieldset>
-        <fieldset>
-          <legend>Voice</legend>
-          <p className="fine">
-            Listen uses this browser’s speech engine. ElevenLabs is not connected, so there is no
-            separate voice to choose.
-          </p>
-        </fieldset>
-        <label className="choice">
-          <input
-            type="checkbox"
-            checked={session.reducedMotion}
-            onChange={(event) => session.setReducedMotion(event.target.checked)}
-          />
-          Reduce motion
-        </label>
-        <label className="choice">
-          <input
-            type="checkbox"
-            checked={session.textOnly}
-            onChange={(event) => session.setTextOnly(event.target.checked)}
-          />
-          Text-only mode, without the illustrated document
-        </label>
-      </form>
-      <p className="fine">
-        English is the only language available. Keyboard focus is visible, and every consent passage is
-        in the page text.
-      </p>
+        </div>
+        <div className="size-extras">
+          <button
+            type="button"
+            className="btn on-paper"
+            aria-pressed={session.contrast === "high"}
+            onClick={() => session.setContrast(session.contrast === "high" ? "paper" : "high")}
+          >
+            Higher contrast
+          </button>
+          <button
+            type="button"
+            className="btn on-paper"
+            aria-pressed={session.reducedMotion}
+            onClick={() => session.setReducedMotion(!session.reducedMotion)}
+          >
+            Less motion
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

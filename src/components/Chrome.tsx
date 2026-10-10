@@ -140,7 +140,6 @@ export function Shell({ mode }: { mode: Role }) {
         </button>
       </aside>
       <div className="workspace">
-        <p className="demo-banner">Not a signature.</p>
         <main id="content" tabIndex={-1}>
           <Outlet />
         </main>
