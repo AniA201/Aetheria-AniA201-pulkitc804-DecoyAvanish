@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useTitle } from "../components/Chrome";
+import { CornerMark, useTitle } from "../components/Chrome";
 import { useSession, type Role } from "../state/Session";
 
 const demoPhrase = "NORTHWIND-DEMO";
@@ -41,6 +41,7 @@ export function Login() {
 
   return (
     <main className="gate gate-simple" id="content">
+      <CornerMark />
       <Link to="/" className="folio-brand">
         <span className="folio-seal" aria-hidden="true" />
         <span>
@@ -137,6 +138,7 @@ export function Register() {
 
   return (
     <main className="gate" id="content">
+      <CornerMark />
       <p className="kicker">Access setup</p>
       <h1>Start as a participant, or ask for research access.</h1>
       <p className="lede">

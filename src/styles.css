@@ -121,7 +121,7 @@ a { color: inherit; }
   position: sticky;
   top: 0;
   height: 100vh;
-  padding: 28px 22px 24px;
+  padding: 28px 22px 5.5rem;
   display: flex;
   flex-direction: column;
   background: transparent;
@@ -424,7 +424,61 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   padding: 0;
   cursor: pointer;
 }
-.folio-menu { justify-self: end; }
+.folio-nav-end {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.folio-nav .folio-menu { display: none; }
+.aetheria-mark { width: 42px; height: 42px; display: block; }
+.shell-mark, .corner-mark, .topbar-mark { line-height: 0; color: inherit; }
+.shell-mark {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  z-index: 8;
+}
+.topbar-end { display: flex; align-items: center; gap: 14px; }
+.type-dock {
+  position: fixed;
+  left: 14px;
+  bottom: 14px;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: rgba(244, 241, 232, 0.96);
+  border: 1px solid rgba(16, 43, 53, 0.18);
+  box-shadow: 0 8px 20px rgba(16, 43, 53, 0.08);
+}
+.type-dock [role="radiogroup"] { display: flex; gap: 2px; }
+.type-dock button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #102b35;
+  font-family: var(--serif);
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.type-dock button[aria-checked="true"],
+.type-dock button[aria-pressed="true"] {
+  background: #102b35;
+  color: #f4f1e8;
+}
+.contrast-toggle span {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+}
 .folio-overlay {
   position: fixed;
   inset: 0;
@@ -952,6 +1006,8 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   .reader, .reader.text-only, .split, .evidence-row, .meta-list div, .benefit-list article, .steps li, .role-grid { grid-template-columns: 1fr; }
   .cfm nav, .cfm footer { padding: 22px; }
   .folio-nav { grid-template-columns: 1fr auto; padding: 16px 18px; }
+  .folio-nav .folio-menu { display: inline; }
+  .shell > .shell-mark { display: none; }
   .folio-nav nav, .folio-vertical, .folio-preview { display: none; }
   .folio-hero, .folio-split, .folio-chapters, .folio-review, .folio-close { padding-left: 22px; padding-right: 22px; }
   .folio-hero { width: auto; padding-right: 22px; }
@@ -1042,7 +1098,7 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
 .shell.participant .reader.text-only {
   width: min(1080px, 100%);
   box-sizing: border-box;
-  padding: 1.5rem 1.6rem 3.25rem;
+  padding: 1.5rem 4.6rem 5.25rem 1.6rem;
 }
 .shell.participant .page h1,
 .shell.participant .reading h1 {
@@ -1156,52 +1212,150 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
 }
 .shell.participant .terms div { grid-template-columns: minmax(5.5rem, 8.5rem) minmax(0, 1fr); }
 .shell.participant .pager { flex-wrap: wrap; }
-.shell.participant .size-card {
-  max-width: 28rem;
-  margin-top: 1.4rem;
-  padding: 1.15rem;
-  background: #f4f1e8;
-  color: #1a1d1c;
-  box-shadow: 0 16px 36px rgba(16, 43, 53, 0.09);
+.shell.participant {
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(56, 125, 115, 0.16), transparent 42%),
+    #d0f0dc;
 }
-.shell.participant .size-choices {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.55rem;
+.shell.participant .rail {
+  background: #f7f4ec;
+  border-right: 0;
+  box-shadow: 10px 0 28px rgba(16, 43, 53, 0.05);
+  padding: 26px 14px 5.5rem;
 }
-.shell.participant .size-choice {
-  appearance: none;
-  border: 1px solid rgba(26, 29, 28, 0.22);
-  background: transparent;
-  color: #1a1d1c;
-  min-height: 8.4rem;
-  padding: 0.85rem 0.4rem;
-  cursor: pointer;
-  display: grid;
-  align-content: center;
-  justify-items: center;
-  gap: 0.45rem;
-  font: inherit;
-  font-size: 0.92rem;
+.shell.participant .rail nav { gap: 0.15rem; margin-top: 1.6rem; }
+.shell.participant .rail-link {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 1.02rem;
+  font-family: var(--serif);
+  padding: 0.58rem 0.7rem;
+  border-top: 0;
+  border-radius: 2px;
 }
-.shell.participant .size-choice[aria-checked="true"] {
+.shell.participant .rail-link span {
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  align-self: center;
+}
+.shell.participant .rail-link[aria-current="page"] {
+  background: #102b35;
+  color: #f7f4ec;
+}
+.shell.participant .rail-link[aria-current="page"] span { color: #cfe3dc; }
+.shell.participant .mode-switch {
+  letter-spacing: 0.1em;
+  padding-left: 0.7rem;
+}
+.shell.participant .kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.shell.participant .kicker::before {
+  content: "";
+  width: 1.35rem;
+  height: 1px;
+  background: #387d73;
+  flex: none;
+}
+.shell.participant .btn.solid,
+.shell.participant .btn.solid.dark {
   background: #102b35;
   color: #f4f1e8;
   border-color: #102b35;
 }
-.shell.participant .size-sample {
-  font-family: var(--serif);
-  line-height: 1;
+.shell.participant .btn.solid:hover,
+.shell.participant .btn.solid.dark:hover {
+  background: #387d73;
+  color: #f4f1e8;
+  border-color: #387d73;
 }
-.shell.participant .size-md { font-size: 1.2rem; }
-.shell.participant .size-lg { font-size: 2rem; }
-.shell.participant .size-xl { font-size: 2.85rem; }
-.shell.participant .size-extras {
-  display: flex;
-  flex-wrap: wrap;
+.shell.participant .btn.on-paper {
+  background: transparent;
+  border-color: rgba(16, 43, 53, 0.38);
+}
+.shell.participant .stat-row {
+  border: 0;
+  gap: 0.7rem;
+  margin: 1.35rem 0 1.15rem;
+}
+.shell.participant .stat-row article {
+  background: #f4f1e8;
+  border: 0;
+  padding: 1rem 1.05rem 0.9rem;
+  box-shadow: 0 12px 26px rgba(16, 43, 53, 0.06);
+}
+.shell.participant .file-pick {
+  min-height: 4.2rem;
+  padding: 0 0.95rem;
+  border: 1px dashed rgba(16, 43, 53, 0.38);
+  background: rgba(255, 255, 255, 0.55);
+}
+.shell.participant .topic-index {
+  display: grid;
   gap: 0.55rem;
-  margin-top: 0.9rem;
+  margin-top: 1.15rem;
 }
+.shell.participant .topic-index a {
+  background: #f4f1e8;
+  border-top: 0;
+  padding: 0.9rem 1rem;
+  box-shadow: 0 10px 22px rgba(16, 43, 53, 0.05);
+  align-items: baseline;
+}
+.shell.participant .topic-index a:hover { background: #fff; }
+.shell.participant .topic-index span {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+}
+.shell.participant .chapter-nav {
+  background: #f7f4ec;
+  padding: 0.45rem;
+  box-shadow: 0 12px 26px rgba(16, 43, 53, 0.06);
+}
+.shell.participant .chapter-nav a {
+  border-top: 0;
+  padding: 0.55rem 0.6rem;
+  text-transform: none;
+}
+.shell.participant .chapter-nav a.current {
+  background: #102b35;
+  color: #f7f4ec;
+}
+.shell.participant .chapter-nav a.current span,
+.shell.participant .chapter-nav a.current em { color: #cfe3dc; }
+.shell.participant .reading {
+  padding: 1.55rem 1.6rem 1.7rem;
+}
+.shell.participant .reading h1 { margin-bottom: 0.35rem; }
+.shell.participant .reading-tools .btn[aria-pressed="true"] {
+  background: #102b35;
+  color: #f4f1e8;
+  border-color: #102b35;
+}
+.shell.participant .passage-body { font-size: 1.08rem; line-height: 1.55; }
+.shell.participant .bubble.person {
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(16, 43, 53, 0.06);
+  padding: 0.75rem 0.95rem;
+}
+.shell.participant .empty { font-family: var(--serif); font-size: 1.05rem; }
+.shell.participant .summary-grid h2 {
+  font-size: 1.25rem;
+  margin: 0 0 0.75rem;
+}
+.shell.participant .mark {
+  padding: 0.18rem 0.45rem;
+  border: 1px solid rgba(16, 43, 53, 0.28);
+}
+.shell.participant .mark.done {
+  background: #102b35;
+  color: #f4f1e8;
+  border-color: #102b35;
+}
+.shell.participant .prompt-text { font-size: 1.35rem; }
 @media (min-width: 1180px) {
   .shell.participant .ask-page { grid-template-columns: minmax(0, 1fr) minmax(270px, 330px); }
   .shell.participant .ask-page .panel-head { grid-column: 1; grid-row: 1; }
@@ -1220,7 +1374,7 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
 @media (max-width: 900px) {
   .shell.participant .page,
   .shell.participant .reader,
-  .shell.participant .reader.text-only { padding: 1.15rem 1rem 2.75rem; }
+  .shell.participant .reader.text-only { padding: 1.15rem 1rem 5.25rem; }
   .shell.participant .reader,
   .shell.participant .reader.text-only { grid-template-columns: 1fr; }
   .shell.participant .chapter-nav {
@@ -1255,40 +1409,140 @@ html[data-contrast="high"] .shell.participant .reading .citation {
   background: #fff;
   color: #000;
 }
-html[data-contrast="high"] .shell.participant .size-card {
-  background: #111;
+html[data-contrast="high"] .shell,
+html[data-contrast="high"] .shell h1,
+html[data-contrast="high"] .shell h2,
+html[data-contrast="high"] .shell h3,
+html[data-contrast="high"] .shell p,
+html[data-contrast="high"] .shell li,
+html[data-contrast="high"] .shell a,
+html[data-contrast="high"] .shell button,
+html[data-contrast="high"] .shell label,
+html[data-contrast="high"] .shell small,
+html[data-contrast="high"] .shell strong,
+html[data-contrast="high"] .shell span,
+html[data-contrast="high"] .shell em,
+html[data-contrast="high"] .shell dt,
+html[data-contrast="high"] .shell dd,
+html[data-contrast="high"] .shell legend,
+html[data-contrast="high"] .shell figcaption,
+html[data-contrast="high"] .shell .kicker,
+html[data-contrast="high"] .shell .lede,
+html[data-contrast="high"] .shell .lede.dark,
+html[data-contrast="high"] .shell .fine,
+html[data-contrast="high"] .shell .btn,
+html[data-contrast="high"] .shell .btn.solid,
+html[data-contrast="high"] .shell .btn.on-paper,
+html[data-contrast="high"] .shell .chip,
+html[data-contrast="high"] .rail,
+html[data-contrast="high"] .rail-link,
+html[data-contrast="high"] .rail-link span,
+html[data-contrast="high"] .mode-switch,
+html[data-contrast="high"] .topbar,
+html[data-contrast="high"] .folio-menu,
+html[data-contrast="high"] .folio-brand,
+html[data-contrast="high"] .folio-brand strong,
+html[data-contrast="high"] .folio-brand em,
+html[data-contrast="high"] .gate,
+html[data-contrast="high"] .gate h1,
+html[data-contrast="high"] .gate p,
+html[data-contrast="high"] .gate a,
+html[data-contrast="high"] .gate button,
+html[data-contrast="high"] .gate label,
+html[data-contrast="high"] .gate .lede,
+html[data-contrast="high"] .missing,
+html[data-contrast="high"] .missing h1 {
+  color: #fff;
+}
+html[data-contrast="high"] .topbar,
+html[data-contrast="high"] .rail {
+  background: #000;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+html[data-contrast="high"] .shell .rail-link,
+html[data-contrast="high"] .shell .stat-row,
+html[data-contrast="high"] .shell .stat-row article,
+html[data-contrast="high"] .shell .btn,
+html[data-contrast="high"] .shell .btn.solid,
+html[data-contrast="high"] .shell .btn.on-paper,
+html[data-contrast="high"] .shell .chip,
+html[data-contrast="high"] .gate .btn {
+  border-color: rgba(255, 255, 255, 0.7);
+  color: #fff;
+}
+html[data-contrast="high"] .shell .btn:hover,
+html[data-contrast="high"] .shell .btn[aria-pressed="true"],
+html[data-contrast="high"] .shell .chip:hover,
+html[data-contrast="high"] .gate .btn:hover {
+  background: #fff;
+  color: #000;
+}
+html[data-contrast="high"] .shell input,
+html[data-contrast="high"] .shell textarea,
+html[data-contrast="high"] .shell select,
+html[data-contrast="high"] .gate input {
+  color: #fff;
+  background: transparent;
+  border-bottom-color: #fff;
+}
+html[data-contrast="high"] .shell .passage,
+html[data-contrast="high"] .shell .passage p,
+html[data-contrast="high"] .shell .passage span,
+html[data-contrast="high"] .shell .passage .passage-label,
+html[data-contrast="high"] .shell .citation,
+html[data-contrast="high"] .shell .citation blockquote,
+html[data-contrast="high"] .shell .citation figcaption {
+  color: #000;
+}
+html[data-contrast="high"] .type-dock {
+  background: #000;
+  border-color: #fff;
+}
+html[data-contrast="high"] .type-dock button {
+  color: #fff;
+  background: transparent;
+}
+html[data-contrast="high"] .type-dock button[aria-checked="true"],
+html[data-contrast="high"] .type-dock button[aria-pressed="true"] {
+  background: #fff;
+  color: #000;
+}
+html[data-contrast="high"] .shell.participant,
+html[data-contrast="high"] .shell.participant .rail,
+html[data-contrast="high"] .shell.participant .chapter-nav,
+html[data-contrast="high"] .shell.participant .stat-row article,
+html[data-contrast="high"] .shell.participant .topic-index a,
+html[data-contrast="high"] .shell.participant .bubble.person {
+  background: #000;
   color: #fff;
   box-shadow: none;
 }
-html[data-contrast="high"] .shell.participant .size-choice {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.45);
-  background: transparent;
+html[data-contrast="high"] .shell.participant .stat-row article,
+html[data-contrast="high"] .shell.participant .topic-index a,
+html[data-contrast="high"] .shell.participant .chapter-nav,
+html[data-contrast="high"] .shell.participant .bubble.person {
+  background: #111;
 }
-html[data-contrast="high"] .shell.participant .size-choice[aria-checked="true"] {
+html[data-contrast="high"] .shell.participant .rail-link[aria-current="page"],
+html[data-contrast="high"] .shell.participant .chapter-nav a.current,
+html[data-contrast="high"] .shell.participant .btn.solid,
+html[data-contrast="high"] .shell.participant .btn.solid.dark,
+html[data-contrast="high"] .shell.participant .reading-tools .btn[aria-pressed="true"],
+html[data-contrast="high"] .shell.participant .mark.done {
   background: #fff;
   color: #000;
   border-color: #fff;
 }
-html[data-contrast="high"] .shell.participant .size-extras .btn {
-  color: #fff;
-  border-color: #fff;
-  background: transparent;
-}
-html[data-contrast="high"] .shell.participant .size-extras .btn[aria-pressed="true"] {
-  background: #fff;
+html[data-contrast="high"] .shell.participant .rail-link[aria-current="page"] span,
+html[data-contrast="high"] .shell.participant .chapter-nav a.current span,
+html[data-contrast="high"] .shell.participant .chapter-nav a.current em {
   color: #000;
 }
-html[data-contrast="high"] .topbar {
-  background: #000;
+html[data-contrast="high"] .shell.participant .file-pick,
+html[data-contrast="high"] .shell.participant .mark {
+  border-color: rgba(255, 255, 255, 0.55);
   color: #fff;
-  border-bottom-color: rgba(255, 255, 255, 0.4);
-}
-html[data-contrast="high"] .shell.participant .kicker,
-html[data-contrast="high"] .shell.participant .page h1,
-html[data-contrast="high"] .shell.participant .lede,
-html[data-contrast="high"] .shell.participant .lede.dark {
-  color: #fff;
+  background: transparent;
 }
 
 /* Aetheria Guide: a paper card on the mint shell, same type and pills as the pages */
