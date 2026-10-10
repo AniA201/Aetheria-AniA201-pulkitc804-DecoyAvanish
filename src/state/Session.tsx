@@ -11,6 +11,7 @@ import type { TeachResult } from "../lib/teachback";
 
 export type ReviewState = "open" | "resolved" | "dismissed";
 export type DraftState = "draft" | "accepted" | "rejected";
+export type Role = "participant" | "researcher";
 
 export type SavedQuestion = {
   id: string;
@@ -21,10 +22,14 @@ export type SavedQuestion = {
 };
 
 type SessionData = {
+  role: Role | null;
+  displayName: string;
+  accessRequest: "none" | "pending";
   fontScale: "md" | "lg" | "xl";
   contrast: "paper" | "high";
   reducedMotion: boolean;
   textOnly: boolean;
+  narrationRate: number;
   reviewed: SectionId[];
   saved: SavedQuestion[];
   teach: TeachResult[];
@@ -33,6 +38,9 @@ type SessionData = {
 };
 
 type SessionApi = SessionData & {
+  setRole: (role: Role | null, displayName?: string) => void;
+  requestResearchAccess: (name: string) => void;
+  setNarrationRate: (value: number) => void;
   setFontScale: (value: SessionData["fontScale"]) => void;
   setContrast: (value: SessionData["contrast"]) => void;
   setReducedMotion: (value: boolean) => void;
@@ -48,10 +56,14 @@ type SessionApi = SessionData & {
 const storageKey = "aetheria-session-v1";
 
 const empty: SessionData = {
+  role: null,
+  displayName: "",
+  accessRequest: "none",
   fontScale: "md",
   contrast: "paper",
   reducedMotion: false,
   textOnly: false,
+  narrationRate: 1,
   reviewed: [],
   saved: [],
   teach: [],
@@ -72,7 +84,7 @@ function load(): SessionData {
 }
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<SessionData>(empty);
+  const [data, setData] = useState<SessionData>(() => load());
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -94,6 +106,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const api = useMemo<SessionApi>(
     () => ({
       ...data,
+      setRole: (role, displayName) =>
+        setData((current) => ({
+          ...current,
+          role,
+          displayName: displayName ?? (role ? current.displayName : ""),
+          accessRequest: role === "researcher" ? "none" : current.accessRequest,
+        })),
+      requestResearchAccess: (name) =>
+        setData((current) => ({
+          ...current,
+          displayName: name || current.displayName,
+          accessRequest: "pending",
+        })),
+      setNarrationRate: (narrationRate) => setData((current) => ({ ...current, narrationRate })),
       setFontScale: (fontScale) => setData((current) => ({ ...current, fontScale })),
       setContrast: (contrast) => setData((current) => ({ ...current, contrast })),
       setReducedMotion: (reducedMotion) => setData((current) => ({ ...current, reducedMotion })),

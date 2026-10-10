@@ -15,6 +15,14 @@ import { auditPlainDraft, runChecks, type Check } from "../lib/checks";
 import { assessTeachback } from "../lib/teachback";
 import { useSession, type ReviewState } from "../state/Session";
 import { useTitle } from "../components/Chrome";
+import { packs } from "../data/packs";
+
+function pace(text: string) {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  const sentences = text.split(/[.!?]+/).map((part) => part.trim()).filter(Boolean);
+  const count = Math.max(sentences.length, 1);
+  return `${words.length} words, about ${Math.round(words.length / count)} words in a sentence.`;
+}
 
 export function Overview() {
   useTitle("Overview");
@@ -48,10 +56,10 @@ export function Overview() {
         </article>
       </div>
       <div className="action-row">
-        <Link className="btn solid dark" to="/team/integrity">
+        <Link className="btn solid dark" to="/researcher/document-integrity">
           Open document integrity
         </Link>
-        <Link className="btn on-paper" to="/team/lab">
+        <Link className="btn on-paper" to="/researcher/test-lab">
           Run the test lab
         </Link>
       </div>
@@ -59,6 +67,16 @@ export function Overview() {
         Reader document: {consentDoc.id} {consentDoc.version}, status {consentDoc.status}. Protocol:{" "}
         {protocolDoc.id} {protocolDoc.version}, status {protocolDoc.status}.
       </p>
+      <h2>Starter sheets in this demo</h2>
+      <ul className="pack-list">
+        {packs.map((pack) => (
+          <li key={pack.id}>
+            <strong>{pack.name}</strong>
+            <p>{pack.used}</p>
+            <p>{pack.where}</p>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -72,8 +90,9 @@ export function Integrity() {
       <p className="kicker">Evidence</p>
       <h1>Protocol against consent.</h1>
       <p className="lede dark">
-        These differences were planted in the synthetic pair. Aetheria shows both sentences. It does
-        not decide which document is the right one.
+        Protocol Pre-Flight checks this synthetic pair for disagreements. Write Once keeps each shared
+        fact in both documents until a person reviews it. Aetheria does not decide which sentence is
+        right, and it does not approve the protocol.
       </p>
       <div className="fact-list">
         {facts.map((fact) => {
@@ -98,6 +117,7 @@ export function Integrity() {
                 </div>
               </div>
               <p>{fact.why}</p>
+              <p>Next step: a person compares the two sentences. Neither document is edited from this screen.</p>
               {flagged && (
                 <div className="action-row">
                   <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "resolved")}>
@@ -159,25 +179,31 @@ export function Insights() {
           </li>
         ))}
       </ul>
-      <h2>Questions saved in this session</h2>
-      {saved.length === 0 ? (
-        <p className="empty">None yet. Saved questions from the participant view appear here.</p>
-      ) : (
-        <ul className="stack">
-          {saved.map((item) => (
-            <li key={item.id}>
-              <strong>{item.question}</strong>
-              <p>{item.answer}</p>
-            </li>
-          ))}
-        </ul>
+      <h2>Questions saved in this browser</h2>
+      <p className="fine">
+        {saved.length === 0
+          ? "None yet. A saved question from the participant view can be opened here. It is not sent anywhere."
+          : `${saved.length} saved in this browser. The wording stays closed until you ask to see it.`}
+      </p>
+      {saved.length > 0 && (
+        <details className="stack">
+          <summary>Show saved questions from this browser</summary>
+          <ul className="stack">
+            {saved.map((item) => (
+              <li key={item.id}>
+                <strong>{item.question}</strong>
+                <p>{item.answer}</p>
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </div>
   );
 }
 
 export function Studio() {
-  useTitle("Plain Language");
+  useTitle("Plain Language Studio");
   const { draft, setDraft } = useSession();
   const audit = auditPlainDraft();
 
@@ -186,8 +212,12 @@ export function Studio() {
       <p className="kicker">Plain language studio</p>
       <h1>{plainDraft.title}</h1>
       <p className="lede dark">
-        The rewrite keeps the consent form’s own numbers. It does not silently replace them with the
-        protocol. Accepting a draft does not change the source document.
+        Say It Plainly: the shorter reading has to keep the consent’s own numbers. It must not pick up
+        the protocol’s visits, weeks, or payment. Accepting a draft does not change the source.
+      </p>
+      <p className="fine">
+        Original: {pace(plainDraft.original)} Draft: {pace(plainDraft.draft)} This is a word count, not
+        a test with a reader.
       </p>
       <div className="split studio">
         <article>
@@ -260,7 +290,7 @@ export function Lab() {
 }
 
 export function Documents() {
-  useTitle("Documents");
+  useTitle("Documents & Versions");
   return (
     <div className="page">
       <p className="kicker">Versions</p>
@@ -279,12 +309,16 @@ export function Documents() {
         ))}
       </ul>
       <p className="fine">{consentDoc.statusNote}</p>
+      <p className="pack-line">
+        Write Once: v2.1 is the form in the reader. v2.0 is outdated and is not offered as the current
+        consent. Shared facts that disagree stay on Document Integrity until a person reviews them.
+      </p>
     </div>
   );
 }
 
 export function Settings() {
-  useTitle("Settings");
+  useTitle("Settings & Audit");
   const { reset } = useSession();
   const [cleared, setCleared] = useState(false);
 
@@ -310,8 +344,11 @@ export function Settings() {
           <p>Review marks, saved questions, and teach-back replies stay in this browser session only.</p>
         </li>
         <li>
-          <strong>Role</strong>
-          <p>The participant and research-team switch is a demo control. It is not authentication.</p>
+          <strong>Roles</strong>
+          <p>
+            Participant entry and the approved demo phrase are stored in this browser only. A
+            participant cannot open this workspace, and a research request does not grant it.
+          </p>
         </li>
       </ul>
       <button

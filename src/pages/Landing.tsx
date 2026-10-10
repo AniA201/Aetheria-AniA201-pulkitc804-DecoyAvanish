@@ -1,355 +1,303 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { consentDoc, factFlagged, facts, study } from "../data/study";
+import { useTitle } from "../components/Chrome";
+import { consentDoc, sections } from "../data/study";
 import { MedicalField } from "../scene/MedicalField";
 import { useSession } from "../state/Session";
-import { useTitle } from "../components/Chrome";
 
-type PanelId = "participants" | "teams" | "method" | "about" | "documents" | "privacy";
-
-const panels: { id: PanelId; label: string }[] = [
-  { id: "participants", label: "For participants" },
-  { id: "teams", label: "For research teams" },
-  { id: "method", label: "How it works" },
-  { id: "about", label: "About" },
+const index = [
+  { id: "read", number: "01", label: "Read" },
+  { id: "ask", number: "02", label: "Ask" },
+  { id: "teach", number: "03", label: "Teach-back" },
+  { id: "review", number: "04", label: "Review" },
 ];
-
-function StrikeLine({ text }: { text: string }) {
-  return <span className="problem-title">{text}</span>;
-}
 
 export function Landing() {
   useTitle("Aetheria");
   const { reducedMotion, textOnly } = useSession();
-  const [panel, setPanel] = useState<PanelId | null>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const mismatch = facts.find(factFlagged);
-  const cursorRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef(0);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const quiet = reducedMotion || textOnly;
+  const [menu, setMenu] = useState(false);
+  const [veil, setVeil] = useState(!quiet);
+  const [chapter, setChapter] = useState(0);
 
   useEffect(() => {
-    const node = cursorRef.current;
-    const fine = window.matchMedia("(pointer: fine)").matches;
-    if (!node || !fine || reducedMotion) return;
-    document.body.classList.add("has-cursor");
-    const move = (event: MouseEvent) => {
-      node.style.left = `${event.clientX}px`;
-      node.style.top = `${event.clientY}px`;
-      const target = event.target as HTMLElement | null;
-      node.classList.toggle("big", Boolean(target?.closest("a, button")));
+    const root = rootRef.current;
+    if (!root) return;
+    const onScroll = () => {
+      const distance = Math.max(root.offsetHeight - window.innerHeight, 1);
+      const progress = Math.min(1, Math.max(0, (window.scrollY - root.offsetTop) / distance));
+      progressRef.current = progress;
+      const next = progress < 0.22 ? 0 : progress < 0.48 ? 1 : progress < 0.72 ? 2 : 3;
+      setChapter((current) => (current === next ? current : next));
     };
-    window.addEventListener("mousemove", move);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
     return () => {
-      document.body.classList.remove("has-cursor");
-      window.removeEventListener("mousemove", move);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
     };
-  }, [reducedMotion]);
+  }, []);
 
   useEffect(() => {
-    if (!panel) return;
-    closeRef.current?.focus();
+    if (quiet) return;
+    const timer = window.setTimeout(() => setVeil(false), 1200);
+    return () => window.clearTimeout(timer);
+  }, [quiet]);
+
+  useEffect(() => {
+    if (!menu) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setPanel(null);
+      if (event.key === "Escape") setMenu(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [panel]);
+  }, [menu]);
 
   return (
-    <div className="cfm">
+    <div className={quiet ? "story is-quiet" : "story"} ref={rootRef}>
       <a className="skip" href="#content">
         Skip to content
       </a>
-      <div ref={cursorRef} id="cur" aria-hidden="true" />
 
-      <nav aria-label="Primary">
-        <div className="nav-menu">
-          {panels.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={panel === item.id ? "active" : ""}
-              onClick={() => setPanel(item.id)}
-            >
+      {veil && (
+        <div className="veil" aria-hidden="true">
+          <span className="folio-seal" />
+          <p>Informed consent</p>
+          <div className="veil-rule">
+            <span />
+          </div>
+          <p className="veil-meta">
+            <span>Opening the form</span>
+            <span>{consentDoc.id}</span>
+          </p>
+        </div>
+      )}
+
+      <header className="folio-nav">
+        <Link to="/" className="folio-brand">
+          <span className="folio-seal" aria-hidden="true" />
+          <span>
+            <strong>Aetheria</strong>
+            <em>Informed consent</em>
+          </span>
+        </Link>
+        <nav aria-label="Enter">
+          {index.map((item) => (
+            <a key={item.id} href={`#${item.id}`}>
               {item.label}
-            </button>
+            </a>
           ))}
-        </div>
-      </nav>
-
-      <div id="hero">
-        {!textOnly && <MedicalField reducedMotion={reducedMotion} />}
-        <div className="hero-vignette" />
-        <div className="hero-text" id="content">
-          <p className="hero-logo">Aetheria</p>
-          <p className="hero-slogan">Understand the consent before you decide.</p>
-        </div>
-      </div>
-
-      <footer>
-        <ul className="ft-links">
-          <li>
-            <Link to="/participant">Enter the study</Link>
-          </li>
-          <li>
-            <Link to="/team">Research view</Link>
-          </li>
-          <li>
-            <button type="button" onClick={() => setPanel("documents")}>
-              Documents
-            </button>
-          </li>
-          <li>
-            <button type="button" onClick={() => setPanel("privacy")}>
-              Privacy
-            </button>
-          </li>
-        </ul>
-      </footer>
-
-      <div id="overlay" className={panel ? "open" : ""}>
+        </nav>
         <button
           type="button"
-          id="overlay-backdrop"
-          aria-label="Close panel"
-          onClick={() => setPanel(null)}
-        />
-        <div
-          id="overlay-panel"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="overlay-label"
-          hidden={!panel}
+          className="folio-menu"
+          aria-expanded={menu}
+          aria-controls="folio-overlay"
+          onClick={() => setMenu((open) => !open)}
         >
-          <div id="overlay-header">
-            <span id="overlay-label">
-              {panel === "documents"
-                ? "Documents"
-                : panel === "privacy"
-                  ? "Privacy"
-                  : panels.find((item) => item.id === panel)?.label}
-            </span>
-            <button ref={closeRef} id="overlay-close" type="button" onClick={() => setPanel(null)}>
-              Close
-            </button>
-          </div>
-          <div id="overlay-body">
-            {panel === "participants" && (
-              <div className="modal-content">
-                <p className="mc-section-label">Does this sound familiar?</p>
-                <div className="problem-stack">
-                  <div className="problem">
-                    <StrikeLine text="The consent is long." />
-                    <span className="problem-text">The important parts are hard to find.</span>
-                  </div>
-                  <div className="problem">
-                    <StrikeLine text="The language is technical." />
-                    <span className="problem-text">A shorter reading should not change the facts.</span>
-                  </div>
-                  <div className="problem">
-                    <StrikeLine text="A yes is not understanding." />
-                    <span className="problem-text">People need room to ask, and to try again.</span>
-                  </div>
-                </div>
-                <div className="bridge">
-                  <p>
-                    You are not expected to decode a protocol alone. Aetheria reads the selected
-                    consent with you, keeps the original paragraph in view, and leaves the decision
-                    with you and the research team.
-                  </p>
-                </div>
-                <div className="benefit-list">
-                  <article>
-                    <span>01</span>
-                    <div>
-                      <em>Plain language</em>
-                      <strong>Five sections of the form</strong>
-                      <p>Procedures, risks, rights, costs, and privacy, each beside its source.</p>
-                    </div>
-                  </article>
-                  <article>
-                    <span>02</span>
-                    <div>
-                      <em>Questions</em>
-                      <strong>Answers from the page</strong>
-                      <p>If the form does not say, Aetheria says so and points you to a person.</p>
-                    </div>
-                  </article>
-                  <article>
-                    <span>03</span>
-                    <div>
-                      <em>Teach-back</em>
-                      <strong>What still needs a conversation</strong>
-                      <p>Not a score. Not a signature. A list of ideas to revisit.</p>
-                    </div>
-                  </article>
-                </div>
-                <Link className="btn-a" to="/participant">
-                  Enter the demo study
-                </Link>
-              </div>
-            )}
+          {menu ? "Close" : "Menu"}
+        </button>
+      </header>
 
-            {panel === "teams" && (
-              <div className="modal-content">
-                <p className="opening">A difference should show both sentences.</p>
-                <p className="body-copy">
-                  {study.sponsor} and {study.product} are fictional. In this pair, the protocol and
-                  the consent do not agree on clinic visits. The review screen shows both passages
-                  and waits for a person. It does not decide which document is correct.
-                </p>
-                {mismatch && (
-                  <div className="evidence-row">
-                    <div>
-                      <em>Protocol · {mismatch.protocolValue}</em>
-                      <p>{mismatch.protocolQuote}</p>
-                      <small>{mismatch.protocolSource}</small>
-                    </div>
-                    <div>
-                      <em>Consent · {mismatch.consentValue}</em>
-                      <p>{mismatch.consentQuote}</p>
-                      <small>{mismatch.consentSource}</small>
-                    </div>
-                  </div>
-                )}
-                <div className="benefit-list">
-                  <article>
-                    <span>01</span>
-                    <div>
-                      <em>Document integrity</em>
-                      <strong>Seeded mismatches, labeled as such</strong>
-                      <p>Visit count, duration, and payment differ. Blood volume and retention do not.</p>
-                    </div>
-                  </article>
-                  <article>
-                    <span>02</span>
-                    <div>
-                      <em>Plain language</em>
-                      <strong>A draft that keeps the consent’s numbers</strong>
-                      <p>Accepting a rewrite does not change the source document.</p>
-                    </div>
-                  </article>
-                  <article>
-                    <span>03</span>
-                    <div>
-                      <em>Test lab</em>
-                      <strong>Checks you can run</strong>
-                      <p>Citations, refusals, teach-back, and the planted mismatch are counted from the run.</p>
-                    </div>
-                  </article>
-                </div>
-                <Link className="btn-a" to="/team">
-                  Open the research view
-                </Link>
-              </div>
-            )}
-
-            {panel === "method" && (
-              <div className="modal-content">
-                <p className="mc-section-label">How it works</p>
-                <ol className="steps">
-                  <li>
-                    <span>01</span>
-                    <div>
-                      <h3>Read the selected form</h3>
-                      <p>
-                        {consentDoc.id} {consentDoc.version} is the document in the reader. Its
-                        approval status stays {consentDoc.status.toLowerCase()} until a real version
-                        list is supplied.
-                      </p>
-                    </div>
-                  </li>
-                  <li>
-                    <span>02</span>
-                    <div>
-                      <h3>Ask from that page</h3>
-                      <p>
-                        A question is matched to a section of the consent. The answer shows the
-                        original clause. A dose, an approval, or a cure is not invented.
-                      </p>
-                    </div>
-                  </li>
-                  <li>
-                    <span>03</span>
-                    <div>
-                      <h3>Hand the rest to a person</h3>
-                      <p>
-                        Teach-back names what is still missing. The research view keeps the protocol
-                        and the consent side by side.
-                      </p>
-                    </div>
-                  </li>
-                </ol>
-                <Link className="btn-a" to="/participant/explore/procedures">
-                  Start at the first section
-                </Link>
-              </div>
-            )}
-
-            {panel === "about" && (
-              <div className="modal-content">
-                <h2 className="about-heading">A reading room for one consent form.</h2>
-                <p className="body-copy">
-                  Aetheria is a synthetic demo of study {study.id}, a fictional {study.phase.toLowerCase()}{" "}
-                  look at {study.product} for {study.name.toLowerCase()}. It is not a trial you can
-                  join, and it is not medical advice.
-                </p>
-                <p className="body-copy">
-                  The illustrated field is the way in. The consent text stays in the page, in a
-                  normal reading layout, with a text-only mode and a larger type size. Nothing in
-                  this preview is sent to an outside model or voice service.
-                </p>
-                <p className="body-copy">
-                  Teach-back does not certify that someone understood or consented. A coordinator
-                  still has the conversation.
-                </p>
-              </div>
-            )}
-
-            {panel === "documents" && (
-              <div className="modal-content">
-                <p className="mc-section-label">Selected for this demo</p>
-                <ul className="doc-list">
-                  <li>
-                    <strong>
-                      {consentDoc.id} {consentDoc.version}
-                    </strong>
-                    <span>
-                      Consent form · {consentDoc.date} · {consentDoc.status}
-                    </span>
-                  </li>
-                  <li>
-                    <strong>PROT-AETHER-01 v3.0</strong>
-                    <span>Protocol · 2 March 2026 · Unverified</span>
-                  </li>
-                  <li>
-                    <strong>ICF-AETHER-01 v2.0</strong>
-                    <span>Earlier consent draft · Outdated</span>
-                  </li>
-                </ul>
-                <p className="body-copy">{consentDoc.statusNote}</p>
-                <Link className="btn-a" to="/team/documents">
-                  Open the version list
-                </Link>
-              </div>
-            )}
-
-            {panel === "privacy" && (
-              <div className="modal-content">
-                <p className="opening">This preview keeps the session in the browser.</p>
-                <p className="body-copy">
-                  Saved questions, teach-back replies, and review marks stay in this browser session.
-                  They are not uploaded. The listen control, when the browser allows it, uses the
-                  device speech engine. ElevenLabs is not connected.
-                </p>
-                <p className="body-copy">
-                  Do not enter a real name, a real medical history, or a real consent form. The study
-                  on screen is synthetic.
-                </p>
-              </div>
-            )}
-          </div>
+      {menu && (
+        <div className="folio-overlay" id="folio-overlay" role="dialog" aria-label="Menu">
+          <nav>
+            {index.map((item) => (
+              <a key={item.id} href={`#${item.id}`} onClick={() => setMenu(false)}>
+                <span>{item.number}</span>
+                {item.label}
+              </a>
+            ))}
+            <Link to="/login?as=participant" onClick={() => setMenu(false)}>
+              Explore demo
+            </Link>
+            <Link to="/login?as=researcher" onClick={() => setMenu(false)}>
+              Researcher login
+            </Link>
+            <Link to="/register" onClick={() => setMenu(false)}>
+              Get started
+            </Link>
+          </nav>
         </div>
-      </div>
+      )}
+
+      <p className="folio-word" aria-hidden="true">
+        Aetheria
+      </p>
+      {!textOnly && (
+        <div className="story-stage" aria-hidden="true">
+          <MedicalField reducedMotion={reducedMotion} progressRef={progressRef} />
+        </div>
+      )}
+
+      <main id="content">
+        <section className="folio-hero">
+          <p className="folio-kicker">Chapter 00 — The form</p>
+          <h1>Understand the consent before you decide.</h1>
+          <p className="folio-lede">
+            A synthetic consent, read with the original wording still in view. It explains, answers,
+            and checks understanding. It does not sign.
+          </p>
+          <p className="folio-vertical">ICF-AETHER-01</p>
+          <Link className="folio-preview" to="/login?as=participant">
+            <span className="folio-preview-sheet" aria-hidden="true" />
+            <span>
+              Preview
+              <em>v2.1, unsigned</em>
+            </span>
+          </Link>
+          <nav className="folio-index" aria-label="Chapters">
+            {index.map((item, itemIndex) => (
+              <a key={item.id} href={`#${item.id}`} aria-current={chapter === itemIndex ? "true" : undefined}>
+                <b>{item.number}</b>
+                {item.label}
+              </a>
+            ))}
+          </nav>
+        </section>
+
+        <section className="folio-split" id="read">
+          <h2>A yes is not understanding.</h2>
+          <div>
+            <p>
+              Consent forms are long, and “Do you understand?” often gets a yes when the important
+              parts were missed. The same facts are also rewritten by hand across the protocol and
+              the consent.
+            </p>
+            <p>Aetheria keeps both sentences visible. A shorter reading cannot change a number.</p>
+            <Link className="folio-link" to="/login?as=participant">
+              Open the form
+            </Link>
+          </div>
+        </section>
+
+        <section className="folio-facts" aria-label="Document facts">
+          <article>
+            <b>05</b>
+            <span>Chapters</span>
+          </article>
+          <article>
+            <b>{consentDoc.version}</b>
+            <span>Consent in the reader</span>
+          </article>
+          <article>
+            <b>12 Mar</b>
+            <span>2026</span>
+          </article>
+          <article>
+            <b>{consentDoc.status}</b>
+            <span>No approval list in this preview</span>
+          </article>
+        </section>
+
+        <section className="folio-chapters" id="ask">
+          <div className="folio-chapter-head">
+            <h2>Five chapters. One source.</h2>
+            <p>
+              Each chapter keeps the original clause beside a shorter reading. The citation stays
+              attached. Answers come only from this form.
+            </p>
+          </div>
+          <ol>
+            {sections.map((section) => (
+              <li key={section.id}>
+                <span>{section.index}</span>
+                <h3>{section.title}</h3>
+                <p>{section.short}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="folio-split folio-teach" id="teach">
+          <h2>Explain it in your own words.</h2>
+          <div>
+            <p>
+              Teach-back asks about randomization, withdrawal, and risks. “I consent” is not
+              understanding. “I don’t know” is a reason for a person to follow up.
+            </p>
+            <ul>
+              <li>Understands the key concept</li>
+              <li>Partially understands</li>
+              <li>Needs clarification</li>
+              <li>Requires human follow-up</li>
+            </ul>
+            <p className="folio-aside">The summary is a handoff. It is not a consent certificate.</p>
+          </div>
+        </section>
+
+        <section className="folio-review" id="review">
+          <h2>Both sentences, side by side.</h2>
+          <p>
+            The synthetic protocol and consent disagree on purpose. Aetheria shows both passages. It
+            does not decide which document is right.
+          </p>
+          <dl>
+            <div>
+              <dt>Visits</dt>
+              <dd>Protocol 8 · Consent 6</dd>
+            </div>
+            <div>
+              <dt>Duration</dt>
+              <dd>Protocol 24 weeks · Consent about 16 weeks</dd>
+            </div>
+            <div>
+              <dt>Payment</dt>
+              <dd>Protocol $80 · Consent $50</dd>
+            </div>
+          </dl>
+          <p className="folio-aside">
+            Blood volume and how long records are kept match. Accepting a plain-language draft does
+            not change the source.
+          </p>
+        </section>
+
+        <section className="folio-close">
+          <Link className="folio-pill" to="/login?as=participant">
+            Begin the reading
+          </Link>
+          <p>
+            AETHER-01, Aetherol, and Northwind Clinical Research are fictional. This is not medical
+            advice, and it is not a signed consent.
+          </p>
+          <footer>
+            <div>
+              <h3>Chapters</h3>
+              <ul>
+                {sections.map((section) => (
+                  <li key={section.id}>{section.title}</li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3>Practice</h3>
+              <ul>
+                <li>Read with the original clause</li>
+                <li>Ask only from the form</li>
+                <li>Teach it back</li>
+                <li>Compare both documents</li>
+              </ul>
+            </div>
+            <div>
+              <h3>Enter</h3>
+              <ul>
+                <li>
+                  <Link to="/login?as=participant">Explore demo</Link>
+                </li>
+                <li>
+                  <Link to="/login?as=researcher">Researcher login</Link>
+                </li>
+                <li>
+                  <Link to="/register">Get started</Link>
+                </li>
+              </ul>
+            </div>
+          </footer>
+        </section>
+      </main>
     </div>
   );
 }

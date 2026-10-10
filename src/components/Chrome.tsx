@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
+import { useSession, type Role } from "../state/Session";
 
 export function useTitle(title: string) {
   useEffect(() => {
@@ -8,6 +9,7 @@ export function useTitle(title: string) {
 }
 
 export function ListenButton({ text }: { text: string }) {
+  const { narrationRate } = useSession();
   const [state, setState] = useState<"idle" | "playing" | "unavailable">("idle");
 
   useEffect(() => {
@@ -23,7 +25,7 @@ export function ListenButton({ text }: { text: string }) {
     }
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.96;
+    utterance.rate = narrationRate;
     utterance.onend = () => setState("idle");
     utterance.onerror = () => setState("unavailable");
     setState("playing");
@@ -56,27 +58,38 @@ export function ListenButton({ text }: { text: string }) {
 }
 
 const participantNav = [
-  { to: "/participant", label: "Home", end: true },
-  { to: "/participant/study", label: "My Study" },
-  { to: "/participant/explore", label: "Explore Consent" },
+  { to: "/participant/home", label: "Home", end: true },
+  { to: "/participant/my-study", label: "My Study" },
+  { to: "/participant/explore-consent", label: "Explore Consent" },
   { to: "/participant/ask", label: "Ask Aetheria" },
-  { to: "/participant/teach", label: "Teach-Back" },
+  { to: "/participant/teach-back", label: "Teach-Back" },
   { to: "/participant/summary", label: "My Summary" },
-  { to: "/participant/access", label: "Accessibility" },
+  { to: "/participant/accessibility", label: "Accessibility" },
 ];
 
-const teamNav = [
-  { to: "/team", label: "Overview", end: true },
-  { to: "/team/integrity", label: "Document Integrity" },
-  { to: "/team/insights", label: "Participant Insights" },
-  { to: "/team/studio", label: "Plain Language" },
-  { to: "/team/lab", label: "Test Lab" },
-  { to: "/team/documents", label: "Documents" },
-  { to: "/team/settings", label: "Settings" },
+const researcherNav = [
+  { to: "/researcher/overview", label: "Overview", end: true },
+  { to: "/researcher/document-integrity", label: "Document Integrity" },
+  { to: "/researcher/insights", label: "Participant Insights" },
+  { to: "/researcher/plain-language", label: "Plain Language Studio" },
+  { to: "/researcher/test-lab", label: "Test Lab" },
+  { to: "/researcher/documents", label: "Documents & Versions" },
+  { to: "/researcher/settings", label: "Settings & Audit" },
 ];
 
-export function Shell({ mode }: { mode: "participant" | "team" }) {
-  const links = mode === "participant" ? participantNav : teamNav;
+export function RequireRole({ role }: { role: Role }) {
+  const { role: current } = useSession();
+  const location = useLocation();
+  if (current !== role) {
+    const next = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?as=${role}&next=${next}`} replace />;
+  }
+  return <Shell mode={role} />;
+}
+
+export function Shell({ mode }: { mode: Role }) {
+  const { setRole } = useSession();
+  const links = mode === "participant" ? participantNav : researcherNav;
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
@@ -90,12 +103,16 @@ export function Shell({ mode }: { mode: "participant" | "team" }) {
         Skip to content
       </a>
       <header className="topbar">
-        <NavLink to="/" className="wordmark">
-          Aetheria
+        <NavLink to="/" className="folio-brand">
+          <span className="folio-seal" aria-hidden="true" />
+          <span>
+            <strong>Aetheria</strong>
+            <em>{mode === "participant" ? "Participant" : "Research"}</em>
+          </span>
         </NavLink>
         <button
           type="button"
-          className="menu-button"
+          className="folio-menu"
           aria-expanded={open}
           aria-controls="app-nav"
           onClick={() => setOpen((value) => !value)}
@@ -104,23 +121,27 @@ export function Shell({ mode }: { mode: "participant" | "team" }) {
         </button>
       </header>
       <aside className={`rail ${open ? "open" : ""}`} id="app-nav">
-        <NavLink to="/" className="wordmark rail-mark">
-          Aetheria
+        <NavLink to="/" className="folio-brand rail-mark">
+          <span className="folio-seal" aria-hidden="true" />
+          <span>
+            <strong>Aetheria</strong>
+            <em>{mode === "participant" ? "Participant" : "Research"}</em>
+          </span>
         </NavLink>
-        <p className="rail-kicker">{mode === "participant" ? "Participant" : "Research team"}</p>
         <nav aria-label={mode === "participant" ? "Participant" : "Research team"}>
-          {links.map((link) => (
+          {links.map((link, index) => (
             <NavLink key={link.to} to={link.to} end={link.end} className="rail-link">
+              <span>{String(index + 1).padStart(2, "0")}</span>
               {link.label}
             </NavLink>
           ))}
         </nav>
-        <NavLink
-          className="mode-switch"
-          to={mode === "participant" ? "/team" : "/participant"}
-        >
-          {mode === "participant" ? "Research team view" : "Participant view"}
+        <NavLink className="mode-switch" to="/login">
+          Switch role
         </NavLink>
+        <button type="button" className="mode-switch sign-out" onClick={() => setRole(null)}>
+          Sign out
+        </button>
       </aside>
       <div className="workspace">
         <p className="demo-banner">

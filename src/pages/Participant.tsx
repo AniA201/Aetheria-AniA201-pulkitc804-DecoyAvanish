@@ -12,16 +12,17 @@ import { answerQuestion, suggestedQuestions, type Answer } from "../lib/answers"
 import { assessTeachback, type TeachResult } from "../lib/teachback";
 import { useSession } from "../state/Session";
 import { ListenButton, useTitle } from "../components/Chrome";
+import { ConsentSheet } from "../scene/ConsentSheet";
 
 export function ParticipantHome() {
   useTitle("Home");
-  const { reviewed, saved, teach } = useSession();
+  const { reviewed, saved, teach, displayName } = useSession();
   const next = sections.find((section) => !reviewed.includes(section.id)) ?? sections[0];
 
   return (
     <div className="page">
       <p className="kicker">{study.label}</p>
-      <h1>Welcome to {study.id}.</h1>
+      <h1>{displayName ? `${displayName}, your study is ready.` : `Your place in ${study.id}.`}</h1>
       <p className="lede dark">
         {study.purpose} You are reading consent {consentDoc.version}, marked {consentDoc.status.toLowerCase()}.
       </p>
@@ -42,11 +43,11 @@ export function ParticipantHome() {
         </article>
       </div>
       <div className="action-row">
-        <Link className="btn solid dark" to={`/participant/explore/${next.id}`}>
-          {reviewed.length === 0 ? "Start reading" : "Resume reading"}
+        <Link className="btn solid dark" to={`/participant/explore-consent/${next.id}`}>
+          Continue learning
         </Link>
-        <Link className="btn on-paper" to="/participant/study">
-          Study details
+        <Link className="btn on-paper" to="/participant/my-study">
+          My Study
         </Link>
       </div>
     </div>
@@ -88,7 +89,7 @@ export function MyStudy() {
       <ol className="topic-index">
         {sections.map((section) => (
           <li key={section.id}>
-            <Link to={`/participant/explore/${section.id}`}>
+            <Link to={`/participant/explore-consent/${section.id}`}>
               <span>{section.index}</span>
               <strong>{section.title}</strong>
               <em>{section.short}</em>
@@ -106,10 +107,10 @@ export function Explore() {
   const known = !params.sectionId || sections.some((section) => section.id === params.sectionId);
   const requested = (known ? (params.sectionId as SectionId | undefined) : undefined) ?? sections[0].id;
   const section = sectionById(requested);
-  const { textOnly, markReviewed, reviewed } = useSession();
+  const { textOnly, markReviewed, reviewed, reducedMotion } = useSession();
   const [showOriginal, setShowOriginal] = useState(false);
   if (!known) {
-    return <Navigate to="/participant/explore/procedures" replace />;
+    return <Navigate to="/participant/explore-consent/procedures" replace />;
   }
   const index = sections.findIndex((item) => item.id === section.id);
   const previous = sections[index - 1];
@@ -121,7 +122,7 @@ export function Explore() {
         {sections.map((item) => (
           <Link
             key={item.id}
-            to={`/participant/explore/${item.id}`}
+            to={`/participant/explore-consent/${item.id}`}
             className={item.id === section.id ? "current" : ""}
             aria-current={item.id === section.id ? "page" : undefined}
           >
@@ -131,11 +132,23 @@ export function Explore() {
           </Link>
         ))}
       </aside>
+      {!textOnly && (
+        <div className="consent-stage">
+          <ConsentSheet chapter={index} reducedMotion={reducedMotion} />
+          <p className="stage-caption">
+            Chapter {section.index} of {sections.length}. The words below are the document.
+          </p>
+        </div>
+      )}
       <article className="reading">
         <p className="kicker">
           {section.index} / {sections.length} · {consentDoc.version}
         </p>
         <h1>{section.title}</h1>
+        <p className="pack-line">
+          Teach It Back reads this chapter from {consentDoc.id} {consentDoc.version}. Say It Plainly
+          keeps the original clause next to the shorter reading.
+        </p>
         <div className="reading-tools">
           <button
             type="button"
@@ -183,11 +196,11 @@ export function Explore() {
         </div>
         <div className="pager">
           {previous ? (
-            <Link to={`/participant/explore/${previous.id}`}>Previous · {previous.title}</Link>
+            <Link to={`/participant/explore-consent/${previous.id}`}>Previous · {previous.title}</Link>
           ) : (
             <span />
           )}
-          {next ? <Link to={`/participant/explore/${next.id}`}>Next · {next.title}</Link> : <span />}
+          {next ? <Link to={`/participant/explore-consent/${next.id}`}>Next · {next.title}</Link> : <span />}
         </div>
       </article>
     </div>
@@ -249,7 +262,7 @@ export function Ask() {
                   {message.answer.citation} · {message.answer.page}
                 </strong>
                 <blockquote>{message.answer.quote}</blockquote>
-                <Link to={`/participant/explore/${message.answer.sectionId}#source`}>Open this passage</Link>
+                <Link to={`/participant/explore-consent/${message.answer.sectionId}#source`}>Open this passage</Link>
               </div>
             )}
             {message.answer && (
@@ -311,7 +324,7 @@ export function Teach() {
 
   return (
     <div className="page">
-      <p className="kicker">Check my understanding</p>
+      <p className="kicker">Teach It Back</p>
       <h1>Say it in your own words.</h1>
       <p className="lede dark">
         This is not a test you pass or fail, and it is not a record that you consented. It shows which
@@ -364,7 +377,7 @@ export function Teach() {
               ))}
             </ul>
           )}
-          <Link to={`/participant/explore/${prompt.sectionId}`}>Reread {prompt.topic.toLowerCase()}</Link>
+          <Link to={`/participant/explore-consent/${prompt.sectionId}`}>Reread {prompt.topic.toLowerCase()}</Link>
         </article>
       )}
     </div>
@@ -478,6 +491,41 @@ export function Access() {
             />
             Higher contrast
           </label>
+        </fieldset>
+        <fieldset>
+          <legend>Narration speed</legend>
+          {(
+            [
+              [0.85, "Slower"],
+              [1, "Default"],
+              [1.15, "Faster"],
+            ] as const
+          ).map(([rate, label]) => (
+            <label key={rate} className="choice">
+              <input
+                type="radio"
+                name="rate"
+                checked={session.narrationRate === rate}
+                onChange={() => session.setNarrationRate(rate)}
+              />
+              {label}
+            </label>
+          ))}
+        </fieldset>
+        <fieldset>
+          <legend>Language</legend>
+          <label className="choice">
+            <input type="radio" name="language" checked readOnly />
+            English
+          </label>
+          <p className="fine">Other languages stay off until a reviewed translation exists.</p>
+        </fieldset>
+        <fieldset>
+          <legend>Voice</legend>
+          <p className="fine">
+            Listen uses this browser’s speech engine. ElevenLabs is not connected, so there is no
+            separate voice to choose.
+          </p>
         </fieldset>
         <label className="choice">
           <input
