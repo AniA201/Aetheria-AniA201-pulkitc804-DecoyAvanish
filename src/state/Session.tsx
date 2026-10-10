@@ -10,9 +10,12 @@ import type { Passage } from "../data/documents";
 import { setExtraPassages } from "../data/documents";
 import type { SubmittedConsent } from "../lib/consent";
 import type { TeachResult } from "../lib/teachback";
+import { audienceDrafts } from "../lib/workbook";
 
 export type ReviewState = "open" | "under-review" | "resolved" | "dismissed";
 export type DraftState = "draft" | "accepted" | "rejected";
+export type AudienceState = DraftState | "in-review" | "stale";
+export type LineDecision = "accepted" | "rejected";
 export type Role = "participant" | "researcher";
 
 export type SavedQuestion = {
@@ -63,6 +66,13 @@ type SessionData = {
   draftText: string;
   imports: ImportedDocument[];
   audit: AuditEvent[];
+  approvedVersions: string[];
+  publicStudyId: string;
+  audienceText: { adult: string; caregiver: string };
+  audienceState: { adult: AudienceState; caregiver: AudienceState };
+  lineDecisions: Record<string, LineDecision>;
+  briefDecisions: Record<string, LineDecision>;
+  lastSpoken: string;
 };
 
 type SessionApi = SessionData & {
@@ -83,6 +93,13 @@ type SessionApi = SessionData & {
   setDraft: (state: DraftState) => void;
   setDraftText: (text: string) => void;
   addImport: (document: ImportedDocument) => void;
+  setApprovedVersions: (versions: string[]) => void;
+  setPublicStudyId: (id: string) => void;
+  setAudienceText: (audience: "adult" | "caregiver", text: string) => void;
+  setAudienceState: (audience: "adult" | "caregiver", state: AudienceState) => void;
+  decideLine: (id: string, decision: LineDecision) => void;
+  decideBrief: (id: string, decision: LineDecision) => void;
+  setLastSpoken: (text: string) => void;
   reset: () => void;
 };
 
@@ -107,6 +124,13 @@ const empty: SessionData = {
   draftText: "",
   imports: [],
   audit: [],
+  approvedVersions: [],
+  publicStudyId: "",
+  audienceText: { adult: audienceDrafts.adult, caregiver: audienceDrafts.caregiver },
+  audienceState: { adult: "draft", caregiver: "draft" },
+  lineDecisions: {},
+  briefDecisions: {},
+  lastSpoken: "",
 };
 
 const SessionContext = createContext<SessionApi | null>(null);
@@ -128,6 +152,13 @@ function load(): SessionData {
       imports: parsed.imports ?? [],
       audit: parsed.audit ?? [],
       draftText: parsed.draftText ?? "",
+      approvedVersions: parsed.approvedVersions ?? [],
+      publicStudyId: parsed.publicStudyId ?? "",
+      audienceText: parsed.audienceText ?? empty.audienceText,
+      audienceState: parsed.audienceState ?? empty.audienceState,
+      lineDecisions: parsed.lineDecisions ?? {},
+      briefDecisions: parsed.briefDecisions ?? {},
+      lastSpoken: parsed.lastSpoken ?? "",
     };
   } catch {
     return empty;
@@ -190,6 +221,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           teach: [],
           draft: "draft",
           draftText: "",
+          audienceState: {
+            adult: current.audienceState.adult === "accepted" || current.audienceState.adult === "in-review" ? "stale" : "draft",
+            caregiver: current.audienceState.caregiver === "accepted" || current.audienceState.caregiver === "in-review" ? "stale" : "draft",
+          },
           reviews: {},
           reviewNotes: {},
           audit: pushAudit(
@@ -207,6 +242,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           teach: [],
           draft: "draft",
           draftText: "",
+          audienceState: {
+            adult: current.audienceState.adult === "accepted" || current.audienceState.adult === "in-review" ? "stale" : current.audienceState.adult,
+            caregiver: current.audienceState.caregiver === "accepted" || current.audienceState.caregiver === "in-review" ? "stale" : current.audienceState.caregiver,
+          },
           reviews: {},
           reviewNotes: {},
           audit: pushAudit(current, "Consent removed", "The submitted form was cleared so another file can be checked."),
@@ -245,6 +284,55 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           audit: pushAudit(current, "Plain-language decision", `${draft}. The source clause was not changed.`),
         })),
       setDraftText: (draftText) => setData((current) => ({ ...current, draftText })),
+      setApprovedVersions: (approvedVersions) =>
+        setData((current) => ({
+          ...current,
+          approvedVersions,
+          audit: pushAudit(
+            current,
+            "Approved-version list",
+            approvedVersions.length === 0
+              ? "The list was cleared. Versions stay Unverified."
+              : `A person entered ${approvedVersions.join(", ")}. This is not an IRB approval.`,
+          ),
+        })),
+      setPublicStudyId: (publicStudyId) => setData((current) => ({ ...current, publicStudyId })),
+      setAudienceText: (audience, text) =>
+        setData((current) => ({
+          ...current,
+          audienceText: { ...current.audienceText, [audience]: text },
+          audienceState: {
+            ...current.audienceState,
+            [audience]: current.audienceState[audience] === "accepted" ? "stale" : "draft",
+          },
+        })),
+      setAudienceState: (audience, state) =>
+        setData((current) => ({
+          ...current,
+          audienceState: { ...current.audienceState, [audience]: state },
+          audit: pushAudit(
+            current,
+            "Plain-language decision",
+            `${audience} → ${state}. The source clause was not changed.`,
+          ),
+        })),
+      decideLine: (id, decision) =>
+        setData((current) => ({
+          ...current,
+          lineDecisions: { ...current.lineDecisions, [id]: decision },
+          audit: pushAudit(
+            current,
+            "Block change",
+            `${id} → ${decision}. The source files were not edited.`,
+          ),
+        })),
+      decideBrief: (id, decision) =>
+        setData((current) => ({
+          ...current,
+          briefDecisions: { ...current.briefDecisions, [id]: decision },
+          audit: pushAudit(current, "Design brief", `${id} → ${decision}. This is not a protocol approval.`),
+        })),
+      setLastSpoken: (lastSpoken) => setData((current) => ({ ...current, lastSpoken })),
       addImport: (document) =>
         setData((current) => ({
           ...current,

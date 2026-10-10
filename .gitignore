@@ -10,3 +10,4 @@ dist
 .vercel
 backend/*.db
 backend/.venv/
+__pycache__/

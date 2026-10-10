@@ -166,7 +166,7 @@ a { color: inherit; }
 }
 .workspace { min-width: 0; }
 main { outline: none; }
-.page, .reader { padding: 2.4rem 7vw 5rem; }
+.page, .reader { padding: 2.4rem 7vw 8.5rem; }
 .page h1, .reading h1, .gate h1, .missing h1 {
   font-size: clamp(2.6rem, 4.6vw, 4.4rem);
   max-width: 11em;
@@ -447,12 +447,26 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   z-index: 12;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 2px;
+  max-width: 13rem;
   padding: 3px;
   background: rgba(244, 241, 232, 0.96);
   border: 1px solid rgba(16, 43, 53, 0.18);
   box-shadow: 0 8px 20px rgba(16, 43, 53, 0.08);
 }
+.sheet-work { display: grid; gap: 1.4rem; margin-top: 1.6rem; }
+.sheet-work textarea,
+.page section textarea {
+  width: 100%;
+  min-height: 4.5rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid rgba(0, 0, 0, 0.28);
+  background: #fff;
+  color: #000;
+  font: inherit;
+}
+.type-dock button:disabled { opacity: 0.45; cursor: not-allowed; }
 .type-dock [role="radiogroup"] { display: flex; gap: 2px; }
 .type-dock button {
   width: 32px;
@@ -1098,7 +1112,7 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
 .shell.participant .reader.text-only {
   width: min(1080px, 100%);
   box-sizing: border-box;
-  padding: 1.5rem 4.6rem 5.25rem 1.6rem;
+  padding: 1.5rem 4.6rem 8.5rem 1.6rem;
 }
 .shell.participant .page h1,
 .shell.participant .reading h1 {
@@ -1428,7 +1442,7 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
 @media (max-width: 900px) {
   .shell.participant .page,
   .shell.participant .reader,
-  .shell.participant .reader.text-only { padding: 1.15rem 1rem 5.25rem; }
+  .shell.participant .reader.text-only { padding: 1.15rem 1rem 8.5rem; }
   .shell.participant .reader,
   .shell.participant .reader.text-only { grid-template-columns: 1fr; }
   .shell.participant .chapter-nav {
