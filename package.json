@@ -12,7 +12,6 @@
     "demo": "vitest run src/lib/demo.test.ts"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.117.3",
     "pdfjs-dist": "^5.6.205",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

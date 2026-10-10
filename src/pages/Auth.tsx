@@ -2,7 +2,6 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTitle } from "../components/Chrome";
 import { useSession, type Role } from "../state/Session";
-import { supabase, supabasePublishableKey, supabaseUrl } from "../lib/supabase";
 
 type AccountType = "client" | "researcher";
 type ApiUser = { name: string; role: AccountType };
@@ -13,17 +12,6 @@ function destination(role: Role, next: string | null) {
   if (role === "participant" && next.startsWith("/participant")) return next;
   if (role === "researcher" && next.startsWith("/researcher")) return next;
   return fallback;
-}
-
-async function workspaceRole(userId: string): Promise<Role> {
-  if (!supabase) throw new Error("Supabase is not configured. Add its URL and publishable key to .env.");
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const { data, error } = await supabase.from("profiles").select("role").eq("id", userId).maybeSingle();
-    if (data) return data.role === "researcher" ? "researcher" : "participant";
-    if (error && error.code !== "PGRST116") throw new Error("We could not open your workspace. Please try again.");
-    await new Promise((resolve) => window.setTimeout(resolve, 350));
-  }
-  throw new Error("Your account was created. Please sign in again in a few seconds.");
 }
 
 async function apiRequest(path: string, body: Record<string, string>): Promise<{ access_token: string; user: ApiUser }> {
@@ -103,15 +91,6 @@ export function Login() {
     setError("");
     setLoading(true);
     try {
-      if (supabase) {
-        const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
-        if (authError || !data.user || !data.session) throw new Error(authError?.message || "We could not sign you in.");
-        const role = await workspaceRole(data.user.id);
-        if ((accountType === "researcher") !== (role === "researcher")) throw new Error("This account belongs to the other workspace type.");
-        setRole(role, data.user.user_metadata.full_name);
-        navigate(destination(role, next));
-        return;
-      }
       const result = await apiRequest("/api/auth/login", { email, password, role: accountType });
       const role: Role = result.user.role === "researcher" ? "researcher" : "participant";
       sessionStorage.setItem("aetheria_token", result.access_token);
@@ -149,23 +128,6 @@ export function Register() {
     if (password !== confirmation) { setError("The passwords do not match."); return; }
     setLoading(true);
     try {
-      if (supabase && supabaseUrl && supabasePublishableKey && accountType === "client") {
-        const { data, error: authError } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name.trim() }, emailRedirectTo: `${window.location.origin}/login` } });
-        if (authError || !data.user) throw new Error(authError?.message || "We could not create your account.");
-        if (!data.session) { setNotice("Check your email to confirm your account, then return here to sign in."); return; }
-      } else if (supabase && supabaseUrl && supabasePublishableKey) {
-        const response = await fetch(`${supabaseUrl}/functions/v1/register-researcher`, { method: "POST", headers: { "Content-Type": "application/json", apikey: supabasePublishableKey, Authorization: `Bearer ${supabasePublishableKey}` }, body: JSON.stringify({ name, email, password, researcherKey }) });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(result.error || "We could not create your researcher account.");
-      }
-      if (supabase) {
-        const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-        if (signInError || !data.user || !data.session) throw new Error(signInError?.message || "Account created. Confirm your email, then sign in.");
-        const role = await workspaceRole(data.user.id);
-        setRole(role, data.user.user_metadata.full_name);
-        navigate(destination(role, null));
-        return;
-      }
       const result = await apiRequest("/api/auth/register", { name, email, password, role: accountType, researcher_key: researcherKey });
       const role: Role = result.user.role === "researcher" ? "researcher" : "participant";
       sessionStorage.setItem("aetheria_token", result.access_token);
@@ -194,10 +156,7 @@ export function ForgotPassword() {
     setNotice("");
     setLoading(true);
     try {
-      if (!supabase) throw new Error("Supabase is not configured. Add the project URL and publishable key to .env.");
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/login` });
-      if (resetError) throw resetError;
-      setNotice("If an account exists for that email, a password-reset link is on its way.");
+      setNotice("Password reset is not set up for this local demo. Please contact your study team.");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "We could not send the password-reset email.");
     } finally {
@@ -205,5 +164,5 @@ export function ForgotPassword() {
     }
   }
 
-  return <main className="auth-gate" id="content"><AuthHeader label="Account recovery" /><section className="auth-layout" aria-label="Password reset"><div className="auth-intro"><p className="kicker">Account recovery</p><h1>Start fresh,<br />securely.</h1><p className="auth-lede">Enter the email connected to your Aetheria account. If it exists, Supabase will send a secure reset link.</p></div><form className="auth-form" onSubmit={requestReset}><div className="auth-form-heading"><p className="kicker">Reset password</p><h2>Check your inbox</h2></div><label>Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="you@example.com" required /></label>{error && <p className="auth-error" role="alert">{error}</p>}{notice && <p className="auth-notice" role="status">{notice}</p>}<button className="btn auth-submit" type="submit" disabled={loading}>{loading ? "Sending…" : "Send reset link"}</button><div className="auth-meta"><span>Remembered it?</span><Link to="/login">Back to sign in</Link></div></form></section><AuthFooter /></main>;
+  return <main className="auth-gate" id="content"><AuthHeader label="Account recovery" /><section className="auth-layout" aria-label="Password reset"><div className="auth-intro"><p className="kicker">Account recovery</p><h1>Need help<br />signing in?</h1><p className="auth-lede">This local demo does not send password reset emails.</p></div><form className="auth-form" onSubmit={requestReset}><div className="auth-form-heading"><p className="kicker">Password help</p><h2>Contact your team</h2></div><label>Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="you@example.com" required /></label>{error && <p className="auth-error" role="alert">{error}</p>}{notice && <p className="auth-notice" role="status">{notice}</p>}<button className="btn auth-submit" type="submit" disabled={loading}>{loading ? "Checking…" : "Get help"}</button><div className="auth-meta"><span>Remembered it?</span><Link to="/login">Back to sign in</Link></div></form></section><AuthFooter /></main>;
 }
