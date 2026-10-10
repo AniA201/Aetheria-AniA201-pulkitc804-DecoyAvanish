@@ -1,6 +1,9 @@
-import { listPassages } from "../data/documents";
-import { consentDoc, factFlagged, facts, plainDraft, sectionById, teachFixtures } from "../data/study";
+import { listPassages, type Passage } from "../data/documents";
+import { consentDoc, factFlagged, facts, plainDraft, sectionById, teachFixtures, teachPrompts } from "../data/study";
+import { checkClaim, guardQuestion, runTool, validateFinal } from "./agent";
 import { answerQuestion, knownSectionIds } from "./answers";
+import { checkBriefingJson, checkTeachJson } from "./coach";
+import { loadDemoConsent } from "./consent";
 import { inspectText, rejectUpload } from "./ingest";
 import { validateModelDraft } from "./ollama";
 import { auditPlainText } from "./plain";
@@ -211,6 +214,83 @@ export function runChecks(): Check[] {
       listPassages().some((passage) => passage.version === "v2.0" && !passage.usable) &&
       listPassages().some((passage) => passage.documentId === "PROT-AETHER-01" && passage.kind === "protocol"),
     detail: `${listPassages().length} passages`,
+  });
+
+  const demo = loadDemoConsent();
+  const visitPassage = demo.passages.find((passage) => passage.sectionId === "procedures");
+  const seen = new Map<string, Passage>(visitPassage ? [[visitPassage.id, visitPassage]] : []);
+  checks.push({
+    id: "agent-fake-citation",
+    name: "Guide: a Gemini answer citing a passage it was not given is rejected",
+    passed:
+      validateFinal({ answer: "You come 6 times.", supported: true, passage_ids: ["ICF-AETHER-01:v9:made-up"] }, seen) === null &&
+      validateFinal({ answer: "You come to the clinic 6 times.", supported: true, passage_ids: [visitPassage?.id ?? ""] }, seen) !== null,
+    detail: "Only ids returned by a tool in the same run can be cited.",
+  });
+
+  checks.push({
+    id: "agent-figure-leak",
+    name: "Guide: a Gemini answer that adds a figure the passage lacks is rejected",
+    passed:
+      validateFinal({ answer: "There are 8 visits over 24 weeks.", supported: true, passage_ids: [visitPassage?.id ?? ""] }, seen) === null &&
+      validateFinal({ answer: "Not 8 visits: the form says 6 times over about 16 weeks.", supported: true, passage_ids: [visitPassage?.id ?? ""] }, seen, "Is it 8 visits?") !== null &&
+      validateFinal({ answer: "The form says 6 times, not 8 visits, over 24 weeks.", supported: true, passage_ids: [visitPassage?.id ?? ""] }, seen, "Is it 8 visits?") === null,
+    detail: "8 visits and 24 weeks are protocol figures. A correction may repeat a figure the person said, never one they did not.",
+  });
+
+  checks.push({
+    id: "agent-guard",
+    name: "Guide: dose and cure questions are refused before Gemini is called",
+    passed: guardQuestion("What dose of Aetherol will I get?") !== null && guardQuestion("Will this cure my migraines?") !== null && guardQuestion("Can I leave the study?") === null,
+    detail: guardQuestion("What dose of Aetherol will I get?") ?? "Not refused",
+  });
+
+  const claim = checkClaim("I heard there are 8 visits and $80 a visit", demo.passages);
+  checks.push({
+    id: "agent-claim",
+    name: "Guide: a heard figure is checked against the consent (8 visits → 6, $80 → $50)",
+    passed:
+      claim.length === 2 &&
+      claim.every((result) => result.verdict === "differs") &&
+      claim.some((result) => "formSays" in result && /^6/.test(result.formSays)) &&
+      claim.some((result) => "formSays" in result && result.formSays.replace(/\s/g, "") === "$50"),
+    detail: claim.map((result) => `${result.claimed}: ${result.verdict}${"formSays" in result ? ` (${result.formSays})` : ""}`).join("; "),
+  });
+
+  const participantSeen = new Map<string, Passage>();
+  runTool(
+    "search_consent",
+    { query: "visits weeks payment protocol" },
+    { role: "participant", consent: demo, reviews: {}, navigate: () => undefined, saveQuestion: () => undefined },
+    participantSeen,
+  );
+  checks.push({
+    id: "agent-participant-scope",
+    name: "Guide: participant searches never return protocol or outdated passages",
+    passed: participantSeen.size > 0 && [...participantSeen.values()].every((passage) => passage.kind === "consent" && passage.usable && passage.version === "v2.1"),
+    detail: `${participantSeen.size} passages, all from the submitted consent`,
+  });
+
+  const assignmentPrompt = teachPrompts[0];
+  const assignmentSource = demo.passages.find((passage) => passage.sectionId === assignmentPrompt.sectionId)?.text ?? "";
+  checks.push({
+    id: "gemini-teach-guard",
+    name: "Teach-Back: Gemini may only credit listed ideas and may not add figures or say “you consented”",
+    passed:
+      checkTeachJson({ covered: [assignmentPrompt.concepts[0].id], misunderstanding: null, feedback: "You named chance." }, assignmentPrompt, assignmentSource) !== null &&
+      checkTeachJson({ covered: ["invented"], misunderstanding: null, feedback: "Good." }, assignmentPrompt, assignmentSource) === null &&
+      checkTeachJson({ covered: [], misunderstanding: null, feedback: "There are 8 visits." }, assignmentPrompt, assignmentSource) === null &&
+      checkTeachJson({ covered: [], misunderstanding: null, feedback: "You have consented." }, assignmentPrompt, assignmentSource) === null,
+    detail: "Unknown idea ids, figures not in the passage, and consent language fall back to local matching.",
+  });
+
+  checks.push({
+    id: "gemini-briefing-guard",
+    name: "My Summary: a Gemini briefing that adds a study figure is rejected",
+    passed:
+      checkBriefingJson({ summary: "You saved one question.", questions: [{ text: "Can my cousin join?", reason: "Saved" }] }, "{}") !== null &&
+      checkBriefingJson({ summary: "You get $80 per visit.", questions: [] }, "{}") === null,
+    detail: "The briefing may only restate what this browser session recorded.",
   });
 
   return checks;

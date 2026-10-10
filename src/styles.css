@@ -1290,3 +1290,52 @@ html[data-contrast="high"] .shell.participant .lede,
 html[data-contrast="high"] .shell.participant .lede.dark {
   color: #fff;
 }
+
+/* Aetheria Guide: a paper card on the mint shell, same type and pills as the pages */
+.guide-launch {
+  position: fixed; right: 1.25rem; bottom: 1.25rem; z-index: 40;
+  font: inherit; font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 0.8rem 1.15rem; border-radius: 999px; cursor: pointer;
+  color: #000; background: #f4f1e8; border: 1px solid rgba(0, 0, 0, 0.7);
+  box-shadow: 0 16px 36px rgba(16, 43, 53, 0.12);
+}
+.guide-launch:hover { background: #000; color: #f4f1e8; }
+.guide-panel {
+  position: fixed; right: 1rem; bottom: 1rem; z-index: 40;
+  width: min(25rem, calc(100vw - 2rem)); height: min(38rem, calc(100vh - 2rem));
+  display: grid; grid-template-rows: auto auto 1fr auto;
+  background: #f4f1e8; color: #1a1d1c;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  box-shadow: 0 24px 60px rgba(16, 43, 53, 0.18);
+  overflow: hidden;
+}
+.guide-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: 1rem 1.15rem 0.8rem; border-bottom: 1px solid rgba(0, 0, 0, 0.18); }
+.guide-head strong { display: block; font-weight: 500; font-size: 1.15rem; letter-spacing: -0.01em; }
+.guide-head small { color: rgba(0, 0, 0, 0.6); }
+.guide-close { font: inherit; background: none; border: 0; padding: 0; color: #000; cursor: pointer; text-decoration: underline; }
+.guide-notice { margin: 0; padding: 0.55rem 1.15rem; font-size: 0.8rem; line-height: 1.4; color: rgba(0, 0, 0, 0.7); background: #d0f0dc; }
+.guide-log { overflow-y: auto; padding: 0.9rem 1.15rem; display: grid; align-content: start; gap: 0.9rem; }
+.guide-starters { display: grid; gap: 0.5rem; }
+.shell .guide-panel .chip { letter-spacing: 0; padding: 0.55rem 0.85rem; font-size: 0.92rem; line-height: 1.3; white-space: normal; text-align: left; }
+.shell .guide-panel .chip:hover { background: #000; color: #f4f1e8; }
+.guide-question { margin: 0 0 0 auto; max-width: 85%; text-align: right; }
+.guide-thinking { margin: 0.3rem 0 0; color: rgba(0, 0, 0, 0.55); font-style: italic; }
+.guide-reply { padding-top: 0.6rem; margin-top: 0.4rem; border-top: 1px solid rgba(0, 0, 0, 0.18); }
+.guide-reply p { margin: 0 0 0.5rem; }
+.guide-steps { margin: 0 0 0.5rem; padding-left: 1.1rem; font-size: 0.8rem; color: rgba(0, 0, 0, 0.6); }
+.guide-quote { margin: 0.5rem 0; padding: 0.1rem 0 0.1rem 0.8rem; border-left: 2px solid #000; font-size: 0.9rem; }
+.guide-quote p { margin: 0 0 0.3rem; }
+.guide-quote cite { font-style: normal; font-size: 0.75rem; color: rgba(0, 0, 0, 0.6); }
+.guide-quote a { color: #000; }
+.guide-engine { display: block; font-size: 0.75rem; color: rgba(0, 0, 0, 0.55); }
+.guide-form { display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem 1.15rem 0.9rem; border-top: 1px solid rgba(0, 0, 0, 0.18); }
+.guide-form input { flex: 1; min-width: 0; font: inherit; padding: 0.55rem 0; border: 0; border-bottom: 1px solid rgba(26, 29, 28, 0.35); background: transparent; color: #1a1d1c; }
+.guide-form input:focus { outline: none; border-bottom-color: #000; }
+.shell .guide-form .btn { padding: 0.55rem 1rem; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+html[data-contrast="high"] .guide-launch,
+html[data-contrast="high"] .guide-panel { background: #000; color: #fff; border-color: #fff; }
+html[data-contrast="high"] .guide-notice { background: #111; color: #fff; }
+html[data-contrast="high"] .guide-quote { border-left-color: #fff; }
+html[data-contrast="high"] .guide-quote a,
+html[data-contrast="high"] .guide-close { color: #fff; }

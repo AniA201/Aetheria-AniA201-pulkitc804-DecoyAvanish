@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -28,8 +28,10 @@ describe("PDF consent extraction", () => {
     expect(extracted.ok).toBe(false);
   });
 
-  it("reads the downloaded sample consent and keeps every page", async () => {
-    const file = "/Users/anishallada/Downloads/sample_IC.pdf";
+  // This sample PDF lives on one teammate's computer, so the test runs only where it exists.
+  const sampleConsent = "/Users/anishallada/Downloads/sample_IC.pdf";
+  it.skipIf(!existsSync(sampleConsent))("reads the downloaded sample consent and keeps every page", async () => {
+    const file = sampleConsent;
     const extracted = await extractPdfText(new Uint8Array(readFileSync(file)));
     if (!extracted.ok) throw new Error(extracted.error);
     expect(extracted.ok).toBe(true);

@@ -16,7 +16,7 @@ export type Answer = {
   documentId: string;
   version: string;
   passageId?: string;
-  engine: "local-rules" | "ollama";
+  engine: "local-rules" | "ollama" | "gemini";
   model?: string;
 };
 

@@ -14,6 +14,8 @@ export type TeachResult = {
   feedback: string;
   documentId: string;
   version: string;
+  engine?: "gemini" | "ollama" | "local";
+  note?: string;
 };
 
 function promptById(id: string): TeachPrompt {
@@ -22,6 +24,16 @@ function promptById(id: string): TeachPrompt {
     throw new Error(`Unknown teach-back prompt ${id}`);
   }
   return prompt;
+}
+
+/** Empty, unsure, or a bare yes / "I consent". These never count as understanding and never go to a model. */
+export function isNonAnswer(response: string): boolean {
+  const clean = response.trim();
+  return (
+    !clean ||
+    /^(i don'?t know|do not know|not sure|no idea|idk)\.?$/i.test(clean) ||
+    /^(yes|ok|okay|i understand|i consent|i agree|sure)\.?$/i.test(clean)
+  );
 }
 
 export function assessTeachback(promptId: string, response: string, prompts: TeachPrompt[] = teachPrompts): TeachResult {

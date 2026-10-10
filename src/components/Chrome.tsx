@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 import { useSession, type Role } from "../state/Session";
+import { AgentPanel } from "./AgentPanel";
 
 export function useTitle(title: string) {
   useEffect(() => {
@@ -144,6 +145,7 @@ export function Shell({ mode }: { mode: Role }) {
           <Outlet />
         </main>
       </div>
+      <AgentPanel role={mode} />
     </div>
   );
 }
