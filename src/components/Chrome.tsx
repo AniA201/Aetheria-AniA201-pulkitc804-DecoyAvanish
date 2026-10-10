@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 import { useSession, type Role } from "../state/Session";
 import { AgentPanel } from "./AgentPanel";
-import { supabase } from "../lib/supabase";
 
 export function useTitle(title: string) {
   useEffect(() => {
@@ -152,7 +151,6 @@ export function Shell({ mode }: { mode: Role }) {
   }, [location.pathname]);
 
   const signOut = async () => {
-    await supabase?.auth.signOut();
     sessionStorage.removeItem("aetheria_token");
     setRole(null);
   };

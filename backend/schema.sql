@@ -1,18 +1,12 @@
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
-DO $$ BEGIN
-  CREATE TYPE account_role AS ENUM ('client', 'researcher');
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
-
+-- SQLite schema. The API creates this automatically on startup.
 CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email VARCHAR(255) NOT NULL UNIQUE,
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
-  full_name VARCHAR(120) NOT NULL,
-  role account_role NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  last_login_at TIMESTAMPTZ
+  full_name TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('client', 'researcher')),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_login_at TEXT
 );
 
 CREATE INDEX IF NOT EXISTS users_email_idx ON users (email);

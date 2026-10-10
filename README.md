@@ -24,7 +24,7 @@ Optional model settings live in `.env.example`. Copy it to `.env` only if you wa
 
 ### Team secrets (`.env.team`)
 
-API keys and passwords the team shares (Gemini now; Vercel, Supabase, and others later) live in `.env.team`. The file is committed, but **every value is encrypted**, so anyone without the decryption key sees only `encrypted:…`.
+API keys and passwords the team shares (Gemini now; backend secrets and others later) live in `.env.team`. The file is committed, but **every value is encrypted**, so anyone without the decryption key sees only `encrypted:…`.
 
 1. Ask Pulkit for the decryption key in a private message. Never post it in GitHub, an issue, or a group chat.
 2. Save it as a file named `.env.keys` in the repo root (git ignores it):
@@ -38,10 +38,9 @@ To add or change a secret (it's encrypted as it's saved): `npm run secret:set --
 | Name | Used by |
 |---|---|
 | `GEMINI_API_KEY`, `GEMINI_MODEL` | `npm run dev` (dev server only, never the browser). `GEMINI_MODEL` is a comma-separated list. Free-tier limits are per model (`gemini-3-flash-preview` allows only 20 requests a day), so when one model hits its limit the next is used. |
-| `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` | `npm run dev`, passed to the browser for Supabase sign-in |
 | `DATABASE_URL`, `JWT_SECRET`, `RESEARCHER_REGISTRATION_KEY` | `npm run api` (starts the FastAPI backend on port 8000 with these set) |
 
-Vite puts `VITE_` values into the browser bundle, so use that prefix only for publishable values. Never use it for a service-role key, database URL, password, or JWT secret. A `backend/.env` file, if present, still overrides the team values for the backend. The Supabase edge function's `SUPABASE_SERVICE_ROLE_KEY` belongs in the Supabase dashboard's function secrets, not here.
+Vite puts `VITE_` values into the browser bundle, so use that prefix only for publishable values. Never use it for a database URL, password, or JWT secret. A `backend/.env` file, if present, still overrides the team values for the backend.
 
 ### Aetheria Guide (optional, Gemini free tier)
 

@@ -8,3 +8,5 @@ dist
 !.env.example
 !.env.team
 .vercel
+backend/*.db
+backend/.venv/
