@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 import { useSession, type Role } from "../state/Session";
 import { AgentPanel } from "./AgentPanel";
+import { supabase } from "../lib/supabase";
 
 export function useTitle(title: string) {
   useEffect(() => {
@@ -150,6 +151,12 @@ export function Shell({ mode }: { mode: Role }) {
     setOpen(false);
   }, [location.pathname]);
 
+  const signOut = async () => {
+    await supabase?.auth.signOut();
+    sessionStorage.removeItem("aetheria_token");
+    setRole(null);
+  };
+
   return (
     <div className={`shell ${mode}`}>
       <a className="skip" href="#content">
@@ -197,7 +204,7 @@ export function Shell({ mode }: { mode: Role }) {
         <NavLink className="mode-switch" to="/login">
           Switch role
         </NavLink>
-        <button type="button" className="mode-switch sign-out" onClick={() => setRole(null)}>
+        <button type="button" className="mode-switch sign-out" onClick={signOut}>
           Sign out
         </button>
       </aside>

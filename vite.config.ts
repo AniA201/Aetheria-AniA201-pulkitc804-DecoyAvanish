@@ -8,8 +8,12 @@ const ollamaProxy = {
   },
 };
 
-// The Gemini key is read on the dev server only. It has no VITE_ prefix, so it never
-// reaches the browser bundle. The page posts a request body and this adds the key.
+const apiProxy = {
+  "/api": {
+    target: "http://127.0.0.1:8000",
+  },
+};
+
 function geminiProxy(key: string, model: string): Plugin {
   const handler: Connect.NextHandleFunction = (req, res, next) => {
     const url = req.url ?? "";
@@ -19,9 +23,7 @@ function geminiProxy(key: string, model: string): Plugin {
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify(body));
     };
-    if (url === "/gemini/status" && req.method === "GET") {
-      return send(200, { configured: Boolean(key), model });
-    }
+    if (url === "/gemini/status" && req.method === "GET") return send(200, { configured: Boolean(key), model });
     if (url !== "/gemini/generate" || req.method !== "POST") return send(404, { error: "Not found" });
     if (!key) return send(503, { error: "GEMINI_API_KEY is not set in .env.local" });
 
@@ -34,15 +36,12 @@ function geminiProxy(key: string, model: string): Plugin {
     });
     req.on("end", async () => {
       try {
-        const upstream = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-            body: Buffer.concat(chunks).toString("utf8"),
-            signal: AbortSignal.timeout(25_000),
-          },
-        );
+        const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+          body: Buffer.concat(chunks).toString("utf8"),
+          signal: AbortSignal.timeout(25_000),
+        });
         res.statusCode = upstream.status;
         res.setHeader("Content-Type", "application/json");
         res.end(await upstream.text());
@@ -51,28 +50,14 @@ function geminiProxy(key: string, model: string): Plugin {
       }
     });
   };
-  return {
-    name: "aetheria-gemini-proxy",
-    configureServer(server) {
-      server.middlewares.use(handler);
-    },
-    configurePreviewServer(server) {
-      server.middlewares.use(handler);
-    },
-  };
+  return { name: "aetheria-gemini-proxy", configureServer(server) { server.middlewares.use(handler); }, configurePreviewServer(server) { server.middlewares.use(handler); } };
 }
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   return {
     plugins: [react(), geminiProxy(env.GEMINI_API_KEY ?? "", env.GEMINI_MODEL || "gemini-3-flash-preview")],
-    server: {
-      host: "0.0.0.0",
-      port: 5173,
-      proxy: ollamaProxy,
-    },
-    preview: {
-      proxy: ollamaProxy,
-    },
+    server: { host: "0.0.0.0", port: 5173, proxy: { ...ollamaProxy, ...apiProxy } },
+    preview: { proxy: { ...ollamaProxy, ...apiProxy } },
   };
 });
