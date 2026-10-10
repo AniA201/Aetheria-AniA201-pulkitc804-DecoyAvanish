@@ -12,7 +12,7 @@ Deno.serve(async (request) => {
   try {
     const { name, email, password, researcherKey } = await request.json();
     if (!name?.trim() || !email?.trim() || !password || !researcherKey) throw new Error("Complete every field to create a researcher account.");
-    if (password.length < 12) throw new Error("Use a password with at least 12 characters.");
+    if (password.length < 8) throw new Error("Use a password with at least 8 characters.");
     if (researcherKey !== Deno.env.get("RESEARCHER_REGISTRATION_KEY")) return Response.json({ error: "That researcher registration key is not valid." }, { status: 403, headers: corsHeaders });
 
     const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");

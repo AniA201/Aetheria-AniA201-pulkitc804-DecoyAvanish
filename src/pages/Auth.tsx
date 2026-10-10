@@ -17,9 +17,13 @@ function destination(role: Role, next: string | null) {
 
 async function workspaceRole(userId: string): Promise<Role> {
   if (!supabase) throw new Error("Supabase is not configured. Add its URL and publishable key to .env.");
-  const { data, error } = await supabase.from("profiles").select("role").eq("id", userId).single();
-  if (error) throw new Error("Your account is ready, but its workspace is still being prepared. Please try again in a moment.");
-  return data.role === "researcher" ? "researcher" : "participant";
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const { data, error } = await supabase.from("profiles").select("role").eq("id", userId).maybeSingle();
+    if (data) return data.role === "researcher" ? "researcher" : "participant";
+    if (error && error.code !== "PGRST116") throw new Error("We could not open your workspace. Please try again.");
+    await new Promise((resolve) => window.setTimeout(resolve, 350));
+  }
+  throw new Error("Your account was created. Please sign in again in a few seconds.");
 }
 
 async function apiRequest(path: string, body: Record<string, string>): Promise<{ access_token: string; user: ApiUser }> {
@@ -47,8 +51,31 @@ function AuthHeader({ label }: { label: string }) {
 }
 
 function AuthFooter() {
-  return <footer className="auth-footer"><span>© Aetheria</span><span>Protected research access</span><span>Privacy &amp; terms</span></footer>;
+  return <footer className="auth-footer"><span>© Aetheria</span><span>Private and secure</span><span>Medical research workspace</span></footer>;
 }
+
+const accountCopy = {
+  client: {
+    eyebrow: "Clinical research, clearly explained",
+    title: <>Know your<br />care first.</>,
+    description: "Read your study details, ask questions, and decide at your own pace.",
+    trust: "Made for study clients",
+    trustDetail: "Your information stays private.",
+    signInNote: "Sign in to view your study and consent information.",
+    registerTitle: <>Join your<br />study.</>,
+    registerNote: "Create an account to keep your study details in one place.",
+  },
+  researcher: {
+    eyebrow: "A simple space for your study team",
+    title: <>Keep your<br />study clear.</>,
+    description: "Review study information, support clients, and keep your research work organized.",
+    trust: "Made for research teams",
+    trustDetail: "Private access for approved team members.",
+    signInNote: "Sign in to manage your research workspace.",
+    registerTitle: <>Set up your<br />team space.</>,
+    registerNote: "Use the private key from your study lead to create your account.",
+  },
+};
 
 function RoleSwitch({ value, onChange }: { value: AccountType; onChange: (role: AccountType) => void }) {
   return <div className="auth-role-switch" role="radiogroup" aria-label="Account type">
@@ -69,6 +96,7 @@ export function Login() {
   const [loading, setLoading] = useState(false);
   const { setRole } = useSession();
   const navigate = useNavigate();
+  const copy = accountCopy[accountType];
 
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -96,7 +124,7 @@ export function Login() {
     }
   }
 
-  return <main className="auth-gate" id="content"><AuthHeader label="Secure workspace" /><section className="auth-layout" aria-label="Account sign in"><div className="auth-intro"><p className="kicker">Return to the work</p><h1>Sign in with<br />intention.</h1><p className="auth-lede">Aetheria keeps each study conversation in the right hands—whether you are taking part or advancing the research.</p><div className="auth-caption"><span aria-hidden="true">↘</span><p>Your account type determines the workspace you enter.</p></div></div><form className="auth-form" onSubmit={signIn}><div className="auth-form-heading"><p className="kicker">Account access</p><h2>Choose your view</h2></div><RoleSwitch value={accountType} onChange={setAccountType} /><label>Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="you@example.com" required /></label><label>Password<span className="password-field"><input type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" placeholder="Enter your password" required /><button type="button" onClick={() => setShowPassword((visible) => !visible)}>{showPassword ? "Hide" : "Show"}</button></span></label>{error && <p className="auth-error" role="alert">{error}</p>}<button className="btn auth-submit" type="submit" disabled={loading}>{loading ? "Signing in…" : `Enter as ${accountType}`}</button><div className="auth-meta"><Link to="/forgot-password">Forgot your password?</Link><Link to="/register">Need an account?</Link></div></form></section><AuthFooter /></main>;
+  return <main className="auth-gate auth-reference" id="content"><section className="auth-reference-layout" aria-label="Account sign in"><aside className="auth-showcase auth-showcase-minimal"><Link to="/" className="auth-showcase-brand"><span className="folio-seal" aria-hidden="true" /><strong>Aetheria</strong></Link><p className="auth-showcase-word" aria-hidden="true">Aetheria</p><div className="auth-showcase-copy"><p className="kicker">{copy.eyebrow}</p><h1>{copy.title}</h1><p>{copy.description}</p></div><div className="auth-showcase-trust"><span className="auth-trust-icon">+</span><p><strong>{copy.trust}</strong><small>{copy.trustDetail}</small></p></div></aside><section className="auth-login-shell"><div className="auth-login-card"><div className="auth-login-icon" aria-hidden="true">+</div><div className="auth-login-title"><h2>Welcome back</h2><p>{copy.signInNote}</p></div><form className="auth-form auth-form-reference" onSubmit={signIn}><RoleSwitch value={accountType} onChange={setAccountType} /><label>Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="you@example.com" required /></label><label>Password<span className="password-field"><input type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" placeholder="Enter your password" required /><button type="button" onClick={() => setShowPassword((visible) => !visible)}>{showPassword ? "Hide" : "Show"}</button></span></label><div className="auth-remember"><label><input type="checkbox" /> Remember me</label><Link to="/forgot-password">Forgot password?</Link></div>{error && <p className="auth-error" role="alert">{error}</p>}<button className="btn auth-submit" type="submit" disabled={loading}>{loading ? "Signing in…" : "Sign in"}</button><p className="auth-signup-line">New to Aetheria? <Link to="/register">Create an account</Link></p></form></div><p className="auth-login-note">Secure access for study clients and research teams.</p></section></section></main>;
 }
 
 export function Register() {
@@ -112,6 +140,7 @@ export function Register() {
   const [loading, setLoading] = useState(false);
   const { setRole } = useSession();
   const navigate = useNavigate();
+  const copy = accountCopy[accountType];
 
   async function createAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -149,7 +178,7 @@ export function Register() {
     }
   }
 
-  return <main className="auth-gate register-gate" id="content"><AuthHeader label="Account registration" /><section className="auth-layout"><div className="auth-intro"><p className="kicker">Begin here</p><h1>{accountType === "client" ? <>Your study.<br />Your pace.</> : <>Research with<br />clarity.</>}</h1><p className="auth-lede">{accountType === "client" ? "Create a client account to keep your consent materials, questions, and progress together." : "Create a researcher account with the private registration key shared by your study team."}</p><div className="auth-caption"><span aria-hidden="true">↘</span><p>{accountType === "client" ? "Client accounts can be created without a private key." : "The private key is checked securely by Supabase."}</p></div></div><form className="auth-form" onSubmit={createAccount}><div className="auth-form-heading"><p className="kicker">Account setup</p><h2>Create your account</h2></div><RoleSwitch value={accountType} onChange={setAccountType} /><label>Your name<input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" placeholder="Your full name" required /></label><label>Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="you@example.com" required /></label><label>Password <small>At least 12 characters</small><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" placeholder="Create a password" minLength={12} required /></label><label>Confirm password<input type="password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} autoComplete="new-password" placeholder="Repeat your password" minLength={12} required /></label>{accountType === "researcher" && <label>Private researcher key<input type="password" value={researcherKey} onChange={(event) => setResearcherKey(event.target.value)} autoComplete="off" placeholder="Enter the private key" required /></label>}{error && <p className="auth-error" role="alert">{error}</p>}{notice && <p className="auth-notice" role="status">{notice}</p>}<button className="btn auth-submit" type="submit" disabled={loading}>{loading ? "Creating account…" : `Create ${accountType} account`}</button><div className="auth-meta"><span>{accountType === "researcher" ? "Ask your study lead for the private key." : "Researcher? Choose Researcher above."}</span><Link to="/login">Already have an account?</Link></div></form></section><AuthFooter /></main>;
+  return <main className="auth-gate auth-reference" id="content"><section className="auth-reference-layout" aria-label="Create an account"><aside className="auth-showcase auth-showcase-minimal"><Link to="/" className="auth-showcase-brand"><span className="folio-seal" aria-hidden="true" /><strong>Aetheria</strong></Link><p className="auth-showcase-word" aria-hidden="true">Aetheria</p><div className="auth-showcase-copy"><p className="kicker">{copy.eyebrow}</p><h1>{copy.registerTitle}</h1><p>{copy.registerNote}</p></div><div className="auth-showcase-trust"><span className="auth-trust-icon">+</span><p><strong>{copy.trust}</strong><small>{copy.trustDetail}</small></p></div></aside><section className="auth-login-shell"><div className="auth-login-card"><div className="auth-login-icon" aria-hidden="true">+</div><div className="auth-login-title"><h2>Create account</h2><p>{accountType === "client" ? "Start with your study details." : "Create access for your research team."}</p></div><form className="auth-form auth-form-reference" onSubmit={createAccount}><RoleSwitch value={accountType} onChange={setAccountType} /><label>Your name<input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" placeholder="Your full name" required /></label><label>Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="you@example.com" required /></label><label>Password <small>At least 8 characters</small><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" placeholder="Create a password" minLength={8} required /></label><label>Confirm password<input type="password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} autoComplete="new-password" placeholder="Type your password again" minLength={8} required /></label>{accountType === "researcher" && <label>Private researcher key<input type="password" value={researcherKey} onChange={(event) => setResearcherKey(event.target.value)} autoComplete="off" placeholder="Enter the key from your study lead" required /></label>}{error && <p className="auth-error" role="alert">{error}</p>}{notice && <p className="auth-notice" role="status">{notice}</p>}<button className="btn auth-submit" type="submit" disabled={loading}>{loading ? "Creating account…" : "Create account"}</button><p className="auth-signup-line">Already have an account? <Link to="/login">Sign in</Link></p></form></div><p className="auth-login-note">{accountType === "researcher" ? "Ask your study lead if you need the private key." : "Researcher? Select Researcher above."}</p></section></section></main>;
 }
 
 export function ForgotPassword() {

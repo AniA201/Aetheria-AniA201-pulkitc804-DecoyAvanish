@@ -81,8 +81,8 @@ def register(payload: RegisterRequest):
     name = payload.name.strip()
     if len(name) < 2:
         raise HTTPException(status_code=422, detail="Please enter your name.")
-    if len(payload.password) < 12:
-        raise HTTPException(status_code=422, detail="Use a password with at least 12 characters.")
+    if len(payload.password) < 8:
+        raise HTTPException(status_code=422, detail="Use a password with at least 8 characters.")
     if payload.role == "researcher" and (not RESEARCHER_REGISTRATION_KEY or not payload.researcher_key or not secrets.compare_digest(payload.researcher_key, RESEARCHER_REGISTRATION_KEY)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="That researcher registration key is not valid.")
 
