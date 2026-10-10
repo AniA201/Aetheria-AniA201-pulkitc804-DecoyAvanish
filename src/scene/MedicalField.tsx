@@ -4,7 +4,6 @@ import * as THREE from "three";
 const paper = "#f3efe4";
 const ink = "#1a1d1c";
 const clay = "#8d4e38";
-const mute = "#5c6562";
 
 function wrap(
   ctx: CanvasRenderingContext2D,
@@ -41,7 +40,7 @@ function paintSheet(ctx: CanvasRenderingContext2D, kind: "consent" | "protocol",
   ctx.fillRect(72, 78, 148, 3);
 
   ctx.font = "500 22px Newsreader, Georgia, serif";
-  ctx.fillStyle = mute;
+  ctx.fillStyle = ink;
   ctx.fillText(kind === "consent" ? "INFORMED CONSENT" : "PROTOCOL", 72, 128);
 
   ctx.font = "500 54px Newsreader, Georgia, serif";
@@ -49,7 +48,7 @@ function paintSheet(ctx: CanvasRenderingContext2D, kind: "consent" | "protocol",
   ctx.fillText(kind === "consent" ? "ICF-AETHER-01" : "PROT-AETHER-01", 72, 196);
 
   ctx.font = "400 22px Newsreader, Georgia, serif";
-  ctx.fillStyle = mute;
+  ctx.fillStyle = ink;
   ctx.fillText(kind === "consent" ? "Version 2.1  ·  12 March 2026" : "Version 3.0  ·  2 March 2026", 72, 238);
 
   ctx.strokeStyle = clay;
@@ -81,16 +80,21 @@ function paintSheet(ctx: CanvasRenderingContext2D, kind: "consent" | "protocol",
     const flagged = index < 3;
     ctx.fillStyle = flagged ? "rgba(141, 78, 56, 0.08)" : "transparent";
     ctx.fillRect(72, y - 28, width - 144, 64);
-    ctx.fillStyle = mute;
+    ctx.fillStyle = ink;
     ctx.font = "500 18px Newsreader, Georgia, serif";
     ctx.fillText(label.toUpperCase(), 92, y);
-    ctx.fillStyle = ink;
     ctx.font = "500 28px Newsreader, Georgia, serif";
     ctx.fillText(value, 340, y + 2);
+    ctx.strokeStyle = "rgba(26, 29, 28, 0.45)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(92, y + 16);
+    ctx.lineTo(width - 110, y + 16);
+    ctx.stroke();
     y += 78;
   });
 
-  ctx.fillStyle = mute;
+  ctx.fillStyle = ink;
   ctx.font = "400 22px Newsreader, Georgia, serif";
   const blurb =
     kind === "consent"
@@ -104,8 +108,41 @@ function paintSheet(ctx: CanvasRenderingContext2D, kind: "consent" | "protocol",
   ctx.lineTo(width - 72, height - 150);
   ctx.stroke();
   ctx.font = "italic 400 20px Newsreader, Georgia, serif";
-  ctx.fillStyle = mute;
+  ctx.fillStyle = ink;
   ctx.fillText(kind === "consent" ? "Signature line left blank" : "Not a consent form", 72, height - 112);
+}
+
+function paintLeaf(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  title: string,
+  lines: string[],
+) {
+  ctx.fillStyle = paper;
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeStyle = "rgba(26, 29, 28, 0.18)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(36, 36, width - 72, height - 72);
+  ctx.fillStyle = ink;
+  ctx.fillRect(72, 88, 132, 3);
+  ctx.font = "500 22px Newsreader, Georgia, serif";
+  ctx.fillText("INFORMED CONSENT", 72, 140);
+  ctx.font = "500 48px Newsreader, Georgia, serif";
+  ctx.fillText(title, 72, 210);
+  ctx.font = "400 26px Newsreader, Georgia, serif";
+  let y = 280;
+  for (const line of lines) {
+    y = wrap(ctx, line, 72, y, width - 170, 40);
+    y += 16;
+  }
+  ctx.strokeStyle = "rgba(26, 29, 28, 0.35)";
+  ctx.beginPath();
+  ctx.moveTo(72, height - 150);
+  ctx.lineTo(width - 72, height - 150);
+  ctx.stroke();
+  ctx.font = "italic 400 20px Newsreader, Georgia, serif";
+  ctx.fillText("Signature line left blank", 72, height - 112);
 }
 
 function makeTexture(kind: "consent" | "protocol") {
@@ -121,6 +158,19 @@ function makeTexture(kind: "consent" | "protocol") {
   return { canvas, context, texture };
 }
 
+function makeLeafTexture(title: string, lines: string[]) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1024;
+  canvas.height = 1320;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Could not draw the consent sheet.");
+  paintLeaf(context, canvas.width, canvas.height, title, lines);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  return { canvas, context, texture, title, lines };
+}
+
 function smoothstep(value: number) {
   const t = Math.min(1, Math.max(0, value));
   return t * t * (3 - 2 * t);
@@ -130,12 +180,12 @@ function makePage(texture: THREE.Texture, width: number, height: number) {
   const group = new THREE.Group();
   const face = new THREE.Mesh(
     new THREE.PlaneGeometry(width, height),
-    new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9, metalness: 0 }),
+    new THREE.MeshBasicMaterial({ map: texture, toneMapped: false }),
   );
   face.position.z = 0.02;
   const edge = new THREE.Mesh(
     new THREE.BoxGeometry(width, height, 0.028),
-    new THREE.MeshStandardMaterial({ color: "#e7e1d4", roughness: 1 }),
+    new THREE.MeshBasicMaterial({ color: "#f6f1e6", toneMapped: false }),
   );
   group.add(edge, face);
   return { group, face, edge };
@@ -181,32 +231,63 @@ export function MedicalField({
 
     const consentSheet = makeTexture("consent");
     const protocolSheet = makeTexture("protocol");
-    track(consentSheet.texture);
-    track(protocolSheet.texture);
+    const leafSheets = [
+      makeLeafTexture("Procedures", [
+        "The clinic asks you to come in six times across about sixteen weeks.",
+        "A visit takes about two hours.",
+      ]),
+      makeLeafTexture("Risks", [
+        "The form names the risks in plain sentences.",
+        "A shorter reading cannot change those words.",
+      ]),
+      makeLeafTexture("In your words", [
+        "Teach-back asks you to explain randomization, withdrawal, and risks.",
+        "A yes is not understanding.",
+      ]),
+    ];
+    [consentSheet, protocolSheet, ...leafSheets].forEach((sheet) => track(sheet.texture));
 
     const folio = new THREE.Group();
     scene.add(folio);
     const consent = makePage(consentSheet.texture, 1.56, 2.02);
-    const protocol = makePage(protocolSheet.texture, 1.56, 2.02);
-    folio.add(protocol.group, consent.group);
-    [consent, protocol].forEach((page) => {
+    const behind = [protocolSheet, ...leafSheets].map((sheet) => makePage(sheet.texture, 1.56, 2.02));
+    const pages = [...behind, consent];
+    folio.add(...pages.map((page) => page.group));
+    pages.forEach((page) => {
       track(page.face.geometry);
       track(page.face.material);
       track(page.edge.geometry);
       track(page.edge.material);
     });
 
-    const shadow = new THREE.Mesh(
-      track(new THREE.CircleGeometry(1.35, 48)),
-      track(new THREE.MeshBasicMaterial({ color: "#000000", transparent: true, opacity: 0.38, depthWrite: false })),
-    );
-    shadow.rotation.x = -Math.PI / 2;
-    shadow.position.y = -1.55;
-    folio.add(shadow);
+    const shadowGeometry = track(new THREE.CircleGeometry(0.58, 40));
+    const shadows = pages.map(() => {
+      const material = track(
+        new THREE.MeshBasicMaterial({ color: "#000000", transparent: true, opacity: 0.34, depthWrite: false }),
+      );
+      const mesh = new THREE.Mesh(shadowGeometry, material);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.y = -1.08;
+      mesh.renderOrder = -1;
+      folio.add(mesh);
+      return mesh;
+    });
+
+    const placeShadow = (mesh: THREE.Mesh, page: THREE.Group, opacity: number) => {
+      mesh.position.x = page.position.x + Math.sin(page.rotation.y) * 0.28;
+      mesh.position.z = page.position.z * 0.4;
+      mesh.position.y = -1.08;
+      mesh.scale.set(0.78, 0.18, 1);
+      (mesh.material as THREE.MeshBasicMaterial).opacity = opacity;
+    };
 
     const redraw = () => {
       paintSheet(consentSheet.context, "consent", consentSheet.canvas.width, consentSheet.canvas.height);
       paintSheet(protocolSheet.context, "protocol", protocolSheet.canvas.width, protocolSheet.canvas.height);
+      leafSheets.forEach((sheet) => {
+        paintLeaf(sheet.context, sheet.canvas.width, sheet.canvas.height, sheet.title, sheet.lines);
+        sheet.texture.needsUpdate = true;
+      });
       consentSheet.texture.needsUpdate = true;
       protocolSheet.texture.needsUpdate = true;
     };
@@ -241,25 +322,39 @@ export function MedicalField({
       const elapsed = reducedMotion ? 0 : clock.getElapsedTime();
       const progress = Math.min(1, Math.max(0, progressRef.current ?? 0));
       const open = smoothstep((progress - 0.08) / 0.5);
-      const spread = smoothstep((progress - 0.58) / 0.22);
       const settle = smoothstep((progress - 0.58) / 0.28);
       sway.x += ((reducedMotion ? 0 : pointer.x) * 0.12 - sway.x) * 0.05;
       sway.y += ((reducedMotion ? 0 : pointer.y) * 0.06 - sway.y) * 0.05;
 
-      folio.position.set(0.48 + open * 0.72, -0.42 + open * 0.55 + Math.sin(elapsed * 0.35) * 0.012, 0);
-      folio.scale.setScalar(1 - open * 0.16);
+      folio.position.set(0.7 + open * 0.22, -0.18 + open * 0.08 + Math.sin(elapsed * 0.35) * 0.012, 0);
+      folio.scale.setScalar(0.94 - open * 0.04);
       folio.rotation.set(sway.y * 0.08, sway.x * 0.1, 0);
 
       const yaw = -0.16 + open * 0.06 + elapsed * 0.006;
-      consent.group.position.set(0.12 + settle * 0.15, 0, 0.05);
+      const fan = smoothstep((progress - 0.4) / 0.3);
+      consent.group.position.set(-0.42 + settle * 0.04, 0, 0.08);
       consent.group.rotation.set(-0.02, yaw, 0.008);
+      consent.group.scale.setScalar(1);
 
-      protocol.group.position.set(0.12 - spread * 1.42, 0, -0.04);
-      protocol.group.rotation.set(-0.02, yaw + spread * 0.4, 0);
-      protocol.group.scale.setScalar(0.97 + spread * 0.03);
-
-      shadow.scale.set(1 + open * 0.85, 1, 1);
-      shadow.position.x = -open * 0.7;
+      const revealed = [
+        { x: -0.78, y: 0.012, z: 0.035, yaw: 0.02, scale: 1 },
+        { x: -1.08, y: 0.02, z: -0.01, yaw: 0.1, scale: 0.995 },
+        { x: -0.58, y: 0.018, z: -0.02, yaw: -0.05, scale: 0.995 },
+        { x: -1.32, y: 0.028, z: -0.045, yaw: 0.16, scale: 0.99 },
+      ];
+      behind.forEach((page, index) => {
+        const reveal = revealed[index];
+        const t = smoothstep(Math.min(1, Math.max(0, (fan - index * 0.08) / 0.78)));
+        page.group.position.set(
+          0.04 + (reveal.x - 0.04) * t,
+          reveal.y * t,
+          -0.05 - index * 0.012 + (reveal.z + 0.05) * t,
+        );
+        page.group.rotation.set(-0.02, yaw + reveal.yaw * t, index === 0 ? 0 : -0.01 * t);
+        page.group.scale.setScalar(1 + (reveal.scale - 1) * t);
+        placeShadow(shadows[index], page.group, index === 0 ? 0.26 : 0.2);
+      });
+      placeShadow(shadows[behind.length], consent.group, 0.3);
 
       camera.position.set(0.2 + sway.x * 0.25, 0.08 - sway.y * 0.12, 7.15 - open * 0.85 + settle * 0.35);
       camera.lookAt(0.05, -0.15, 0);

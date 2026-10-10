@@ -1,4 +1,5 @@
 import { parseDocument, type Passage } from "../data/documents";
+import type { PdfPage } from "./pdf";
 import { consentDoc, sections, study, teachPrompts, type TeachPrompt } from "../data/study";
 
 export type ConsentSection = {
@@ -78,7 +79,7 @@ export function loadDemoConsent(): SubmittedConsent {
 export function readConsentText(filename: string, text: string): { ok: true; consent: SubmittedConsent } | { ok: false; error: string } {
   const body = text.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").trim();
   if (!body) return { ok: false, error: "This file has no readable text, so nothing was submitted." };
-  if (body.length > 200_000) return { ok: false, error: "This file is too long to read here, so it was not submitted." };
+  if (body.length > 400_000) return { ok: false, error: "This file is too long to read here, so it was not submitted." };
 
   if (/^document-id:/m.test(body) && body.includes("\n---\n")) {
     const parsed = parseDocument(body, filename, { anyStudy: true });
@@ -136,6 +137,143 @@ export function readConsentText(filename: string, text: string): { ok: true; con
   };
 }
 
+export function readConsentPages(
+  filename: string,
+  pages: PdfPage[],
+): { ok: true; consent: SubmittedConsent } | { ok: false; error: string } {
+  const kept = pages.filter((page) => page.text.trim());
+  if (kept.length === 0) {
+    return { ok: false, error: "This PDF has no readable text, so nothing was submitted." };
+  }
+  const documentId = filename.replace(/\.[^.]+$/, "") || "consent";
+  const stamp = new Date().toISOString().slice(0, 10);
+  const sectionsFromPages = sectionsFromPdf(kept);
+  const named = (heading: string) =>
+    sectionsFromPages.find((section) => section.title.toLowerCase() === heading.toLowerCase())?.original;
+  const passages: Passage[] = sectionsFromPages.map((section) => ({
+    id: `${documentId}:uploaded:${section.id}`,
+    studyId: documentId,
+    documentId,
+    version: "uploaded",
+    date: stamp,
+    kind: "consent",
+    status: "Unverified",
+    usable: true,
+    sectionId: section.id,
+    heading: section.title,
+    page: section.page,
+    citation: section.citation,
+    text: section.original,
+    filename,
+  }));
+  return {
+    ok: true,
+    consent: {
+      source: "upload",
+      filename,
+      documentId,
+      version: "uploaded",
+      date: stamp,
+      status: "Unverified",
+      statusNote,
+      studyId: documentId,
+      studyName: named("Title") || documentId,
+      product: named("Principal investigator") || "See the form",
+      phase: "See the form",
+      sponsor: named("Study sponsor") || "See the form",
+      purpose: "This reading uses only the file you submitted.",
+      sample: false,
+      hasProtocol: false,
+      sections: sectionsFromPages,
+      passages,
+    },
+  };
+}
+
+function sectionsFromPdf(pages: PdfPage[]): ConsentSection[] {
+  const chunks: { title: string; page: number; total: number; lines: string[] }[] = [];
+  let current: (typeof chunks)[number] | null = null;
+  for (const page of pages) {
+    for (const raw of page.text.split("\n")) {
+      const line = raw.trim();
+      if (!line) continue;
+      if (isHeading(line)) {
+        current = { title: titleCase(line), page: page.number, total: page.total, lines: [] };
+        chunks.push(current);
+      } else if (!current) {
+        current = { title: "Start of the form", page: page.number, total: page.total, lines: [line] };
+        chunks.push(current);
+      } else {
+        current.lines.push(line);
+      }
+    }
+  }
+  return chunks
+    .filter((chunk) => chunk.lines.length > 0)
+    .map((chunk, index) => {
+      const original = toParagraphs(chunk.lines);
+      return {
+        id: slug(chunk.title, index),
+        index: String(index + 1).padStart(2, "0"),
+        title: chunk.title,
+        short: original.split(/(?<=[.!?])\s+/)[0]?.slice(0, 90) || chunk.title,
+        original,
+        plain: plainReading(original),
+        citation: `Page ${chunk.page} of ${chunk.total}`,
+        page: `p. ${chunk.page}`,
+        terms: [],
+        ask: `What does the form say about ${chunk.title.toLowerCase()}?`,
+      };
+    });
+}
+
+function isHeading(line: string): boolean {
+  const text = line.replace(/:$/, "").trim();
+  if (text.length < 4 || text.length > 60) return false;
+  if (text.split(/\s+/).length > 8) return false;
+  const letters = text.replace(/[^A-Za-z]/g, "");
+  if (letters.length < 4) return false;
+  return letters.replace(/[^A-Z]/g, "").length / letters.length > 0.8;
+}
+
+function continuesWord(current: string, next: string): boolean {
+  const last = current.split(/\s+/).at(-1)?.toLowerCase() ?? "";
+  if (last.length < 2 || last.length > 3 || /^[A-Z]/.test(next) || commonWord.has(last)) return false;
+  return /^[a-z]/.test(next);
+}
+
+const commonWord = new Set([
+  "a", "an", "the", "of", "to", "in", "on", "or", "and", "for", "be", "is", "it", "we", "you", "are", "if",
+  "as", "at", "by", "do", "no", "not", "but", "can", "may", "has", "had", "was", "any", "all", "our", "who",
+  "how", "why", "its", "his", "her", "end", "use", "per", "day", "one", "two",
+]);
+
+function titleCase(line: string): string {
+  const text = line.replace(/:$/, "").trim().toLowerCase();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function toParagraphs(lines: string[]): string {
+  const paragraphs: string[] = [];
+  let current = "";
+  for (const line of lines) {
+    if (!current) {
+      current = line;
+      continue;
+    }
+    if (/[.!?]$/.test(current) && /^[A-Z«]/.test(line)) {
+      paragraphs.push(current);
+      current = line;
+    } else if (continuesWord(current, line)) {
+      current = `${current}${line}`;
+    } else {
+      current = `${current} ${line}`;
+    }
+  }
+  if (current) paragraphs.push(current);
+  return paragraphs.join("\n\n");
+}
+
 export function promptsFor(consent: SubmittedConsent): TeachPrompt[] {
   if (consent.source === "demo") return teachPrompts;
   return consent.sections.slice(0, 4).map((section) => {
@@ -159,7 +297,10 @@ export function promptsFor(consent: SubmittedConsent): TeachPrompt[] {
 }
 
 export function plainReading(original: string): string {
-  return original.replace(/;\s+/g, ". ").replace(/\s+/g, " ").trim();
+  const flat = original.replace(/;\s+/g, ". ").replace(/\s+/g, " ").trim();
+  const sentences = flat.split(/(?<=[.!?])\s+/).filter(Boolean);
+  if (sentences.length <= 2) return flat;
+  return sentences.slice(0, 2).join(" ");
 }
 
 function fromPassages(filename: string, passages: Passage[], sample: boolean): SubmittedConsent {

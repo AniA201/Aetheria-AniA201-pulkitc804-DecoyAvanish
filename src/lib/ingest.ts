@@ -7,7 +7,7 @@ export function rejectUpload(file: { name: string; type: string; size: number })
   if (file.size > maxBytes) return "This file is over 1.5 MB, so it was not indexed.";
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
   if (ext === "pdf" || file.type === "application/pdf") {
-    return "This PDF was not indexed. Text extraction is not available, so an empty file was not treated as complete. Use a .txt or .md file, or the included sample.";
+    return "Submit a consent PDF from Home. This importer reads the structured text documents.";
   }
   if (ext === "docx" || file.type.includes("wordprocessingml")) {
     return "This DOCX was not indexed. Word extraction is not included. Use a .txt or .md file, or the included sample.";

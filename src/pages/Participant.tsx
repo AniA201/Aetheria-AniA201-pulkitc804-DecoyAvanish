@@ -9,18 +9,38 @@ import { ListenButton, useTitle } from "../components/Chrome";
 import { ConsentFile } from "../components/ConsentFile";
 import { ConsentSheet } from "../scene/ConsentSheet";
 
+function NeedFile({ title }: { title: string }) {
+  return (
+    <div className="page">
+      <h1>{title}</h1>
+      <p className="lede dark">Add the consent form on Start.</p>
+      <Link className="btn solid dark" to="/participant/home">
+        Go to Start
+      </Link>
+    </div>
+  );
+}
+
+function PassageText({ text }: { text: string }) {
+  const parts = text.split(/\n\n+/).filter(Boolean);
+  return (
+    <div className="passage-body">
+      {parts.map((part, index) => (
+        <p key={index}>{part}</p>
+      ))}
+    </div>
+  );
+}
+
 export function ParticipantHome() {
   useTitle("Home");
   const { reviewed, saved, teach, displayName, consent } = useSession();
   if (!consent) {
     return (
       <div className="page">
-        <p className="kicker">Consent</p>
-        <h1>{displayName ? `${displayName}, submit the consent form.` : "Submit the consent form."}</h1>
-        <p className="lede dark">
-          Choose the file to read. After you submit it, the sections, questions, and teach-back use that
-          form. Aetheria does not sign it or decide that anyone consented.
-        </p>
+        <p className="kicker">Start</p>
+        <h1>{displayName ? `${displayName}, add the consent form.` : "Add the consent form."}</h1>
+        <p className="lede dark">Upload a PDF. Then read it, ask a question, or check a section.</p>
         <ConsentFile />
       </div>
     );
@@ -29,11 +49,9 @@ export function ParticipantHome() {
 
   return (
     <div className="page">
-      <p className="kicker">{consent.sample ? "Included sample" : consent.documentId}</p>
-      <h1>{displayName ? `${displayName}, the form is ready.` : "The form is ready."}</h1>
-      <p className="lede dark">
-        {consent.purpose} You are reading {consent.documentId} {consent.version}, marked {consent.status.toLowerCase()}.
-      </p>
+      <p className="kicker">{consent.sample ? "Practice form" : consent.filename}</p>
+      <h1>{consent.studyName}</h1>
+      <p className="lede dark">{consent.sections.length} sections. Nothing here is a signature.</p>
       <div className="stat-row">
         <article>
           <strong>
@@ -52,10 +70,10 @@ export function ParticipantHome() {
       </div>
       <div className="action-row">
         <Link className="btn solid dark" to={`/participant/explore-consent/${next.id}`}>
-          Continue learning
+          Read the form
         </Link>
-        <Link className="btn on-paper" to="/participant/my-study">
-          My Study
+        <Link className="btn on-paper" to="/participant/ask">
+          Ask a question
         </Link>
       </div>
     </div>
@@ -65,58 +83,21 @@ export function ParticipantHome() {
 export function MyStudy() {
   useTitle("My Study");
   const { consent } = useSession();
-  if (!consent) {
-    return (
-      <div className="page">
-        <p className="kicker">My Study</p>
-        <h1>No consent form yet.</h1>
-        <p className="lede dark">Submit a consent file to open the study reading.</p>
-        <ConsentFile />
-      </div>
-    );
-  }
+  if (!consent) return <NeedFile title="No form yet." />;
   return (
     <div className="page">
-      <p className="kicker">{consent.studyId}</p>
+      <p className="kicker">Your form</p>
       <h1>{consent.studyName}</h1>
-      <dl className="meta-list">
-        <div>
-          <dt>Investigational product</dt>
-          <dd>{consent.product}</dd>
-        </div>
-        <div>
-          <dt>Design</dt>
-          <dd>{consent.phase}</dd>
-        </div>
-        <div>
-          <dt>Sponsor</dt>
-          <dd>{consent.sponsor}</dd>
-        </div>
-        <div>
-          <dt>Consent</dt>
-          <dd>
-            {consent.documentId} {consent.version} · {consent.date}
-          </dd>
-        </div>
-        <div>
-          <dt>Approval status</dt>
-          <dd>
-            {consent.status}. {consent.statusNote}
-          </dd>
-        </div>
-        <div>
-          <dt>File</dt>
-          <dd>{consent.sample ? `${consent.filename} · included sample` : consent.filename}</dd>
-        </div>
-      </dl>
-      <ConsentFile />
+      <p className="lede dark">
+        {consent.filename}
+        {consent.sample ? " · practice form" : ""}
+      </p>
       <ol className="topic-index">
         {consent.sections.map((section) => (
           <li key={section.id}>
             <Link to={`/participant/explore-consent/${section.id}`}>
               <span>{section.index}</span>
               <strong>{section.title}</strong>
-              <em>{section.short}</em>
             </Link>
           </li>
         ))}
@@ -130,15 +111,7 @@ export function Explore() {
   const params = useParams();
   const { consent, textOnly, markReviewed, reviewed, reducedMotion } = useSession();
   const [showOriginal, setShowOriginal] = useState(false);
-  if (!consent) {
-    return (
-      <div className="page">
-        <p className="kicker">Explore Consent</p>
-        <h1>Submit a consent form first.</h1>
-        <ConsentFile />
-      </div>
-    );
-  }
+  if (!consent) return <NeedFile title="Read" />;
   const sections = consent.sections;
   const known = !params.sectionId || sections.some((section) => section.id === params.sectionId);
   const requested = (known ? params.sectionId : undefined) ?? sections[0].id;
@@ -151,7 +124,7 @@ export function Explore() {
   const next = sections[index + 1];
 
   return (
-    <div className={`reader ${textOnly ? "text-only" : ""}`}>
+    <div className={`reader ${textOnly || !consent.sample ? "text-only" : ""}`}>
       <aside className="chapter-nav" aria-label="Consent sections">
         {sections.map((item) => (
           <Link
@@ -162,7 +135,7 @@ export function Explore() {
           >
             <span>{item.index}</span>
             {item.title}
-            {reviewed.includes(item.id) ? <em>Read</em> : null}
+            {reviewed.includes(item.id) ? <em>Done</em> : null}
           </Link>
         ))}
       </aside>
@@ -170,7 +143,7 @@ export function Explore() {
         <div className="consent-stage">
           <ConsentSheet chapter={index} reducedMotion={reducedMotion} />
           <p className="stage-caption">
-            Chapter {section.index} of {sections.length}. The words below are the document.
+            Practice form. The text is the section.
           </p>
         </div>
       )}
@@ -179,10 +152,7 @@ export function Explore() {
           {section.index} / {sections.length} · {consent.version}
         </p>
         <h1>{section.title}</h1>
-        <p className="pack-line">
-          Teach It Back reads this chapter from {consent.documentId} {consent.version}. Say It Plainly
-          keeps the original clause next to the shorter reading.
-        </p>
+        <p className="fine">{section.citation}</p>
         <div className="reading-tools">
           <button
             type="button"
@@ -190,7 +160,7 @@ export function Explore() {
             aria-pressed={!showOriginal}
             onClick={() => setShowOriginal(false)}
           >
-            Plain language
+            Short
           </button>
           <button
             type="button"
@@ -198,13 +168,13 @@ export function Explore() {
             aria-pressed={showOriginal}
             onClick={() => setShowOriginal(true)}
           >
-            Original clause
+            Full text
           </button>
           <ListenButton text={section.plain} />
         </div>
         <div className="passage" id="source">
-          <p className="passage-label">{showOriginal ? "Original wording" : "Plain-language reading"}</p>
-          <p className="passage-body">{showOriginal ? section.original : section.plain}</p>
+          <p className="passage-label">{showOriginal ? "From the form" : "Short reading"}</p>
+          <PassageText text={showOriginal ? section.original : section.plain} />
         </div>
         <dl className="terms">
           {section.terms.map((term) => (
@@ -214,12 +184,14 @@ export function Explore() {
             </div>
           ))}
         </dl>
-        <figure className="citation">
-          <figcaption>
-            {section.citation} · {section.page}
-          </figcaption>
-          <blockquote>{section.original}</blockquote>
-        </figure>
+        {consent.sample ? (
+          <figure className="citation">
+            <figcaption>
+              {section.citation} · {section.page}
+            </figcaption>
+            <blockquote>{section.original}</blockquote>
+          </figure>
+        ) : null}
         <div className="action-row">
           <button type="button" className="btn solid dark" onClick={() => markReviewed(section.id)}>
             {reviewed.includes(section.id) ? "Marked as read" : "Mark this section as read"}
@@ -270,15 +242,7 @@ export function Ask() {
   const [dictateNote, setDictateNote] = useState("");
   const [savedId, setSavedId] = useState<string | null>(null);
   const request = useRef(0);
-  if (!consent) {
-    return (
-      <div className="page">
-        <p className="kicker">Ask Aetheria</p>
-        <h1>Submit a consent form first.</h1>
-        <ConsentFile />
-      </div>
-    );
-  }
+  if (!consent) return <NeedFile title="Ask" />;
 
   const ask = async (question: string) => {
     const clean = question.trim();
@@ -328,19 +292,18 @@ export function Ask() {
 
   return (
     <div className="page ask-page">
-      <p className="kicker">Source-grounded</p>
-      <h1>Ask from the consent form.</h1>
-      <p className="lede dark">
-        Answers use {consent.documentId} {consent.version}, the form you submitted. If that form does
-        not say, the reply stops there.
-      </p>
-      <div className="suggestions">
-        {consent.sections.map((item) => (
-          <button key={item.id} type="button" className="chip" onClick={() => ask(item.ask)}>
-            {item.ask}
-          </button>
-        ))}
-      </div>
+      <header className="panel-head">
+        <p className="kicker">Ask</p>
+        <h1>Ask about this form.</h1>
+        <p className="lede dark">Answers come only from the file you added.</p>
+        <div className="suggestions">
+          {consent.sections.slice(0, 4).map((item) => (
+            <button key={item.id} type="button" className="chip" onClick={() => ask(item.ask)}>
+              {item.title}
+            </button>
+          ))}
+        </div>
+      </header>
       <div className="thread" aria-live="polite">
         {messages.length === 0 && <p className="empty">Choose a suggested question, or write your own.</p>}
         {messages.map((message) => (
@@ -358,10 +321,8 @@ export function Ask() {
             {message.answer && (
               <>
                 <small>
-                  {message.answer.engine === "ollama"
-                    ? `Local model ${message.answer.model}. The quotation is the retrieved passage, not a model-written quote.`
-                    : "Local rules answered this. Ollama did not produce this reply."}{" "}
-                  {message.answer.documentId} {message.answer.version}
+                  {message.answer.engine === "ollama" ? "Answered on this computer." : "Answered from the form."}{" "}
+                  {message.answer.citation}
                 </small>
                 <ListenButton text={message.text} />
                 <button
@@ -421,15 +382,7 @@ export function Teach() {
   const [promptId, setPromptId] = useState(prompts[0]?.id ?? "");
   const [response, setResponse] = useState("");
   const [result, setResult] = useState<TeachResult | null>(null);
-  if (!consent || prompts.length === 0) {
-    return (
-      <div className="page">
-        <p className="kicker">Teach-Back</p>
-        <h1>Submit a consent form first.</h1>
-        <ConsentFile />
-      </div>
-    );
-  }
+  if (!consent || prompts.length === 0) return <NeedFile title="Check" />;
   const prompt = prompts.find((item) => item.id === promptId) ?? prompts[0];
 
   const submit = () => {
@@ -439,13 +392,13 @@ export function Teach() {
   };
 
   return (
-    <div className="page">
-      <p className="kicker">Teach It Back</p>
-      <h1>Say it in your own words.</h1>
-      <p className="lede dark">
-        This is not a test you pass or fail, and it is not a record that you consented. It shows which
-        ideas may still need a person.
-      </p>
+    <div className="page check-page">
+      <header className="panel-head">
+        <p className="kicker">Check</p>
+        <h1>Say it in your own words.</h1>
+        <p className="lede dark">This is not a test and not a signature.</p>
+      </header>
+      <div className="check-layout">
       <form
         className="teach-form"
         onSubmit={(event) => {
@@ -504,6 +457,7 @@ export function Teach() {
           <Link to={`/participant/explore-consent/${prompt.sectionId}`}>Reread {prompt.topic.toLowerCase()}</Link>
         </article>
       )}
+      </div>
     </div>
   );
 }
@@ -515,30 +469,25 @@ export function Summary() {
     () => teach.filter((item) => item.label !== "Understands the key concept"),
     [teach],
   );
-  if (!consent) {
-    return (
-      <div className="page">
-        <p className="kicker">My Summary</p>
-        <h1>Submit a consent form first.</h1>
-        <ConsentFile />
-      </div>
-    );
-  }
+  if (!consent) return <NeedFile title="Summary" />;
 
   return (
-    <div className="page">
-      <p className="kicker">Handoff</p>
-      <h1>What you have explored.</h1>
-      <p className="notice">
-        This summary is not a consent certificate, a signature, or proof that you understood the study.
-      </p>
+    <div className="page summary-page">
+      <header className="panel-head">
+        <p className="kicker">Summary</p>
+        <h1>What you have read.</h1>
+        <p className="notice">This is not a signature.</p>
+      </header>
+      <div className="summary-grid">
       <section>
         <h2>Sections marked as read</h2>
         <ul className="plain-list">
           {consent.sections.map((section) => (
             <li key={section.id}>
-              {section.title}
-              <span>{reviewed.includes(section.id) ? "Read" : "Not marked"}</span>
+              <span className="summary-title">{section.title}</span>
+              <span className={reviewed.includes(section.id) ? "mark done" : "mark"}>
+                {reviewed.includes(section.id) ? "Read" : "Not yet"}
+              </span>
             </li>
           ))}
         </ul>
@@ -578,6 +527,7 @@ export function Summary() {
           </ul>
         )}
       </section>
+      </div>
       <p className="fine">
         Document used: {consent.documentId} {consent.version}, {consent.date}. Status: {consent.status}. This summary is a handoff, not a signature.
       </p>

@@ -5,7 +5,6 @@ import {
   factFlagged,
   facts,
   plainDraft,
-  protocolDoc,
   study,
   teachFixtures,
   teachPrompts,
@@ -20,7 +19,6 @@ import { isOpenReview, reviewLabel } from "../lib/preflight";
 import { assessTeachback } from "../lib/teachback";
 import { useSession, type ReviewState } from "../state/Session";
 import { useTitle } from "../components/Chrome";
-import { packs } from "../data/packs";
 
 function pace(text: string) {
   const words = text.trim().split(/\s+/).filter(Boolean);
@@ -38,12 +36,9 @@ export function Overview() {
 
   return (
     <div className="page">
-      <p className="kicker">Research team · {study.label}</p>
-      <h1>{study.id} needs a human look.</h1>
-      <p className="lede dark">
-        Counts come from the consent submitted in this browser and from actions in this session. They are
-        not enrollment or outcome results.
-      </p>
+      <p className="kicker">Research</p>
+      <h1>What needs a person.</h1>
+      <p className="lede dark">These counts are from this browser. They are not study results.</p>
       <div className="stat-row">
         <article>
           <strong>{openFlags.length}</strong>
@@ -64,26 +59,12 @@ export function Overview() {
       </div>
       <div className="action-row">
         <Link className="btn solid dark" to="/researcher/document-integrity">
-          Open document integrity
+          Compare documents
         </Link>
-        <Link className="btn on-paper" to="/researcher/test-lab">
-          Run the test lab
+        <Link className="btn on-paper" to="/researcher/plain-language">
+          Plain language
         </Link>
       </div>
-      <p className="fine">
-        Reader document: {consentDoc.id} {consentDoc.version}, status {consentDoc.status}. Protocol:{" "}
-        {protocolDoc.id} {protocolDoc.version}, status {protocolDoc.status}.
-      </p>
-      <h2>Starter sheets in this product</h2>
-      <ul className="pack-list">
-        {packs.map((pack) => (
-          <li key={pack.id}>
-            <strong>{pack.name}</strong>
-            <p>{pack.used}</p>
-            <p>{pack.where}</p>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
@@ -105,23 +86,16 @@ export function Integrity() {
       <div className="page">
         <p className="kicker">Evidence</p>
         <h1>Protocol against consent.</h1>
-        <p className="lede dark">
-          {consent.documentId} {consent.version} has no paired research protocol. The comparison needs
-          that protocol. Aetheria will not invent one, and it will not add flags from another study.
-        </p>
+        <p className="lede dark">This file has no protocol next to it, so there is nothing to compare.</p>
       </div>
     );
   }
 
   return (
     <div className="page">
-      <p className="kicker">Evidence</p>
-      <h1>Protocol against consent.</h1>
-      <p className="lede dark">
-        Protocol Pre-Flight checks the included sample, where a protocol is paired with the consent.
-        Write Once keeps each shared fact visible until a person reviews it. Aetheria does not decide
-        which sentence is right, and it does not approve the protocol.
-      </p>
+      <p className="kicker">Compare</p>
+      <h1>Protocol next to consent.</h1>
+      <p className="lede dark">Differences stay here until a person reviews them.</p>
       <div className="fact-list">
         {facts.map((fact) => {
           const flagged = factFlagged(fact);
@@ -196,12 +170,9 @@ export function Insights() {
 
   return (
     <div className="page">
-      <p className="kicker">Synthetic cases</p>
-      <h1>Where the fixed examples get stuck.</h1>
-      <p className="lede dark">
-        These four replies are examples written for the sample form. They are not people in this
-        browser. The labels come from the same rubric the teach-back screen uses.
-      </p>
+      <p className="kicker">Questions</p>
+      <h1>Example replies.</h1>
+      <p className="lede dark">These are practice answers for the sample form. They are not people in this browser.</p>
       <div className="stat-row">
         {Object.entries(counts).map(([label, count]) => (
           <article key={label}>
@@ -252,7 +223,7 @@ export function Studio() {
       <div className="page">
         <p className="kicker">Plain language studio</p>
         <h1>Submit a consent form first.</h1>
-        <p className="lede dark">A shorter reading is reviewed beside the submitted clause. Accepting it does not change the source.</p>
+        <p className="lede dark">A shorter reading sits beside the original. Accepting it does not change the file.</p>
       </div>
     );
   }
@@ -270,8 +241,8 @@ export function Studio() {
       <h1>{title}</h1>
       <p className="lede dark">
         {uploaded
-          ? "Say It Plainly keeps the submitted clause beside a shorter reading. Accepting that reading does not change the source."
-          : "Say It Plainly: the shorter reading has to keep the consent’s own numbers. It must not pick up the protocol’s visits, weeks, or payment. Accepting a draft does not change the source."}
+          ? "The shorter reading sits beside the original. Accepting it does not change the file."
+          : "The shorter reading keeps this form’s own numbers. Accepting it does not change the file."}
       </p>
       <p className="fine">
         {uploaded
@@ -337,12 +308,9 @@ export function Lab() {
 
   return (
     <div className="page">
-      <p className="kicker">Reproducible checks</p>
+      <p className="kicker">Checks</p>
       <h1>Run the checks.</h1>
-      <p className="lede dark">
-        This button executes the citation, fallback, teach-back, mismatch, and wording checks in the
-        browser. The result is counted from that run.
-      </p>
+      <p className="lede dark">One button. The count comes from that run.</p>
       <button type="button" className="btn solid dark" onClick={() => setResults(runChecks())}>
         Run checks
       </button>
@@ -374,6 +342,11 @@ export function Documents() {
 
   const onFile = async (file: File | undefined) => {
     if (!file) return;
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    if (ext === "pdf" || file.type === "application/pdf") {
+      setNote("Submit a consent PDF from Home. This page stores the structured text documents.");
+      return;
+    }
     const rejected = rejectUpload({ name: file.name, type: file.type, size: file.size });
     if (rejected) {
       setNote(rejected);

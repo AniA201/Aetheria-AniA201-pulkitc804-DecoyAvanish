@@ -51,7 +51,7 @@ export function Login() {
       <p className="kicker">Enter</p>
       <h1>Sign in</h1>
       <p className="lede">
-        Choose a view. A participant account does not open the research workspace.
+        Choose Participant or Researcher.
       </p>
       <div className="role-switch" role="group" aria-label="Account type">
         <button
@@ -85,7 +85,7 @@ export function Login() {
           }}
         >
           <p className="role-copy">
-            Read the five chapters, ask from the form, and try teach-back. This stays in your browser.
+            Read the form, ask a question, or check a section. This stays in this browser.
           </p>
           <button type="submit" className="btn solid">
             Continue

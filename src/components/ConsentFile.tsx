@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { loadDemoConsent, readConsentText } from "../lib/consent";
+import { loadDemoConsent, readConsentPages, readConsentText } from "../lib/consent";
+import { extractPdfText } from "../lib/pdf";
 import { useSession } from "../state/Session";
 
 export function ConsentFile() {
@@ -12,15 +13,25 @@ export function ConsentFile() {
       setNote("Choose a consent file, then submit it.");
       return;
     }
-    if (chosen.size > 1_500_000) {
-      setNote("This file is over 1.5 MB, so it was not submitted.");
+    const ext = chosen.name.split(".").pop()?.toLowerCase() ?? "";
+    const pdf = ext === "pdf" || chosen.type === "application/pdf";
+    if (chosen.size > (pdf ? 12_000_000 : 1_500_000)) {
+      setNote("This file is too large, so it was not submitted.");
       return;
     }
-    const ext = chosen.name.split(".").pop()?.toLowerCase() ?? "";
-    if (ext === "pdf" || chosen.type === "application/pdf") {
-      setNote(
-        "This PDF was not read. Text extraction is not available, so nothing was indexed. Use a .txt or .md file, or the included sample.",
-      );
+    if (pdf) {
+      const extracted = await extractPdfText(new Uint8Array(await chosen.arrayBuffer()));
+      if (!extracted.ok) {
+        setNote(extracted.error);
+        return;
+      }
+      const result = readConsentPages(chosen.name, extracted.pages);
+      if (!result.ok) {
+        setNote(result.error);
+        return;
+      }
+      submitConsent(result.consent);
+      setNote(`Submitted ${extracted.pages.length} pages from ${chosen.name}.`);
       return;
     }
     if (ext === "docx" || chosen.type.includes("wordprocessingml")) {
@@ -50,17 +61,19 @@ export function ConsentFile() {
         void submit();
       }}
     >
-      <label htmlFor="consent-file">Consent form</label>
-      <div className="action-row">
+      <label className="file-pick">
         <input
           id="consent-file"
           type="file"
-          accept=".txt,.md,.pdf,.docx,text/plain"
+          accept=".txt,.md,.pdf,application/pdf,text/plain"
           onChange={(event) => {
             setChosen(event.target.files?.[0] ?? null);
             setNote("");
           }}
         />
+        <span>{chosen ? chosen.name : "Choose a PDF"}</span>
+      </label>
+      <div className="action-row">
         <button className="btn solid dark" type="submit">
           Submit consent
         </button>
@@ -68,7 +81,7 @@ export function ConsentFile() {
           Use included sample
         </button>
       </div>
-      <p className="fine">Use included sample loads the bundled file ICF-AETHER-01 v2.1.</p>
+      <p className="fine">PDF or text. The sample is the bundled practice form.</p>
       {note ? <p className="notice">{note}</p> : null}
     </form>
   );

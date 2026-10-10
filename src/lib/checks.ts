@@ -175,16 +175,16 @@ export function runChecks(): Check[] {
   });
 
   const emptyFile = inspectText("empty.txt", "   ");
-  const pdf = rejectUpload({ name: "scan.pdf", type: "application/pdf", size: 1200 });
+  const tooBig = rejectUpload({ name: "huge.txt", type: "text/plain", size: 20_000_000 });
   const otherStudy = inspectText(
     "other.txt",
     "document-id: X\nversion: v1\ndate: 1 January 2026\nstudy: OTHER-01\nkind: consent\nstatus: Unverified\nusable: yes\n\n---\nsection: a\nheading: A\npage: p. 1\ncitation: Other\n\nHello",
   );
   checks.push({
     id: "ingest-guards",
-    name: "Empty files, PDFs, and other studies are not indexed",
-    passed: !emptyFile.ok && pdf !== null && !otherStudy.ok,
-    detail: [emptyFile.ok ? "" : emptyFile.error, pdf, otherStudy.ok ? "" : otherStudy.error].filter(Boolean).join(" "),
+    name: "Empty files, oversized files, and other studies are not indexed",
+    passed: !emptyFile.ok && tooBig !== null && !otherStudy.ok,
+    detail: [emptyFile.ok ? "" : emptyFile.error, tooBig, otherStudy.ok ? "" : otherStudy.error].filter(Boolean).join(" "),
   });
 
   const dropped = auditPlainText(plainDraft.draft.replace("$50", "a payment"));

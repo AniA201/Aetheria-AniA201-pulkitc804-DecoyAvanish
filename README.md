@@ -12,7 +12,7 @@ npm test
 npm run dev
 ```
 
-Open the local address printed by Vite. Sign in as a participant and submit a `.txt` or `.md` consent form. The button beside the file control, **Use included sample**, loads the bundled consent `demo/synthetic/ICF-AETHER-01-v2.1.txt` and pairs it with the sample protocol. PDF and DOCX are refused rather than indexed as empty files.
+Open the local address printed by Vite. Sign in as a participant and submit a PDF, `.txt`, or `.md` consent form. A PDF is read page by page, and each page keeps its page number. A scan with no text layer is refused rather than indexed as empty. The button beside the file control, **Use included sample**, loads the bundled consent `demo/synthetic/ICF-AETHER-01-v2.1.txt` and pairs it with the sample protocol. DOCX is not read.
 
 The dev server proxies local Ollama at `/ollama`. Inside some sandboxes, bind the server explicitly:
 
@@ -66,10 +66,10 @@ The supplied Regeneron pack contains many sheets. This app uses the four that ma
 | Plain-language edit, accept, reject | Working. Source text is not replaced |
 | Protocol comparison and review note | Working for the five shared facts |
 | Versions, outdated form excluded from answers | Working |
-| Consent file | `.txt` and `.md`, with headings or the sample header. PDF and DOCX are refused instead of indexed as empty |
+| Consent file | PDF text is extracted page by page. `.txt` and `.md` still work. A scanned PDF is not indexed as empty. DOCX is not read |
 | Audit trail | Working in this browser session |
 | Test Lab | Working. Counts a real run |
-| ClinicalTrials.gov, PDF OCR, ElevenLabs, phone calls | Not connected |
+| ClinicalTrials.gov, PDF OCR, ElevenLabs, phone calls | Not connected. A PDF must already contain text |
 | Pre-flight score or protocol approval | Intentionally absent |
 
 ## Data and privacy

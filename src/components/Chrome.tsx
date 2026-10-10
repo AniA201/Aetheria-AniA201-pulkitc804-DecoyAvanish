@@ -48,33 +48,29 @@ export function ListenButton({ text }: { text: string }) {
           Listen
         </button>
       )}
-      <p>
-        {state === "unavailable"
-          ? "Voice is unavailable in this browser. The written explanation stays on the page."
-          : "Listen uses this browser’s speech engine. ElevenLabs is not connected, and the writing stays visible."}
-      </p>
+      {state === "unavailable" ? <p>Voice is off. The text stays on the page.</p> : null}
     </div>
   );
 }
 
 const participantNav = [
-  { to: "/participant/home", label: "Home", end: true },
-  { to: "/participant/my-study", label: "My Study" },
-  { to: "/participant/explore-consent", label: "Explore Consent" },
-  { to: "/participant/ask", label: "Ask Aetheria" },
-  { to: "/participant/teach-back", label: "Teach-Back" },
-  { to: "/participant/summary", label: "My Summary" },
-  { to: "/participant/accessibility", label: "Accessibility" },
+  { to: "/participant/home", label: "Start", end: true },
+  { to: "/participant/my-study", label: "Your form" },
+  { to: "/participant/explore-consent", label: "Read" },
+  { to: "/participant/ask", label: "Ask" },
+  { to: "/participant/teach-back", label: "Check" },
+  { to: "/participant/summary", label: "Summary" },
+  { to: "/participant/accessibility", label: "Text size" },
 ];
 
 const researcherNav = [
-  { to: "/researcher/overview", label: "Overview", end: true },
-  { to: "/researcher/document-integrity", label: "Document Integrity" },
-  { to: "/researcher/insights", label: "Participant Insights" },
-  { to: "/researcher/plain-language", label: "Plain Language Studio" },
-  { to: "/researcher/test-lab", label: "Test Lab" },
-  { to: "/researcher/documents", label: "Documents & Versions" },
-  { to: "/researcher/settings", label: "Settings & Audit" },
+  { to: "/researcher/overview", label: "Start", end: true },
+  { to: "/researcher/document-integrity", label: "Compare" },
+  { to: "/researcher/insights", label: "Questions" },
+  { to: "/researcher/plain-language", label: "Plain language" },
+  { to: "/researcher/test-lab", label: "Checks" },
+  { to: "/researcher/documents", label: "Files" },
+  { to: "/researcher/settings", label: "Settings" },
 ];
 
 export function RequireRole({ role }: { role: Role }) {
@@ -144,9 +140,7 @@ export function Shell({ mode }: { mode: Role }) {
         </button>
       </aside>
       <div className="workspace">
-        <p className="demo-banner">
-          Not medical advice, not a consent decision, and not a signed form.
-        </p>
+        <p className="demo-banner">Not a signature.</p>
         <main id="content" tabIndex={-1}>
           <Outlet />
         </main>
