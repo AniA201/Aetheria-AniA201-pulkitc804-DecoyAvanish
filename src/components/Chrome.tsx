@@ -178,6 +178,7 @@ export function Shell({ mode }: { mode: Role }) {
   const roleName = participant ? t.roleName : r.roleName;
   const blocked = mode === "participant" && consent !== null && versionStanding(consent.version, approvedVersions) === "not-listed";
   const [open, setOpen] = useState(false);
+  const [railCompact, setRailCompact] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -206,7 +207,7 @@ export function Shell({ mode }: { mode: Role }) {
   };
 
   return (
-    <div className={`shell ${mode}`}>
+    <div className={`shell ${mode} ${railCompact ? "rail-compact" : ""}`}>
       <a className="skip" href="#content">
         Skip to content
       </a>
@@ -238,6 +239,9 @@ export function Shell({ mode }: { mode: Role }) {
             <em>{roleName}</em>
           </span>
         </NavLink>
+        <button className="rail-toggle" type="button" onClick={() => setRailCompact((value) => !value)} aria-label={railCompact ? "Expand navigation" : "Collapse navigation"} aria-pressed={railCompact}>
+          <span aria-hidden="true">{railCompact ? "→" : "←"}</span>
+        </button>
         <nav aria-label={roleName}>
           {links.map((link, index) => (
             <NavLink key={link.to} to={link.to} end={link.end} className="rail-link">

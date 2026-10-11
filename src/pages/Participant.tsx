@@ -20,6 +20,7 @@ import { ListenButton, useTitle } from "../components/Chrome";
 import { VersionGate, VersionStanding } from "../components/SheetPanels";
 import { ConsentFile } from "../components/ConsentFile";
 import { ConsentSheet } from "../scene/ConsentSheet";
+import { FormMap3D } from "../scene/FormMap3D";
 
 type Section = SubmittedConsent["sections"][number];
 
@@ -387,7 +388,7 @@ function useDictation(onText: (text: string) => void, sendLabel: string) {
 export function Ask() {
   const t = useT();
   useTitle(t.ask.title);
-  const { consent, saveQuestion, approvedVersions, language } = useSession();
+  const { consent, saveQuestion, approvedVersions, language, reducedMotion } = useSession();
   const view = useShown(consent);
   const [params] = useSearchParams();
   const starter = params.get("q") ?? "";
@@ -460,6 +461,7 @@ export function Ask() {
         <div className="ask-greeting">
           <strong><span>Ask</span><span>Aetheria</span></strong>
           <span className="ask-greeting-note">Five sections of your form, in view</span>
+          <FormMap3D reducedMotion={reducedMotion} />
         </div>
       </header>
       <div className="thread" aria-live="polite">
