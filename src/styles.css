@@ -2517,6 +2517,8 @@ html[data-contrast="high"] .guide-close { color: #fff; }
 .start-next h2 { font-size: clamp(1.55rem,3vw,2.25rem); }
 .start-next p { margin: .3rem 0 0; color: #d4e9df; }
 .start-next a { display:grid; place-items:center; width:2.65rem; height:2.65rem; border-radius:50%; background:var(--ochre); color:#153c39; font-size:1.35rem; text-decoration:none; }
+.start-next a span { display:block; transform:translateX(-1px); transition:transform 180ms cubic-bezier(.16,1,.3,1); }
+.start-next a:hover span { transform:translateX(3px); }
 .start-map { position: relative; z-index: 1; max-width: 68rem; margin-top: 1.4rem; padding: 1.2rem; background: rgba(247,244,236,.58); border: 1px solid rgba(13,91,88,.2); box-shadow: 0 14px 28px rgba(16,43,53,.08); }
 .start-map-heading { display:flex; justify-content:space-between; align-items:baseline; gap:1rem; padding-bottom:.85rem; border-bottom:1px solid rgba(13,91,88,.22); }
 .start-map h2 { color:#0d5b58; font-size:1.45rem; }
@@ -2536,6 +2538,10 @@ html[data-contrast="high"] .guide-close { color: #fff; }
 .shell.participant.rail-compact .rail nav,
 .shell.participant.rail-compact .mode-switch { display: none; }
 .shell.participant.rail-compact .rail-toggle { position: fixed; left: .65rem; top: 1rem; right: auto; }
+.shell.participant .rail-toggle { width:2.8rem; height:2.8rem; right:-1.35rem; font-size:1.35rem; transition:transform 240ms cubic-bezier(.16,1,.3,1), box-shadow 180ms cubic-bezier(.16,1,.3,1); }
+.shell.participant .rail-toggle span { display:block; transition:transform 240ms cubic-bezier(.16,1,.3,1); }
+.shell.participant .rail-toggle:hover { transform:scale(1.08); box-shadow:0 10px 20px rgba(16,43,53,.24); }
+.shell.participant.rail-compact .rail-toggle span { transform:rotate(180deg); }
 .shell.participant .type-dock { width: 2.55rem; height: 2.55rem; padding: .28rem; overflow: hidden; grid-template-columns: 1fr; transition: width 220ms cubic-bezier(.16,1,.3,1), height 220ms cubic-bezier(.16,1,.3,1), box-shadow 220ms cubic-bezier(.16,1,.3,1); }
 .shell.participant .type-dock::before { content: "Aa"; display:grid; place-items:center; height:2rem; border-radius:50%; background:#0d5b58; color:#f4f1e8; font-family:var(--serif); }
 .shell.participant .type-dock > * { opacity: 0; pointer-events: none; transition: opacity 120ms linear; }

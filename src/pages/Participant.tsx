@@ -134,7 +134,7 @@ export function ParticipantHome() {
             <h2>{view(next).title}</h2>
             <p>{view(next).short}</p>
           </div>
-          <Link to={`/participant/explore-consent/${next.id}`} aria-label={`Read ${view(next).title}`}>↗</Link>
+          <Link to={`/participant/explore-consent/${next.id}`} aria-label={`Read ${view(next).title}`}><span aria-hidden="true">→</span></Link>
         </div>
       </section>
       <section className="start-map" aria-label="Study form sections">
@@ -163,9 +163,9 @@ export function MyStudy() {
   return (
     <div className="page participant-form">
       <p className="kicker">{t.myStudy.kicker}</p>
-      <h1>{studyTitle(consent, language)}</h1>
+      <h1>Your form</h1>
       <p className="lede dark">
-        {consent.filename}
+        {studyTitle(consent, language)} · {consent.filename}
         {consent.sample ? t.myStudy.practice : ""}
       </p>
       <ol className="topic-index form-section-grid">
