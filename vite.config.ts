@@ -1,4 +1,5 @@
-import { defineConfig, loadEnv, type Connect, type Plugin } from "vite";
+import { existsSync, realpathSync } from "node:fs";
+import { defineConfig, loadEnv, searchForWorkspaceRoot, type Connect, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { createGeminiRelay, parseModels } from "./server/gemini-relay";
 import { teamSecrets } from "./server/team-secrets";
@@ -41,7 +42,14 @@ function geminiProxy(key: string, models: string[]): Plugin {
       send(result.status, result.body, result.model);
     });
   };
-  return { name: "aetheria-gemini-proxy", configureServer(server) { server.middlewares.use(handler); }, configurePreviewServer(server) { server.middlewares.use(handler); } };
+  return {
+    name: "aetheria-gemini-proxy",
+    configureServer(server) {
+      if (!key) server.config.logger.warn("Gemini is unavailable in this local server: set GEMINI_API_KEY in .env.local or add DOTENV_PRIVATE_KEY_TEAM in .env.keys to decrypt .env.team, then restart Vite.");
+      server.middlewares.use(handler);
+    },
+    configurePreviewServer(server) { server.middlewares.use(handler); },
+  };
 }
 
 export default defineConfig(({ mode }) => {
@@ -56,7 +64,14 @@ export default defineConfig(({ mode }) => {
   const env = { ...team, ...local };
   return {
     plugins: [react(), geminiProxy(env.GEMINI_API_KEY ?? "", parseModels(env.GEMINI_MODEL))],
-    server: { host: "0.0.0.0", port: 5173, proxy: { ...ollamaProxy, ...apiProxy } },
+    server: {
+      host: "0.0.0.0",
+      port: 5173,
+      proxy: { ...ollamaProxy, ...apiProxy },
+      // A worktree may link node_modules from another checkout. Allow its real path so imports
+      // such as pdfjs-dist's worker (?url) are not denied by Vite's file-system guard.
+      fs: { allow: [searchForWorkspaceRoot(process.cwd()), ...(existsSync("node_modules") ? [realpathSync("node_modules")] : [])] },
+    },
     preview: { proxy: { ...ollamaProxy, ...apiProxy } },
   };
 });

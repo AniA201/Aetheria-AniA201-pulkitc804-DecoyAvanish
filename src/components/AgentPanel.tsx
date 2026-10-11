@@ -48,7 +48,7 @@ type GuideCopy = {
 const guide: Record<OtherLanguage, GuideCopy> = {
   es: {
     starters: ["Escuché que hay 8 visitas. ¿Es cierto?", "¿Puedo salir del estudio más adelante?", "¿Qué significa placebo para mí?"],
-    launch: "Preguntar a la Guía",
+    launch: "Preguntar a Aetheria",
     title: "Guía de Aetheria",
     checking: "Buscando Gemini…",
     onComputer: "Respondiendo en esta computadora",
@@ -65,7 +65,7 @@ const guide: Record<OtherLanguage, GuideCopy> = {
   },
   fr: {
     starters: ["J'ai entendu dire qu'il y a 8 visites. C'est vrai ?", "Est-ce que je peux quitter l'étude plus tard ?", "Que veut dire placebo pour moi ?"],
-    launch: "Demander au Guide",
+    launch: "Demander à Aetheria",
     title: "Guide Aetheria",
     checking: "Recherche de Gemini…",
     onComputer: "Réponse sur cet ordinateur",
@@ -82,7 +82,7 @@ const guide: Record<OtherLanguage, GuideCopy> = {
   },
   zh: {
     starters: ["我听说有 8 次就诊，对吗？", "我以后可以退出吗？", "安慰剂对我来说是什么意思？"],
-    launch: "问问向导",
+    launch: "问问 Aetheria",
     title: "Aetheria 向导",
     checking: "正在查找 Gemini…",
     onComputer: "在这台电脑上回答",
@@ -158,7 +158,7 @@ export function AgentPanel({ role }: { role: Role }) {
   if (!open) {
     return (
       <button type="button" className="guide-launch" onClick={() => setOpen(true)}>
-        {ui ? ui.launch : "Ask the Guide"}
+        {ui ? ui.launch : "Ask Aetheria"}
       </button>
     );
   }

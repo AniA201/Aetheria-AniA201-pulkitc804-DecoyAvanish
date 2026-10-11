@@ -127,7 +127,7 @@ describe("say it plainly", () => {
     for (const text of [source.adult, source.caregiver]) {
       expect(checkDraft(text, source).every((check) => check.passed)).toBe(true);
     }
-    expect(toCaregiver(source.adult)).toMatch(/^The person in the study comes/);
+    expect(toCaregiver(source.adult)).toMatch(/^They visit the clinic/);
   });
 
   it("computes Flesch scores from the formula", () => {

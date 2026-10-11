@@ -36,12 +36,12 @@ function makePage(texture: THREE.Texture, width: number, height: number) {
   const group = new THREE.Group();
   const face = new THREE.Mesh(
     new THREE.PlaneGeometry(width, height),
-    new THREE.MeshBasicMaterial({ map: texture, color: "#ffffff", toneMapped: false, side: THREE.DoubleSide }),
+    new THREE.MeshBasicMaterial({ map: texture, color: "#f7f7f2", toneMapped: false, side: THREE.DoubleSide }),
   );
   face.position.z = 0.02;
   const edge = new THREE.Mesh(
     new THREE.BoxGeometry(width, height, 0.028),
-    new THREE.MeshBasicMaterial({ color: "#f6f1e6", toneMapped: false }),
+    new THREE.MeshBasicMaterial({ color: "#f7f7f2", toneMapped: false }),
   );
   group.add(edge, face);
   return { group, face, edge };
@@ -72,7 +72,10 @@ export function MedicalField({
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 40);
     camera.position.set(0.15, 0.05, 7.1);
-    const composer = reducedMotion ? null : new EffectComposer(renderer);
+    // The document needs to stay crisp while it is being read. The old
+    // full-scene blur compounded transparent pages into an unreadable stack.
+    let useScrollBlur = false;
+    const composer = reducedMotion || !useScrollBlur ? null : new EffectComposer(renderer);
     const blurPass = composer ? new ShaderPass(scrollBlur) : null;
     const outputPass = composer ? new OutputPass() : null;
     if (composer && blurPass && outputPass) {
@@ -88,7 +91,7 @@ export function MedicalField({
     };
 
     scene.add(new THREE.AmbientLight("#243036", 0.55));
-    const key = new THREE.SpotLight("#fff4e4", 28, 22, 0.48, 0.45, 1);
+    const key = new THREE.SpotLight("#f7f7f2", 28, 22, 0.48, 0.45, 1);
     key.position.set(0.4, 3.4, 6.2);
     scene.add(key);
     const rim = new THREE.DirectionalLight("#b7d4cc", 0.85);
@@ -100,6 +103,75 @@ export function MedicalField({
 
     const folio = new THREE.Group();
     scene.add(folio);
+
+    // One flat cover sheet: it matches the document dimensions, slides aside,
+    // and fades as the pages take over. There is no folding or hinge motion.
+    const folder = new THREE.Group();
+    const makeFolderPanel = (color: string, marked = false) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 584;
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Unable to draw folder cover");
+      context.fillStyle = color;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.strokeStyle = "rgba(207, 235, 221, 0.78)";
+      context.lineWidth = 7;
+      context.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+      if (marked) {
+        // Exact construction of /public/aetheria-mark.svg, drawn directly on
+        // the cover canvas so it remains visible above this WebGL sheet.
+        const s = canvas.width / 64;
+        context.save();
+        context.scale(s, s);
+        const left = new Path2D("M6 10c9 6 16 8 22 8v36c-6 0-13 2-22 8V10Z");
+        context.fillStyle = "#0D5B58";
+        context.fill(left);
+        // Use a solid mirrored right page. This reads more reliably than a
+        // stroked curve after the sheet is tilted in the WebGL scene.
+        context.beginPath();
+        context.moveTo(58, 10);
+        context.lineTo(36, 18);
+        context.lineTo(36, 54);
+        context.lineTo(58, 62);
+        context.closePath();
+        context.fillStyle = "#EEF9F0";
+        context.fill();
+        context.strokeStyle = "#083F3E";
+        context.lineWidth = 2;
+        context.lineJoin = "round";
+        context.stroke(new Path2D("M7 10c8.7 5.7 15.5 7.7 21 8v36c-5.5 0-12.3 2.3-21 8"));
+        context.stroke(new Path2D("M57 10c-8.7 5.7-15.5 7.7-21 8v36c5.5 0 12.3 2.3 21 8"));
+        context.strokeStyle = "#CFEBDD";
+        context.lineWidth = 2.5;
+        context.lineCap = "round";
+        [23, 29, 35, 41].forEach((y) => { context.beginPath(); context.moveTo(13, y); context.lineTo(23, y); context.stroke(); });
+        context.strokeStyle = "#0D5B58";
+        [23, 29, 35, 41].forEach((y) => { context.beginPath(); context.moveTo(41, y); context.lineTo(51, y); context.stroke(); });
+        const star = new Path2D("M32 27l2.6 4.4 4.4 2.6-4.4 2.6-2.6 4.4-2.6-4.4-4.4-2.6 4.4-2.6L32 27Z");
+        context.fillStyle = "#CFEBDD";
+        context.fill(star);
+        context.strokeStyle = "#083F3E";
+        context.lineWidth = 1.3;
+        context.stroke(star);
+        context.restore();
+      }
+      const texture = track(new THREE.CanvasTexture(canvas));
+      texture.colorSpace = THREE.SRGBColorSpace;
+      const material = track(new THREE.MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false, side: THREE.DoubleSide, depthWrite: false }));
+      const panel = new THREE.Mesh(track(new THREE.PlaneGeometry(1, 1)), material);
+      panel.scale.set(2.12, 2.74, 1);
+      return { panel, material };
+    };
+    const { panel: folderFront, material: navyFront } = makeFolderPanel("#063f4a");
+    folderFront.position.set(0, 0, 0.08);
+    folderFront.renderOrder = 1;
+    folder.add(folderFront);
+    // The landing stage now opens directly into the documents. Keep this
+    // legacy cover out of the scene rather than layering it over the pages.
+    folder.visible = false;
+    folio.add(folder);
+
     const pages = folioTextures.pages.map((sheet) => makePage(sheet.texture, 1.56, 2.02));
     folio.add(...pages.map((page) => page.group));
     pages.forEach((page) => {
@@ -107,19 +179,6 @@ export function MedicalField({
       track(page.face.material);
       track(page.edge.geometry);
       track(page.edge.material);
-    });
-
-    const shadowGeometry = track(new THREE.CircleGeometry(0.58, 40));
-    const shadows = pages.map(() => {
-      const material = track(
-        new THREE.MeshBasicMaterial({ color: "#000000", transparent: true, opacity: 0.34, depthWrite: false }),
-      );
-      const mesh = new THREE.Mesh(shadowGeometry, material);
-      mesh.rotation.x = -Math.PI / 2;
-      mesh.position.y = -1.08;
-      mesh.renderOrder = -1;
-      folio.add(mesh);
-      return mesh;
     });
 
     document.fonts?.ready.then(folioTextures.redraw).catch(() => undefined);
@@ -167,9 +226,10 @@ export function MedicalField({
       const turn = reducedMotion ? 1 : smoothstep(progress / 0.25);
       // Have the full stack in view as the chapter list enters the viewport.
       const fan = reducedMotion ? 1 : smoothstep((progress - 0.1) / 0.25);
+      const folderExit = reducedMotion ? 1 : smoothstep((progress - 0.12) / 0.28);
       const yaw = -0.95 + turn * 0.8;
       const heroPosition = 1 - turn;
-      const heroRightShift = parent.clientWidth < 600 ? 0.18 : 0.7;
+      const heroRightShift = parent.clientWidth < 600 ? 0.18 : 1.35;
 
       folio.position.set(
         (narrow ? 1.15 : 0.85) - turn * (narrow ? 0.55 : 0.48) - heroPosition * (narrow ? 0.16 : 0.27) + heroPosition * heroRightShift,
@@ -179,26 +239,44 @@ export function MedicalField({
       folio.scale.setScalar(narrow ? 0.7 : 0.92);
       folio.rotation.set(sway.y * 0.04, yaw + sway.x * 0.06, 0);
 
+      // Keep the sheet flat, then move it clear of the document stack.
+      folderFront.position.set(-folderExit * 1.45, folderExit * 0.03, 0.08 - folderExit * 0.28);
+      folder.position.set(0, 0, 0);
+      // The folio itself is angled for the paper depth. Counter that angle for
+      // the folder so its closed front remains a clear, square navy panel.
+      folder.rotation.set(0, -yaw - sway.x * 0.06, 0);
+      folder.scale.setScalar(0.68);
+      navyFront.opacity = Math.max(0, 1 - folderExit * 1.04);
+
       const spacing = narrow ? 0.12 : 0.47;
       const lanes = [
-        { restX: 0, restZ: 0.1, outX: 0, outY: 0, outZ: 0.1 },
-        { restX: -0.03, restZ: 0.04, outX: spacing, outY: 0.07, outZ: 0.04 },
-        { restX: -0.06, restZ: -0.02, outX: spacing * 2, outY: 0.14, outZ: -0.02 },
-        { restX: -0.09, restZ: -0.08, outX: spacing * 3, outY: 0.21, outZ: -0.08 },
+        { restX: 0, restY: 0, restZ: 0.1, outX: 0, outY: 0, outZ: 0.1 },
+        { restX: -0.16, restY: 0.04, restZ: 0.04, outX: spacing, outY: 0.07, outZ: 0.04 },
+        { restX: -0.32, restY: 0.08, restZ: -0.02, outX: spacing * 2, outY: 0.14, outZ: -0.02 },
+        { restX: -0.48, restY: 0.12, restZ: -0.08, outX: spacing * 3, outY: 0.21, outZ: -0.08 },
       ];
+      const visibleIndex = selectedPaperRef.current < 0 ? 0 : selectedPaperRef.current;
       pages.forEach((page, index) => {
         const lane = lanes[index];
-        const t = smoothstep(Math.min(1, Math.max(0, (fan - index * 0.06) / 0.82)));
+        const t = smoothstep(Math.min(1, Math.max(0, (fan - index * 0.1) / (1 - index * 0.1))));
         page.group.position.set(
           lane.restX + (lane.outX - lane.restX) * t,
-          lane.outY * t,
+          lane.restY + (lane.outY - lane.restY) * t,
           lane.restZ + (lane.outZ - lane.restZ) * t,
         );
         page.group.rotation.set(0, 0, [-0.018, 0.016, -0.014, 0.02][index] * fan);
         page.group.scale.setScalar(1);
+        // A readable first document anchors the landing stage from the first
+        // frame. Scrolling then fans the rest of the stack outward.
+        const pageReveal = 1;
+        (page.face.material as THREE.MeshBasicMaterial).opacity = pageReveal;
+        (page.edge.material as THREE.MeshBasicMaterial).opacity = pageReveal;
+        // Start with a real overlapping stack, then fan the same sheets out
+        // as the reader begins scrolling.
+        page.group.visible = pageReveal > 0.01;
       });
 
-      const selectedIndex = selectedPaperRef.current;
+      const selectedIndex = visibleIndex;
       pages.forEach((page, index) => {
         focusLevels[index] += ((index === selectedIndex ? 1 : 0) - focusLevels[index]) * (reducedMotion ? 1 : 0.095);
         page.group.position.x += focusLevels[index] * fan * (narrow ? -index * spacing : [1.12, 0.72, 0.45, 0.18][index]);
@@ -209,14 +287,6 @@ export function MedicalField({
         page.group.rotation.z -= focusLevels[index] * fan * 0.025;
         page.face.renderOrder = index === selectedIndex ? 2 : 0;
         page.edge.renderOrder = index === selectedIndex ? 1 : 0;
-      });
-
-      const facing = 0.34 + turn * 0.66;
-      pages.forEach((page, index) => {
-        const shadow = shadows[index];
-        shadow.position.set(page.group.position.x, -1.12, page.group.position.z + 0.04);
-        shadow.scale.set(facing, 0.16, 1);
-        (shadow.material as THREE.MeshBasicMaterial).opacity = index === selectedIndex ? 0.47 : 0.22;
       });
 
       camera.position.set(0.15 + sway.x * 0.2, 0.06 - sway.y * 0.08, 7.35 - turn * 0.35);

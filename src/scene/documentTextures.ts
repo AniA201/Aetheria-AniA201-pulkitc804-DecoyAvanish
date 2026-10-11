@@ -4,7 +4,8 @@ import { facts, sections, study } from "../data/study";
 const WIDTH = 1024;
 const HEIGHT = 1320;
 const SCALE = 2;
-const paper = "#f8f6ee";
+// Powder is the shared document surface across the interface.
+const paper = "#f7f7f2";
 const ink = "#1c2927";
 const teal = "#0d5b58";
 
@@ -54,7 +55,7 @@ function pageFrame(context: CanvasRenderingContext2D, kind: string, tab: string,
   context.translate(WIDTH - 72, 212);
   context.rotate(Math.PI / 2);
   context.font = "600 37px Newsreader, Georgia, serif";
-  context.fillStyle = "#f8f6ee";
+  context.fillStyle = paper;
   context.fillText(tab.toUpperCase(), 0, 0);
   context.restore();
 }
@@ -74,9 +75,9 @@ function footer(context: CanvasRenderingContext2D, label: string) {
 }
 
 function sectionPage(context: CanvasRenderingContext2D, index: number) {
-  const names = ["Read", "Ask", "Feedback", "Review"];
+  const names = ["Read", "Ask", "Evaluate", "Review"];
   const accent = teal;
-  pageFrame(context, "Aetheria / sample study", names[index], accent, "#fffdf8");
+  pageFrame(context, "Aetheria / sample study", names[index], accent, paper);
   context.fillStyle = accent;
   context.font = "500 98px Newsreader, Georgia, serif";
   context.fillText(names[index].toUpperCase() + ".", 72, 280, WIDTH - 270);
