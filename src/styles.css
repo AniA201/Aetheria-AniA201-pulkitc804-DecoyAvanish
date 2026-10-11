@@ -1947,6 +1947,7 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
   transform: translateX(-50%);
 }
 .auth-reference:not(.auth-entry) { overflow-x: hidden; }
+.auth-reference:not(.auth-entry)::before { display: none; }
 .auth-reference:not(.auth-entry) .auth-reference-layout {
   grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
 }
