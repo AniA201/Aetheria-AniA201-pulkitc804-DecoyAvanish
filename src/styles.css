@@ -2134,7 +2134,7 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
 .shell.participant .ask-studio .ask-form {
   grid-column: 1;
   grid-row: 3;
-  position: static;
+  position: relative;
   display: block;
   width: min(92%, 56rem);
   min-height: 0;
@@ -2194,7 +2194,7 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
 @media (max-width: 900px) {
   .shell.participant .page,
   .shell.participant .reader,
-  .shell.participant .reader.text-only { padding: 1.15rem 1rem 8.5rem; }
+  .shell.participant .reader.text-only { padding: 1.15rem 1rem 12rem; }
   .shell.participant .reader,
   .shell.participant .reader.text-only { grid-template-columns: 1fr; }
   .shell.participant .chapter-nav {
@@ -2208,6 +2208,25 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
   .shell.participant .ask-page,
   .shell.participant .check-layout,
   .shell.participant .summary-grid { grid-template-columns: 1fr; }
+}
+
+/* Keep the wide Ask screen as one centered conversation surface. */
+@media (min-width: 1180px) {
+  .shell.participant .ask-studio {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(12rem, .6fr) minmax(20rem, 1fr) auto;
+  }
+  .shell.participant .ask-studio .panel-head,
+  .shell.participant .ask-studio .thread,
+  .shell.participant .ask-studio .ask-form { grid-column: 1; }
+  .shell.participant .ask-studio .panel-head { grid-row: 1; }
+  .shell.participant .ask-studio .thread { grid-row: 2; }
+  .shell.participant .ask-studio .ask-form {
+    grid-row: 3;
+    position: relative;
+    top: auto;
+    align-self: end;
+  }
 }
 html[data-contrast="high"] .passage,
 html[data-contrast="high"] .citation,
