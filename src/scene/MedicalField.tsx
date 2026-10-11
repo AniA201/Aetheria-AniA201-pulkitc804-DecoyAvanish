@@ -181,19 +181,6 @@ export function MedicalField({
       track(page.edge.material);
     });
 
-    const shadowGeometry = track(new THREE.CircleGeometry(0.58, 40));
-    const shadows = pages.map(() => {
-      const material = track(
-        new THREE.MeshBasicMaterial({ color: "#000000", transparent: true, opacity: 0.34, depthWrite: false }),
-      );
-      const mesh = new THREE.Mesh(shadowGeometry, material);
-      mesh.rotation.x = -Math.PI / 2;
-      mesh.position.y = -1.08;
-      mesh.renderOrder = -1;
-      folio.add(mesh);
-      return mesh;
-    });
-
     document.fonts?.ready.then(folioTextures.redraw).catch(() => undefined);
 
     const pointer = { x: 0, y: 0 };
@@ -300,14 +287,6 @@ export function MedicalField({
         page.group.rotation.z -= focusLevels[index] * fan * 0.025;
         page.face.renderOrder = index === selectedIndex ? 2 : 0;
         page.edge.renderOrder = index === selectedIndex ? 1 : 0;
-      });
-
-      const facing = 0.34 + turn * 0.66;
-      pages.forEach((page, index) => {
-        const shadow = shadows[index];
-        shadow.position.set(page.group.position.x, -1.12, page.group.position.z + 0.04);
-        shadow.scale.set(facing, 0.16, 1);
-        (shadow.material as THREE.MeshBasicMaterial).opacity = index === selectedIndex ? 0.47 : 0.22;
       });
 
       camera.position.set(0.15 + sway.x * 0.2, 0.06 - sway.y * 0.08, 7.35 - turn * 0.35);

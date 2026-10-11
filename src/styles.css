@@ -4192,3 +4192,18 @@ html:not([data-contrast="high"]) .auth-form-reference input {
 @media (prefers-reduced-motion: reduce) {
   .type-dock-options, .type-dock-trigger { transition-duration: .01ms !important; }
 }
+
+/* Registration keeps one quiet, pointer-responsive 3D mark in the open field. */
+.auth-reference:not(.auth-entry) .registration-orbit-3d {
+  top: 44%;
+  left: 50%;
+  right: auto;
+  width: min(15rem, 38%);
+  transform: translateX(-50%);
+  filter: drop-shadow(0 14px 18px rgba(13, 91, 88, .16));
+  opacity: .94;
+}
+.auth-reference:not(.auth-entry) .auth-login-title h2 { font-size: clamp(3.15rem, 4.8vw, 4.7rem); line-height: .88; }
+@media (max-width: 900px) {
+  .auth-reference:not(.auth-entry) .registration-orbit-3d { top: 40%; width: min(13rem, 42%); }
+}
