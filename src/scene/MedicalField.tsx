@@ -36,12 +36,12 @@ function makePage(texture: THREE.Texture, width: number, height: number) {
   const group = new THREE.Group();
   const face = new THREE.Mesh(
     new THREE.PlaneGeometry(width, height),
-    new THREE.MeshBasicMaterial({ map: texture, color: "#f7f7f2", toneMapped: false, side: THREE.DoubleSide, transparent: true }),
+    new THREE.MeshBasicMaterial({ map: texture, color: "#f7f7f2", toneMapped: false, side: THREE.DoubleSide }),
   );
   face.position.z = 0.02;
   const edge = new THREE.Mesh(
     new THREE.BoxGeometry(width, height, 0.028),
-    new THREE.MeshBasicMaterial({ color: "#f7f7f2", toneMapped: false, transparent: true }),
+    new THREE.MeshBasicMaterial({ color: "#f7f7f2", toneMapped: false }),
   );
   group.add(edge, face);
   return { group, face, edge };
@@ -72,7 +72,10 @@ export function MedicalField({
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 40);
     camera.position.set(0.15, 0.05, 7.1);
-    const composer = reducedMotion ? null : new EffectComposer(renderer);
+    // The document needs to stay crisp while it is being read. The old
+    // full-scene blur compounded transparent pages into an unreadable stack.
+    let useScrollBlur = false;
+    const composer = reducedMotion || !useScrollBlur ? null : new EffectComposer(renderer);
     const blurPass = composer ? new ShaderPass(scrollBlur) : null;
     const outputPass = composer ? new OutputPass() : null;
     if (composer && blurPass && outputPass) {
@@ -164,6 +167,9 @@ export function MedicalField({
     folderFront.position.set(0, 0, 0.08);
     folderFront.renderOrder = 1;
     folder.add(folderFront);
+    // The landing stage now opens directly into the documents. Keep this
+    // legacy cover out of the scene rather than layering it over the pages.
+    folder.visible = false;
     folio.add(folder);
 
     const pages = folioTextures.pages.map((sheet) => makePage(sheet.texture, 1.56, 2.02));
@@ -262,6 +268,7 @@ export function MedicalField({
         { restX: -0.06, restZ: -0.02, outX: spacing * 2, outY: 0.14, outZ: -0.02 },
         { restX: -0.09, restZ: -0.08, outX: spacing * 3, outY: 0.21, outZ: -0.08 },
       ];
+      const visibleIndex = selectedPaperRef.current < 0 ? 0 : selectedPaperRef.current;
       pages.forEach((page, index) => {
         const lane = lanes[index];
         const t = smoothstep(Math.min(1, Math.max(0, (fan - index * 0.06) / 0.82)));
@@ -275,12 +282,12 @@ export function MedicalField({
         const pageReveal = reducedMotion ? 1 : smoothstep((progress - 0.04) / 0.42);
         (page.face.material as THREE.MeshBasicMaterial).opacity = pageReveal;
         (page.edge.material as THREE.MeshBasicMaterial).opacity = pageReveal;
-        // Avoid showing a lone document edge before the document itself has
-        // entered the scene.
-        page.group.visible = pageReveal > 0.01;
+        // A single opaque page is readable; stacked transparent documents are
+        // not. Reveal the selected document only.
+        page.group.visible = pageReveal > 0.01 && index === visibleIndex;
       });
 
-      const selectedIndex = selectedPaperRef.current;
+      const selectedIndex = visibleIndex;
       pages.forEach((page, index) => {
         focusLevels[index] += ((index === selectedIndex ? 1 : 0) - focusLevels[index]) * (reducedMotion ? 1 : 0.095);
         page.group.position.x += focusLevels[index] * fan * (narrow ? -index * spacing : [1.12, 0.72, 0.45, 0.18][index]);

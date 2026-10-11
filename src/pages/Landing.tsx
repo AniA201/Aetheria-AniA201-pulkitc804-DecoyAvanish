@@ -77,7 +77,6 @@ export function Landing() {
       const progress = Math.min(1, Math.max(0, (window.scrollY - root.offsetTop) / distance));
       progressRef.current = progress;
       root.style.setProperty("--stage-opacity", "1");
-      root.style.setProperty("--landing-progress", progress.toString());
       const position = window.scrollY + window.innerHeight * 0.42;
       const next = index.reduce((active, item, itemIndex) => {
         const section = document.getElementById(item.id);
@@ -120,10 +119,13 @@ export function Landing() {
           // Each glyph has its own finish line: it arrives just as its heading
           // reaches the reading area, rather than all four settling together.
           const settleAt = end.top + window.scrollY - window.innerHeight * 0.62;
-          const duration = Math.max(window.innerHeight * 0.35, settleAt - flightStart);
+          // Each letter begins its trip shortly before its own title enters
+          // view, rather than crossing an earlier section.
+          const transferStart = Math.max(flightStart, settleAt - window.innerHeight * 1.15);
+          const duration = Math.max(window.innerHeight * 0.35, settleAt - transferStart);
           nextProgress[spec.key] = quiet || window.scrollY < 12
             ? 0
-            : Math.min(1, Math.max(0, (window.scrollY - flightStart) / duration));
+            : Math.min(1, Math.max(0, (window.scrollY - transferStart) / duration));
         });
         setLetterPaths((current) => letterTransfers.every(({ key }) => {
           const previous = current[key];
@@ -319,7 +321,6 @@ export function Landing() {
               filter: `blur(${flight * 1.6}px)`,
             }}>{letter}</span>;
           })}</p>
-          <div className="folio-sheet-mark" aria-hidden="true"><AetheriaMark /></div>
           <p className="folio-kicker">Clinical study documents</p>
           <h1><span>Long forms.</span><span>Plain words.</span></h1>
           <p className="folio-lede">
