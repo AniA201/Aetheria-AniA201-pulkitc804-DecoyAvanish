@@ -63,7 +63,6 @@ export function ListenButton({ text, lang }: { text: string; lang?: VoiceLang })
 const participantNav = [
   { to: "/participant/home", key: "start", end: true },
   { to: "/participant/my-study", key: "form" },
-  { to: "/participant/explore-consent", key: "read" },
   { to: "/participant/ask", key: "ask" },
   { to: "/participant/teach-back", key: "check" },
   { to: "/participant/summary", key: "summary" },

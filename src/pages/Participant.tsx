@@ -168,7 +168,12 @@ export function MyStudy() {
         {studyTitle(consent, language)} · {consent.filename}
         {consent.sample ? t.myStudy.practice : ""}
       </p>
-      <ol className="topic-index form-section-grid">
+      <div className="form-reader-action">
+        <Link className="btn on-paper" to={`/participant/explore-consent/${consent.sections[0].id}`}>
+          {t.home.read}
+        </Link>
+      </div>
+      <ol className={`topic-index form-section-grid ${consent.sections.length > 1 && consent.sections.length % 2 === 1 ? "has-centered-last" : ""}`}>
         {consent.sections.map((section) => (
           <li key={section.id}>
             <Link to={`/participant/explore-consent/${section.id}`}>
@@ -492,7 +497,20 @@ export function Ask() {
           <div className="ask-empty-state">
             <p>What would you like to understand?</p>
             <div className="ask-whispers" aria-label="Sample questions">
-              {["How many visits are there?", "Can I leave later?", "What does placebo mean?", "What will I be paid?"].map((prompt) => (
+              {[
+                "How many visits are there?",
+                "Can I leave later?",
+                "What does placebo mean?",
+                "What will I be paid?",
+                "How long is each visit?",
+                "Will anyone know my group?",
+                "What happens at a blood draw?",
+                "Can I bring someone with me?",
+                "What records will be kept?",
+                "Who can I contact with questions?",
+                "Do I have to pay for anything?",
+                "What happens if I change my mind?",
+              ].map((prompt) => (
                 <button key={prompt} type="button" onClick={() => setDraft(prompt)}>{prompt}</button>
               ))}
             </div>

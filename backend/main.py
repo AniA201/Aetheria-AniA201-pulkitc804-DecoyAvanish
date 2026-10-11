@@ -16,7 +16,13 @@ from sqlalchemy.exc import IntegrityError
 
 base_dir = Path(__file__).parent
 load_dotenv(base_dir / ".env", override=True)
-DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{base_dir / 'aetheria.db'}")
+configured_database_url = os.environ.get("DATABASE_URL", f"sqlite:///{base_dir / 'aetheria.db'}")
+# Resolve the documented sqlite:///./... form from this backend's directory, not
+# from whichever shell happened to launch the FastAPI process.
+if configured_database_url.startswith("sqlite:///./"):
+    DATABASE_URL = f"sqlite:///{base_dir / configured_database_url.removeprefix('sqlite:///./')}"
+else:
+    DATABASE_URL = configured_database_url
 JWT_SECRET = os.environ.get("JWT_SECRET", "change-this-local-secret")
 RESEARCHER_REGISTRATION_KEY = os.environ.get("RESEARCHER_REGISTRATION_KEY")
 
@@ -25,7 +31,7 @@ engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} i
 app = FastAPI(title="Aetheria API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174"],
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
     allow_credentials=True,
@@ -116,7 +122,7 @@ def startup():
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "ok", "database": "sqlite"}
+    return {"status": "ok", "database": engine.url.get_backend_name()}
 
 
 def token_for(user):
@@ -205,13 +211,16 @@ def list_participant_messages(user=Depends(current_user)):
 
 @app.post("/api/handoffs/{handoff_id}/messages", status_code=status.HTTP_201_CREATED)
 def create_handoff_message(handoff_id: str, payload: MessageRequest, user=Depends(current_user)):
+    message = payload.message.strip()
+    if not message:
+        raise HTTPException(status_code=422, detail="Write a message before sending it.")
     with engine.begin() as connection:
         handoff = connection.execute(text("SELECT user_id FROM handoffs WHERE id = :id"), {"id": handoff_id}).mappings().first()
         if not handoff:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="That follow-up no longer exists.")
         if user["role"] == "client" and handoff["user_id"] != user["id"]:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only reply to your own follow-ups.")
-        row = {"id": str(uuid4()), "handoff_id": handoff_id, "author_id": user["id"], "message": payload.message.strip()}
+        row = {"id": str(uuid4()), "handoff_id": handoff_id, "author_id": user["id"], "message": message}
         connection.execute(text("""
             INSERT INTO handoff_messages (id, handoff_id, author_id, message)
             VALUES (:id, :handoff_id, :author_id, :message)
