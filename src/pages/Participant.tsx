@@ -137,19 +137,23 @@ export function MyStudy() {
   const view = useShown(consent);
   if (!consent) return <NeedFile title={t.myStudy.none} />;
   return (
-    <div className="page">
+    <div className="page participant-form">
       <p className="kicker">{t.myStudy.kicker}</p>
       <h1>{studyTitle(consent, language)}</h1>
       <p className="lede dark">
         {consent.filename}
         {consent.sample ? t.myStudy.practice : ""}
       </p>
-      <ol className="topic-index">
+      <ol className="topic-index form-section-grid">
         {consent.sections.map((section) => (
           <li key={section.id}>
             <Link to={`/participant/explore-consent/${section.id}`}>
-              <span>{section.index}</span>
-              <strong>{view(section).title}</strong>
+              <span className="section-card-number">{section.index}</span>
+              <span className="section-card-copy">
+                <strong>{view(section).title}</strong>
+                <small>{view(section).short}</small>
+              </span>
+              <span className="section-card-arrow" aria-hidden="true">↗</span>
             </Link>
           </li>
         ))}
@@ -453,14 +457,20 @@ export function Ask() {
   return (
     <div className="page ask-page ask-studio">
       <header className="panel-head">
-        <div className="ask-greeting" aria-hidden="true">
-          <strong>Ask Aetheria</strong>
+        <div className="ask-greeting">
+          <strong><span>Ask</span><span>Aetheria</span></strong>
+          <span className="ask-greeting-note">Five sections of your form, in view</span>
         </div>
       </header>
       <div className="thread" aria-live="polite">
         {messages.length === 0 && (
           <div className="ask-empty-state">
             <p>What would you like to understand?</p>
+            <div className="ask-whispers" aria-label="Sample questions">
+              {["How many visits are there?", "Can I leave later?", "What does placebo mean?", "What will I be paid?"].map((prompt) => (
+                <button key={prompt} type="button" onClick={() => setDraft(prompt)}>{prompt}</button>
+              ))}
+            </div>
             <div className="suggestions">
               {consent.sections.slice(0, 4).map((item) => {
                 const local = view(item);
@@ -539,11 +549,11 @@ export function Ask() {
         <label className="sr-only" htmlFor="question">Your question</label>
         <textarea id="question" value={draft} onChange={(event) => setDraft(event.target.value)} rows={1} placeholder="Ask about your study form" />
         <div className="ask-form-actions">
-          <button className="btn solid dark" type="submit">
-            {t.ask.send}
+          <button className="btn solid dark ask-send" type="submit" aria-label={t.ask.send}>
+            <span aria-hidden="true">↑</span>
           </button>
-          <button className="btn on-paper" type="button" onClick={dictation.start}>
-            {t.ask.dictate}
+          <button className="btn on-paper ask-dictate" type="button" onClick={dictation.start} aria-label={t.ask.dictate} title={t.ask.dictate}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5a3 3 0 0 0-3 3v5a3 3 0 1 0 6 0v-5a3 3 0 0 0-3-3Zm-5 7.3v.7a5 5 0 0 0 10 0v-.7M12 16.5V21M8.5 21h7" /></svg>
           </button>
         </div>
         {dictation.note ? <p className="fine">{dictation.note}</p> : null}

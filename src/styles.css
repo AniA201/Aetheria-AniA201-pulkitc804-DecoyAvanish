@@ -468,6 +468,8 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
 .brief-grid label { display: grid; gap: 0.25rem; font-size: 0.9rem; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .check-row { display: flex; gap: 0.5rem; align-items: center; margin: 0.6rem 0; }
+.check-row input { flex: 0 0 auto; width: 1.05rem; height: 1.05rem; margin: .12rem 0 0; }
+.check-row { gap: .72rem; }
 .sheet-cards { margin-top: 2rem; }
 .sheet-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1rem; }
 .sheet-card-grid ul { margin: 0.4rem 0 0.8rem; padding-left: 1.1rem; display: grid; gap: 0.3rem; }
@@ -2094,7 +2096,7 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
   place-items: end center;
   padding: clamp(2rem, 7vw, 5.8rem) 1rem 1rem;
   border: 0;
-  background: radial-gradient(circle at 50% 100%, rgba(255,253,248,.55), transparent 18rem);
+  background: transparent;
 }
 .shell.participant .ask-greeting {
   position: relative;
@@ -2109,9 +2111,13 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
   color: #083f3e;
   font-size: clamp(3.5rem, 8vw, 7.5rem);
   font-weight: 500;
-  letter-spacing: -0.07em;
-  text-shadow: 3px 4px 0 rgba(8,63,62,.24), 0 14px 25px rgba(7,63,60,.16);
+  display: inline-flex;
+  gap: .18em;
+  letter-spacing: -0.055em;
+  text-shadow: 3px 4px 0 rgba(8,63,62,.34), 0 14px 25px rgba(7,63,60,.2);
 }
+.shell.participant .ask-greeting strong > span { font-size: inherit; }
+.shell.participant .ask-greeting-note { margin-top: .55rem; color: rgba(8,63,62,.7); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; }
 .shell.participant .ask-studio .thread {
   grid-column: 1;
   display: grid;
@@ -2132,6 +2138,9 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
   font-size: clamp(1.35rem, 2.5vw, 2rem);
 }
 .shell.participant .ask-empty-state .suggestions { justify-content: center; }
+.shell.participant .ask-whispers { display: flex; flex-wrap: wrap; justify-content: center; gap: .55rem 1rem; margin: 0 auto 1.35rem; max-width: 44rem; }
+.shell.participant .ask-whispers button { border: 0; padding: .1rem 0; background: transparent; color: rgba(13,91,88,.42); font: inherit; font-size: clamp(.82rem, 1.5vw, 1rem); font-style: italic; cursor: pointer; transition: color 180ms cubic-bezier(.16,1,.3,1), transform 180ms cubic-bezier(.16,1,.3,1), text-shadow 180ms cubic-bezier(.16,1,.3,1); }
+.shell.participant .ask-whispers button:hover, .shell.participant .ask-whispers button:focus-visible { color: #0d5b58; transform: translateY(-2px); text-shadow: 0 7px 13px rgba(7,63,60,.22); outline: none; }
 .shell.participant .ask-studio .ask-form {
   grid-column: 1;
   grid-row: 3;
@@ -2171,8 +2180,42 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
   border-radius: 50%;
   font-size: 0;
 }
-.shell.participant .ask-form-actions .btn::before { content: "↑"; font-family: var(--serif); font-size: 1.5rem; }
-.shell.participant .ask-form-actions .btn.on-paper::before { content: "◌"; }
+.shell.participant .ask-form-actions .btn::before { content: none; }
+.shell.participant .ask-send span { font-family: var(--serif); font-size: 1.5rem; line-height: 1; }
+.shell.participant .ask-dictate { color: #0d5b58; background: #f4f1e8; }
+.shell.participant .ask-dictate svg { width: 1.25rem; height: 1.25rem; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* The form list is a set of short working cards, not a wall of rows. */
+.shell.participant .participant-form .form-section-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 66rem; gap: .8rem; }
+.shell.participant .participant-form .form-section-grid li { min-width: 0; }
+.shell.participant .participant-form .form-section-grid a { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; min-height: 9.8rem; gap: 1rem; padding: 1.15rem; border: 1px solid rgba(13,91,88,.24); background: #f4f1e8; color: #0b4644; box-shadow: 0 10px 22px rgba(16,43,53,.1), 5px 6px 0 rgba(13,91,88,.1); transition: transform 190ms cubic-bezier(.16,1,.3,1), box-shadow 190ms cubic-bezier(.16,1,.3,1), background 190ms cubic-bezier(.16,1,.3,1); }
+.shell.participant .participant-form .form-section-grid a:hover, .shell.participant .participant-form .form-section-grid a:focus-visible { background: #e6f4ec; transform: translateY(-4px); box-shadow: 0 18px 30px rgba(16,43,53,.15), 7px 8px 0 rgba(13,91,88,.18); outline: none; }
+.shell.participant .participant-form .form-section-grid li:nth-child(3n + 1) a { background: #0d5b58; color: #f4f1e8; border-color: #0d5b58; }
+.shell.participant .participant-form .form-section-grid li:nth-child(3n + 1) a:hover, .shell.participant .participant-form .form-section-grid li:nth-child(3n + 1) a:focus-visible { background: #073f3d; }
+.shell.participant .participant-form .section-card-number { color: inherit; font-size: .74rem; font-variant-numeric: tabular-nums; letter-spacing: .12em; opacity: .76; }
+.shell.participant .participant-form .section-card-copy { display: grid; gap: .55rem; min-width: 0; }
+.shell.participant .participant-form .section-card-copy strong { font-family: var(--serif); font-size: clamp(1.25rem, 2vw, 1.65rem); line-height: 1.02; }
+.shell.participant .participant-form .section-card-copy small { color: inherit; font-size: .86rem; line-height: 1.35; opacity: .72; }
+.shell.participant .participant-form .section-card-arrow { color: inherit; font-size: 1.1rem; opacity: .8; }
+
+/* Motion is a brief focus cue: every working page settles in sharp, and frequent controls stay instant. */
+@media (prefers-reduced-motion: no-preference) {
+  .shell.participant .page, .shell.participant .reader { animation: participant-arrive 240ms cubic-bezier(.16,1,.3,1) both; }
+  @keyframes participant-arrive { from { opacity: .68; transform: translateY(8px); filter: blur(2px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+}
+@media (prefers-reduced-motion: reduce) { .shell.participant .page, .shell.participant .reader { animation: none; } }
+
+/* The guide opens from its launcher and uses teal layers rather than large white panels. */
+.guide-panel { transform-origin: bottom right; background: #e7f3eb; border-color: rgba(13,91,88,.38); box-shadow: 0 24px 60px rgba(7,63,60,.24), 7px 8px 0 rgba(13,91,88,.18); }
+.guide-log { background: #d8eee3; }
+.guide-starters { gap: .65rem; }
+.shell .guide-panel .chip { border-color: rgba(13,91,88,.34); background: #c5e6d8; box-shadow: 0 5px 0 rgba(13,91,88,.12); }
+.guide-panel .guide-form { background: #e7f3eb; }
+@media (prefers-reduced-motion: no-preference) { .guide-panel { animation: guide-expand 230ms cubic-bezier(.16,1,.3,1) both; } @keyframes guide-expand { from { opacity: 0; transform: translateY(10px) scale(.98); filter: blur(2px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } } }
+
+/* Prevent the desktop legacy layout from moving the Ask input into a side rail. */
+@media (min-width: 1180px) { .shell.participant .ask-page { grid-template-columns: 1fr; } .shell.participant .ask-page .panel-head, .shell.participant .ask-page .thread, .shell.participant .ask-page .ask-form { grid-column: 1; } .shell.participant .ask-page .ask-form { grid-row: 3; position: relative; top: auto; align-self: auto; } }
+@media (max-width: 760px) { .shell.participant .participant-form .form-section-grid { grid-template-columns: 1fr; } .shell.participant .participant-form .form-section-grid a { min-height: 7.3rem; } .shell.participant .type-dock { left: .9rem; right: auto; max-width: calc(100vw - 1.8rem); overflow: hidden; } }
 @media (max-width: 540px) {
   .shell.participant .type-dock { left: 0.75rem; bottom: 0.75rem; max-width: 12.5rem; }
   .shell.participant .type-dock button { width: 1.9rem; height: 1.9rem; font-size: .85rem; }
