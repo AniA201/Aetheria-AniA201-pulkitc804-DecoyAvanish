@@ -4208,6 +4208,15 @@ html:not([data-contrast="high"]) .auth-form-reference input {
   max-width: min(100%, 32rem);
   font-size: clamp(4.25rem, 6.25vw, 7.1rem);
   line-height: .86;
+  color: rgba(13, 91, 88, .48);
+  text-shadow: none;
+}
+.auth-reference:not(.auth-entry) .auth-showcase-word {
+  color: #083f3e;
+  font-size: clamp(5.5rem, 15cqi, 12.5rem);
+  letter-spacing: -.095em;
+  text-shadow: 2px 5px 10px rgba(13, 91, 88, .14);
+  transform: translateX(-50%) scaleX(.86);
 }
 @media (max-width: 900px) {
   .auth-reference:not(.auth-entry) .registration-orbit-3d { top: 40%; width: min(13rem, 42%); }
