@@ -1928,7 +1928,34 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
 .auth-reference:not(.auth-entry) .auth-showcase-minimal .auth-showcase-copy h1 {
   max-width: min(100%, 26rem);
   font-size: clamp(2.6rem, 4.15vw, 4.3rem);
+  overflow-wrap: anywhere;
 }
+
+/* Registration gets a single blurred mark in the open left field, rather
+   than the former stack of animated pages. */
+.auth-reference:not(.auth-entry) .auth-showcase.auth-showcase-minimal::after {
+  top: 25%;
+  right: 12%;
+  width: min(24rem, 52%);
+  aspect-ratio: 1;
+  border: 0;
+  background: url("/aetheria-mark.svg") center / contain no-repeat;
+  box-shadow: none;
+  filter: blur(7px);
+  opacity: .28;
+  transform: rotate(-7deg);
+}
+.auth-reference:not(.auth-entry) { overflow-x: hidden; }
+.auth-reference:not(.auth-entry) .auth-reference-layout {
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
+}
+.auth-reference:not(.auth-entry) .auth-login-shell {
+  min-width: 0;
+  box-sizing: border-box;
+  padding: clamp(2rem, 5vw, 5rem);
+}
+.auth-reference:not(.auth-entry) .auth-login-card { min-width: 0; width: min(100%, 30rem); }
+.auth-reference:not(.auth-entry) .auth-login-title h2 { max-width: 100%; overflow-wrap: anywhere; }
 .auth-showcase-minimal .auth-showcase-copy > p:last-child { color: #273b37; font-size: 1.08rem; }
 .auth-showcase-minimal .auth-showcase-trust { z-index: 3; border-top-color: rgba(13, 91, 88, 0.35); }
 .auth-showcase-minimal .auth-trust-icon { border-color: #0d5b58; color: #0d5b58; box-shadow: 3px 3px 0 rgba(13, 91, 88, 0.15); }
