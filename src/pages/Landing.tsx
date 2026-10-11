@@ -319,7 +319,6 @@ export function Landing() {
               filter: `blur(${flight * 1.6}px)`,
             }}>{letter}</span>;
           })}</p>
-          <p className="folio-kicker">Clinical study documents</p>
           <h1><span>Long forms.</span><span>Plain words.</span></h1>
           <p className="folio-lede">
             Long study forms are hard to read. Aetheria puts a shorter explanation beside the original text, with sources you can check. Ask about visits, risks, costs, or privacy before you decide.
