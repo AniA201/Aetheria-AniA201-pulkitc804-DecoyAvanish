@@ -26,13 +26,6 @@ const backgroundQuotes = {
   review: ["6 visits / 8 visits", "16 weeks / 24 weeks", "$50 / $80 per visit", "Which count is right?", "Check the original", "Resolve before using"],
 };
 
-const sectionHighlights = {
-  read: ["See the original text.", "Read a short explanation.", "Check the page number."],
-  ask: ["Ask about visits.", "Ask about risks.", "Save the answer."],
-  evaluation: ["Explain it in your words.", "Find what needs clarity.", "Ask a person for help."],
-  review: ["Compare key details.", "Spot a mismatch.", "Resolve it before using."],
-};
-
 type TransferKey = "read" | "ask" | "evaluation" | "review";
 type LetterPath = { x0: number; y0: number; x1: number; y1: number; size0: number; size1: number };
 
@@ -54,14 +47,6 @@ function BackgroundQuotes({ quotes }: { quotes: readonly string[] }) {
         </button>
       ))}
     </div>
-  );
-}
-
-function SectionHighlights({ items }: { items: readonly string[] }) {
-  return (
-    <ul className="section-highlights" aria-label="What you can do">
-      {items.map((item) => <li key={item}>{item}</li>)}
-    </ul>
   );
 }
 
@@ -352,21 +337,12 @@ export function Landing() {
             </Link>
             <a className="folio-try" href="#read">See the sample <span aria-hidden="true">↗</span></a>
           </div>
-          <nav className="folio-index" aria-label="Explore Aetheria">
-            {index.map((item, itemIndex) => (
-              <a key={item.id} href={`#${item.id}`} aria-current={chapter === itemIndex ? "true" : undefined}>
-                <b>{item.number}</b>
-                {item.label}
-              </a>
-            ))}
-          </nav>
         </section>
 
         <section className="folio-split" id="read">
           <BackgroundQuotes quotes={backgroundQuotes.read} />
           <p className="folio-section-label">01 / Read</p>
           {quiet ? <h2>Read.</h2> : <h2 aria-label="Read."><span ref={(node) => { transferTargets.current.read = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: "0.7em", opacity: titleInitialOpacity("read") }} aria-hidden="true">R</span><span aria-hidden="true">ead.</span></h2>}
-          <SectionHighlights items={sectionHighlights.read} />
           <p className="sr-only">Read each part of the consent form beside a shorter, plain-language explanation. The original words and page citation stay in view.</p>
         </section>
 
@@ -376,7 +352,6 @@ export function Landing() {
             <p className="folio-section-label">02 / Ask</p>
             {quiet ? <h2>Ask.</h2> : <h2 aria-label="Ask."><span ref={(node) => { transferTargets.current.ask = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: "0.7em", opacity: titleInitialOpacity("ask") }} aria-hidden="true">A</span><span aria-hidden="true">sk.</span></h2>}
           </div>
-          <SectionHighlights items={sectionHighlights.ask} />
           <p className="sr-only">{sections.map((section) => `${section.ask} ${section.plain} Source: ${section.citation}, ${section.page}.`).join(" ")}</p>
         </section>
 
@@ -384,7 +359,6 @@ export function Landing() {
           <BackgroundQuotes quotes={backgroundQuotes.evaluation} />
           <p className="folio-section-label">03 / Evaluate</p>
           {quiet ? <h2>Evaluate.</h2> : <h2 aria-label="Evaluate."><span ref={(node) => { transferTargets.current.evaluation = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: "0.7em", opacity: titleInitialOpacity("evaluation") }} aria-hidden="true">E</span><span aria-hidden="true">valuate.</span></h2>}
-          <SectionHighlights items={sectionHighlights.evaluation} />
           <p className="sr-only">You cannot choose your study group. The sample form says chance assigns Aetherol or placebo. Neither you nor the study doctor knows your group during the study. Source: {sections[0].citation}, {sections[0].page}.</p>
         </section>
 
@@ -392,7 +366,6 @@ export function Landing() {
           <BackgroundQuotes quotes={backgroundQuotes.review} />
           <p className="folio-section-label">04 / Review</p>
           {quiet ? <h2>Review.</h2> : <h2 aria-label="Review."><span ref={(node) => { transferTargets.current.review = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: "0.7em", opacity: titleInitialOpacity("review") }} aria-hidden="true">R</span><span aria-hidden="true">eview.</span></h2>}
-          <SectionHighlights items={sectionHighlights.review} />
           <p className="sr-only">{facts.filter((fact) => fact.kind === "confirmed-textual-difference").map((fact) => `${fact.label}: consent says ${fact.consentValue}; study plan says ${fact.protocolValue}.`).join(" ")}</p>
         </section>
 

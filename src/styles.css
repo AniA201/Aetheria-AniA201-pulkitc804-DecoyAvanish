@@ -794,7 +794,7 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   position: absolute;
   left: 50vw;
   /* Keep the decorative word below the hero controls at desktop widths. */
-  top: 84vh;
+  top: 60vh;
   transform: translateX(-50%);
   margin: 0;
   z-index: 0;
