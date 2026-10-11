@@ -3597,8 +3597,112 @@ html:not([data-contrast="high"]) .shell.participant .ask-studio textarea:focus {
   border-radius: 999px;
   background: rgba(247, 247, 242, .78);
 }
+.shell.researcher .researcher-integrity .researcher-decision-feedback {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.8rem;
+  margin: .85rem 0 0;
+  padding: .28rem .62rem;
+  border: 1px solid rgba(16, 43, 53, .16);
+  border-radius: 999px;
+  background: rgba(208, 240, 220, .48);
+  color: #284743;
+  font-size: .85rem;
+  font-weight: 650;
+}
+.shell.researcher .researcher-integrity .researcher-review-actions .btn[aria-pressed="true"] {
+  border-color: #0d5b58;
+  background: #0d5b58;
+  color: var(--powder);
+  box-shadow: 0 7px 14px rgba(16, 43, 53, .16);
+}
+.shell.researcher .researcher-integrity .researcher-review-actions .btn:focus-visible,
+.shell.researcher .researcher-integrity .fold > summary:focus-visible,
+.shell.researcher .researcher-integrity .tab-row .btn:focus-visible {
+  outline: 3px solid rgba(118, 84, 130, .68);
+  outline-offset: 3px;
+}
 @media (max-width: 640px) {
   .shell.researcher .researcher-integrity .tab-row { width: 100%; }
   .shell.researcher .researcher-integrity .tab-row .btn { flex: 1 1 9rem; }
   .shell.researcher .researcher-integrity .trial-lookup::before { inset-block: .65rem; }
+}
+
+/* The researcher rail keeps its utilities tactile, but quiet: one continuous
+   Powder surface, rounded controls, and soft volcanic contours. */
+.shell.researcher .rail-toggle {
+  display: grid;
+  place-items: center;
+  position: absolute;
+  top: 1.15rem;
+  right: -1.1rem;
+  width: 2.45rem;
+  height: 2.45rem;
+  padding: 0;
+  border: 1px solid rgba(16, 43, 53, .34);
+  border-radius: 999px;
+  background: #102b35;
+  color: var(--powder);
+  box-shadow: 0 .5rem 1.15rem rgba(16, 43, 53, .22), inset 0 1px 0 rgba(255, 255, 255, .12);
+  cursor: pointer;
+  z-index: 3;
+  transition: transform 220ms cubic-bezier(.16, 1, .3, 1), box-shadow 220ms ease, background 220ms ease;
+}
+.shell.researcher .rail-toggle span {
+  display: block;
+  color: currentColor;
+  transition: transform 220ms cubic-bezier(.16, 1, .3, 1);
+}
+.shell.researcher .rail-toggle:hover {
+  transform: scale(1.06);
+  background: #0d5b58;
+  box-shadow: 0 .75rem 1.45rem rgba(16, 43, 53, .27), inset 0 1px 0 rgba(255, 255, 255, .14);
+}
+.shell.researcher .rail-toggle:focus-visible {
+  outline: 3px solid rgba(118, 84, 130, .62);
+  outline-offset: 3px;
+}
+.shell.researcher.rail-compact .rail-toggle span { transform: rotate(180deg); }
+.shell.researcher .type-dock {
+  left: .9rem;
+  bottom: .9rem;
+  max-width: 12.5rem;
+  padding: .4rem;
+  gap: .26rem;
+  border: 1px solid rgba(16, 43, 53, .18);
+  border-radius: 1.25rem 1.25rem .8rem 1.25rem;
+  background: rgba(247, 247, 242, .94);
+  box-shadow: 0 .8rem 1.8rem rgba(16, 43, 53, .13), inset 0 1px 0 rgba(255, 255, 255, .82);
+  backdrop-filter: blur(12px);
+}
+.shell.researcher .type-dock [role="radiogroup"] { gap: .16rem; }
+.shell.researcher .type-dock button {
+  width: 2rem;
+  height: 2rem;
+  border-radius: .72rem;
+  color: #102b35;
+  transition: transform 180ms cubic-bezier(.16, 1, .3, 1), background 180ms ease, box-shadow 180ms ease;
+}
+.shell.researcher .type-dock button:hover:not(:disabled) {
+  transform: translateY(-.1rem);
+  background: rgba(118, 84, 130, .12);
+  box-shadow: 0 .32rem .68rem rgba(16, 43, 53, .1);
+}
+.shell.researcher .type-dock button[aria-checked="true"],
+.shell.researcher .type-dock button[aria-pressed="true"] {
+  background: #102b35;
+  color: var(--powder);
+  box-shadow: 0 .32rem .75rem rgba(16, 43, 53, .18), inset 0 1px 0 rgba(255, 255, 255, .13);
+}
+.shell.researcher .type-dock button:focus-visible {
+  outline: 2px solid rgba(118, 84, 130, .72);
+  outline-offset: 2px;
+}
+@media (max-width: 900px) {
+  .shell.researcher .rail-toggle { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shell.researcher .rail-toggle,
+  .shell.researcher .rail-toggle span,
+  .shell.researcher .type-dock button { transition-duration: .01ms; }
 }

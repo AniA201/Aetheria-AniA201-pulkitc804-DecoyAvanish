@@ -113,17 +113,20 @@ function PracticeFacts() {
               <>
                 <label htmlFor={`note-${fact.id}`}>{r.integrity.note}</label>
                 <textarea id={`note-${fact.id}`} rows={2} value={reviewNotes[fact.id] ?? ""} onChange={(event) => setReviewNote(fact.id, event.target.value)} />
-                <div className="action-row">
-                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "under-review")}>
+                <p className="researcher-decision-feedback" role="status" aria-live="polite">
+                  {r.review[state]}
+                </p>
+                <div className="action-row researcher-review-actions" role="group" aria-label={`${fact.label} review decision`}>
+                  <button type="button" className="btn on-paper" aria-pressed={state === "under-review"} onClick={() => setReview(fact.id, "under-review")}>
                     {r.integrity.markUnder}
                   </button>
-                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "resolved")}>
+                  <button type="button" className="btn on-paper" aria-pressed={state === "resolved"} onClick={() => setReview(fact.id, "resolved")}>
                     {r.integrity.markReviewed}
                   </button>
-                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "dismissed")}>
+                  <button type="button" className="btn on-paper" aria-pressed={state === "dismissed"} onClick={() => setReview(fact.id, "dismissed")}>
                     {r.integrity.dismiss}
                   </button>
-                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "open")}>
+                  <button type="button" className="btn on-paper" aria-pressed={state === "open"} onClick={() => setReview(fact.id, "open")}>
                     {r.integrity.reopen}
                   </button>
                 </div>
