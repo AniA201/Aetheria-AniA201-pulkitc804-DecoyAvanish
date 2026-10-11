@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { loadDemoConsent, readConsentPages, readConsentText } from "../lib/consent";
+import { useT } from "../lib/i18n";
 import { extractPdfText } from "../lib/pdf";
 import { useSession } from "../state/Session";
 
 export function ConsentFile() {
   const { submitConsent } = useSession();
+  const t = useT();
   const [chosen, setChosen] = useState<File | null>(null);
   const [note, setNote] = useState("");
 
   const submit = async () => {
     if (!chosen) {
-      setNote("Choose a consent file, then submit it.");
+      setNote(t.file.chooseFirst);
       return;
     }
     const ext = chosen.name.split(".").pop()?.toLowerCase() ?? "";
@@ -50,7 +52,7 @@ export function ConsentFile() {
       return;
     }
     submitConsent(result.consent);
-    setNote("Submitted.");
+    setNote(t.file.submitted);
   };
 
   return (
@@ -71,17 +73,17 @@ export function ConsentFile() {
             setNote("");
           }}
         />
-        <span>{chosen ? chosen.name : "Choose a PDF"}</span>
+        <span>{chosen ? chosen.name : t.file.choose}</span>
       </label>
       <div className="action-row">
         <button className="btn solid dark" type="submit">
-          Submit consent
+          {t.file.submit}
         </button>
         <button className="btn on-paper" type="button" onClick={() => submitConsent(loadDemoConsent())}>
-          Use included sample
+          {t.file.sample}
         </button>
       </div>
-      <p className="fine">PDF or text. The sample is the bundled practice form.</p>
+      <p className="fine">{t.file.hint}</p>
       {note ? <p className="notice">{note}</p> : null}
     </form>
   );

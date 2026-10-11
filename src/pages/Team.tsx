@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   consentDoc,
   factFlagged,
@@ -16,21 +15,33 @@ import { inspectText, rejectUpload } from "../lib/ingest";
 import { geminiStatus, type GeminiStatus } from "../lib/gemini";
 import { probeOllama, type OllamaProbe } from "../lib/ollama";
 import { auditNumbers, auditPlainText, longSentenceCount } from "../lib/plain";
-import { isOpenReview, reviewLabel } from "../lib/preflight";
+import { isOpenReview } from "../lib/preflight";
+import { useR } from "../lib/researchI18n";
 import { assessTeachback } from "../lib/teachback";
-import { ApprovedList, CompareWorkbook, PlainWorkbook, RegistryCard, VersionStanding } from "../components/SheetPanels";
+import {
+  ApprovedList,
+  ConsentElements,
+  DesignBrief,
+  PersonaResults,
+  PlainWorkbook,
+  PracticeWriteOnce,
+  PreFlight,
+  RegistryCard,
+  StarterSheets,
+  StoredHandoffs,
+  VersionStanding,
+} from "../components/SheetPanels";
+import { Fold, Tabs } from "../components/Disclosure";
 import { useSession, type ReviewState } from "../state/Session";
 import { useTitle } from "../components/Chrome";
+import { TrialLaySummary, TrialPreFlight, TrialWriteOnce } from "../components/TrialPanels";
+import { TrialLookup } from "../components/TrialLookup";
 
-function pace(text: string) {
-  const words = text.trim().split(/\s+/).filter(Boolean);
-  const sentences = text.split(/[.!?]+/).map((part) => part.trim()).filter(Boolean);
-  const count = Math.max(sentences.length, 1);
-  return `${words.length} words, about ${Math.round(words.length / count)} words in a sentence.`;
-}
+const wordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
 
 export function Overview() {
-  useTitle("Overview");
+  const r = useR();
+  useTitle(r.nav[0]);
   const { reviews, saved, teach, draft, consent } = useSession();
   const openFlags = consent?.hasProtocol
     ? facts.filter((fact) => factFlagged(fact) && isOpenReview(reviews[fact.id] ?? "open"))
@@ -38,199 +49,200 @@ export function Overview() {
 
   return (
     <div className="page">
-      <p className="kicker">Research</p>
-      <h1>What needs a person.</h1>
-      <p className="lede dark">These counts are from this browser. They are not study results.</p>
+      <p className="kicker">{r.overview.kicker}</p>
+      <h1>{r.overview.title}</h1>
       <div className="stat-row">
         <article>
           <strong>{openFlags.length}</strong>
-          <span>Open document flags</span>
+          <span>{r.overview.flags}</span>
         </article>
         <article>
           <strong>{saved.length}</strong>
-          <span>Questions saved here</span>
+          <span>{r.overview.saved}</span>
         </article>
         <article>
           <strong>{teach.filter((item) => item.label !== "Understands the key concept").length}</strong>
-          <span>Teach-back follow-ups</span>
+          <span>{r.overview.followUps}</span>
         </article>
         <article>
-          <strong>{draft}</strong>
-          <span>Plain-language draft</span>
+          <strong>{r.states[draft]}</strong>
+          <span>{r.overview.draft}</span>
         </article>
       </div>
-      <div className="action-row">
-        <Link className="btn solid dark" to="/researcher/document-integrity">
-          Compare documents
-        </Link>
-        <Link className="btn on-paper" to="/researcher/plain-language">
-          Plain language
-        </Link>
-      </div>
+      <StarterSheets />
     </div>
   );
 }
 
+/** The practice protocol beside the submitted consent, one fact at a time, with a review decision for each difference. */
+function PracticeFacts() {
+  const r = useR();
+  const { reviews, setReview, reviewNotes, setReviewNote } = useSession();
+  return (
+    <>
+      {facts.map((fact) => {
+        const flagged = factFlagged(fact);
+        const state: ReviewState = reviews[fact.id] ?? "open";
+        return (
+          <Fold
+            key={fact.id}
+            title={<span lang="en">{fact.label}</span>}
+            meta={flagged ? r.integrity.difference(r.review[state]) : r.integrity.consistent}
+            open={flagged && isOpenReview(state)}
+          >
+            <div className="split" lang="en">
+              <div>
+                <h3>
+                  {r.integrity.protocol} · {fact.protocolValue}
+                </h3>
+                <blockquote>{fact.protocolQuote}</blockquote>
+                <small>{fact.protocolSource}</small>
+              </div>
+              <div>
+                <h3>
+                  {r.integrity.consent} · {fact.consentValue}
+                </h3>
+                <blockquote>{fact.consentQuote}</blockquote>
+                <small>{fact.consentSource}</small>
+              </div>
+            </div>
+            {flagged && (
+              <>
+                <label htmlFor={`note-${fact.id}`}>{r.integrity.note}</label>
+                <textarea id={`note-${fact.id}`} rows={2} value={reviewNotes[fact.id] ?? ""} onChange={(event) => setReviewNote(fact.id, event.target.value)} />
+                <div className="action-row">
+                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "under-review")}>
+                    {r.integrity.markUnder}
+                  </button>
+                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "resolved")}>
+                    {r.integrity.markReviewed}
+                  </button>
+                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "dismissed")}>
+                    {r.integrity.dismiss}
+                  </button>
+                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "open")}>
+                    {r.integrity.reopen}
+                  </button>
+                </div>
+              </>
+            )}
+          </Fold>
+        );
+      })}
+    </>
+  );
+}
+
 export function Integrity() {
-  useTitle("Document Integrity");
-  const { reviews, setReview, reviewNotes, setReviewNote, consent } = useSession();
-  if (!consent) {
-    return (
-      <div className="page">
-        <p className="kicker">Evidence</p>
-        <h1>Protocol against consent.</h1>
-        <p className="lede dark">No consent form has been submitted in this browser yet.</p>
-      </div>
-    );
-  }
-  if (!consent.hasProtocol) {
-    return (
-      <div className="page">
-        <p className="kicker">Evidence</p>
-        <h1>Protocol against consent.</h1>
-        <p className="lede dark">This file has no protocol next to it, so there is nothing to compare.</p>
-      </div>
-    );
-  }
+  const r = useR();
+  useTitle(r.nav[1]);
+  const { consent } = useSession();
 
   return (
     <div className="page">
-      <p className="kicker">Compare</p>
-      <h1>Protocol next to consent.</h1>
-      <p className="lede dark">Differences stay here until a person reviews them.</p>
-      <div className="fact-list">
-        {facts.map((fact) => {
-          const flagged = factFlagged(fact);
-          const state: ReviewState = reviews[fact.id] ?? "open";
-          return (
-            <article key={fact.id} className={flagged ? "fact flagged" : "fact"}>
-              <header>
-                <h2>{fact.label}</h2>
-                <p className="flag">
-                  {flagged ? `Confirmed textual difference · ${reviewLabel(state)}` : "Consistent in this pair"}
-                </p>
-              </header>
-              <div className="split">
-                <div>
-                  <h3>Protocol · {fact.protocolValue}</h3>
-                  <blockquote>{fact.protocolQuote}</blockquote>
-                  <small>{fact.protocolSource}</small>
-                </div>
-                <div>
-                  <h3>Consent · {fact.consentValue}</h3>
-                  <blockquote>{fact.consentQuote}</blockquote>
-                  <small>{fact.consentSource}</small>
-                </div>
+      <p className="kicker">{r.integrity.kicker}</p>
+      <h1>{r.integrity.title}</h1>
+      <TrialLookup />
+      <Tabs
+        label={r.nav[1]}
+        tabs={[
+          {
+            id: "preflight",
+            label: "Protocol Pre-Flight",
+            lang: "en",
+            body: (
+              <div className="sheet-work">
+                <TrialPreFlight />
+                <Fold title={r.ui.otherProtocol}>
+                  <PreFlight />
+                </Fold>
               </div>
-              <p>{fact.why}</p>
-              <p>Next step: a person compares the two sentences. Neither document is edited from this screen.</p>
-              {flagged && (
-                <>
-                  <label htmlFor={`note-${fact.id}`}>Review note</label>
-                  <textarea
-                    id={`note-${fact.id}`}
-                    rows={2}
-                    value={reviewNotes[fact.id] ?? ""}
-                    onChange={(event) => setReviewNote(fact.id, event.target.value)}
-                  />
-                  <div className="action-row">
-                    <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "under-review")}>
-                      Mark under review
-                    </button>
-                    <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "resolved")}>
-                      Mark reviewed
-                    </button>
-                    <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "dismissed")}>
-                      Not a discrepancy
-                    </button>
-                    <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "open")}>
-                      Reopen
-                    </button>
-                  </div>
-                </>
-              )}
-            </article>
-          );
-        })}
-      </div>
-      <CompareWorkbook />
+            ),
+          },
+          {
+            id: "writeonce",
+            label: "Write Once",
+            lang: "en",
+            body: (
+              <div className="sheet-work">
+                <TrialWriteOnce />
+                {consent?.hasProtocol ? (
+                  <Fold title={r.ui.practice}>
+                    <PracticeFacts />
+                    <PracticeWriteOnce />
+                  </Fold>
+                ) : null}
+              </div>
+            ),
+          },
+          {
+            id: "brief",
+            label: r.sheets.pfBrief,
+            body: (
+              <div className="sheet-work">
+                <DesignBrief />
+              </div>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }
 
 export function Insights() {
-  useTitle("Participant Insights");
+  const r = useR();
+  useTitle(r.nav[2]);
   const { saved } = useSession();
-  const fixtureResults = teachFixtures.map((fixture) => ({
+  const examples = teachFixtures.map((fixture) => ({
     ...fixture,
     result: assessTeachback(fixture.promptId, fixture.response),
     topic: teachPrompts.find((prompt) => prompt.id === fixture.promptId)?.topic ?? fixture.promptId,
   }));
-  const counts = fixtureResults.reduce<Record<string, number>>((map, item) => {
-    map[item.result.label] = (map[item.result.label] ?? 0) + 1;
-    return map;
-  }, {});
 
   return (
     <div className="page">
-      <p className="kicker">Questions</p>
-      <h1>Example replies.</h1>
-      <p className="lede dark">These are practice answers for the sample form. They are not people in this browser.</p>
-      <div className="stat-row">
-        {Object.entries(counts).map(([label, count]) => (
-          <article key={label}>
-            <strong>{count}</strong>
-            <span>{label}</span>
-          </article>
-        ))}
+      <p className="kicker">{r.insights.kicker}</p>
+      <h1>{r.nav[2]}.</h1>
+      <div className="sheet-work">
+        <StoredHandoffs />
+        <div>
+          <PersonaResults />
+          <Fold title={r.ui.examples} meta={examples.length}>
+            <p className="fine">{r.insights.note}</p>
+            <ul className="stack">
+              {examples.map((item, index) => (
+                <li key={`${item.promptId}-${index}`}>
+                  <strong>
+                    <span lang="en">{item.topic}</span> · {r.understanding[item.result.label] ?? item.result.label}
+                  </strong>
+                  <p lang="en">“{item.response}”</p>
+                </li>
+              ))}
+            </ul>
+          </Fold>
+          <Fold title={r.insights.savedTitle} meta={saved.length}>
+            {saved.length === 0 ? <p className="empty">{r.insights.savedNone}</p> : null}
+            <ul className="stack">
+              {saved.map((item) => (
+                <li key={item.id}>
+                  <strong>{item.question}</strong>
+                  <p>{item.answer}</p>
+                </li>
+              ))}
+            </ul>
+          </Fold>
+        </div>
       </div>
-      <ul className="stack">
-        {fixtureResults.map((item, index) => (
-          <li key={`${item.promptId}-${index}`}>
-            <strong>
-              {item.topic} · {item.result.label}
-            </strong>
-            <p>“{item.response}”</p>
-            <small>{item.note}</small>
-          </li>
-        ))}
-      </ul>
-      <h2>Questions saved in this browser</h2>
-      <p className="fine">
-        {saved.length === 0
-          ? "None yet. A saved question from the participant view can be opened here. It is not sent anywhere."
-          : `${saved.length} saved in this browser. The wording stays closed until you ask to see it.`}
-      </p>
-      {saved.length > 0 && (
-        <details className="stack">
-          <summary>Show saved questions from this browser</summary>
-          <ul className="stack">
-            {saved.map((item) => (
-              <li key={item.id}>
-                <strong>{item.question}</strong>
-                <p>{item.answer}</p>
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
     </div>
   );
 }
 
-export function Studio() {
-  useTitle("Plain Language Studio");
+/** The practice consent's costs section: original clause beside an editable plain reading. */
+function SectionRewrite() {
+  const r = useR();
   const { draft, setDraft, draftText, setDraftText, consent } = useSession();
-  if (!consent) {
-    return (
-      <div className="page">
-        <p className="kicker">Plain language studio</p>
-        <h1>Submit a consent form first.</h1>
-        <p className="lede dark">A shorter reading sits beside the original. Accepting it does not change the file.</p>
-      </div>
-    );
-  }
-  const uploaded = consent.source === "upload" ? consent.sections[0] : null;
+  const uploaded = consent?.source === "upload" ? consent.sections[0] : null;
   const original = uploaded?.original ?? plainDraft.original;
   const seeded = uploaded?.plain ?? plainDraft.draft;
   const title = uploaded?.title ?? plainDraft.title;
@@ -239,29 +251,13 @@ export function Studio() {
   const costs = uploaded ? uploaded.terms : sectionById("costs").terms;
 
   return (
-    <div className="page">
-      <p className="kicker">Plain language studio</p>
-      <h1>{title}</h1>
-      <p className="lede dark">
-        {uploaded
-          ? "The shorter reading sits beside the original. Accepting it does not change the file."
-          : "The shorter reading keeps this form’s own numbers. Accepting it does not change the file."}
-      </p>
-      <p className="fine">
-        {uploaded
-          ? "Figures in the source clause have to remain in the suggestion."
-          : plainDraft.reason}
-      </p>
-      <p className="fine">
-        Original: {pace(original)} Draft: {pace(reading)} Sentences longer than 25 words:{" "}
-        {longSentenceCount(original)} in the original, {longSentenceCount(reading)} in the draft. This
-        is a word count, not a test with a reader.
-      </p>
+    <Fold title={<span lang="en">{title}</span>} meta={r.states[draft]}>
+      <p className="fine">{r.studio.words(wordCount(original), wordCount(reading), longSentenceCount(original), longSentenceCount(reading))}</p>
       <div className="split studio">
         <article>
-          <h2>Original clause</h2>
-          <p>{original}</p>
-          <dl className="terms">
+          <h3>{r.studio.original}</h3>
+          <p lang="en">{original}</p>
+          <dl className="terms" lang="en">
             {costs.map((term) => (
               <div key={term.word}>
                 <dt>{term.word}</dt>
@@ -271,65 +267,90 @@ export function Studio() {
           </dl>
         </article>
         <article>
-          <h2>Proposed reading · {draft}</h2>
-          <label htmlFor="plain-draft">Edit the suggestion</label>
-          <textarea
-            id="plain-draft"
-            rows={6}
-            value={reading}
-            onChange={(event) => setDraftText(event.target.value)}
-          />
+          <label htmlFor="plain-draft">{r.studio.edit}</label>
+          <textarea id="plain-draft" rows={6} value={reading} onChange={(event) => setDraftText(event.target.value)} />
         </article>
       </div>
       <ul className="plain-list">
         {audit.notes.map((note) => (
           <li key={note}>
-            {note}
-            <span>{audit.passed ? "Holds" : "Check"}</span>
+            <span lang="en">{note}</span>
+            <span>{audit.passed ? r.holds : r.check}</span>
           </li>
         ))}
       </ul>
       <div className="action-row">
         <button type="button" className="btn solid dark" onClick={() => setDraft("accepted")}>
-          Accept draft
+          {r.studio.accept}
         </button>
         <button type="button" className="btn on-paper" onClick={() => setDraft("rejected")}>
-          Reject draft
+          {r.studio.reject}
         </button>
         <button type="button" className="btn on-paper" onClick={() => setDraft("draft")}>
-          Return to draft
+          {r.studio.back}
         </button>
       </div>
-      {consent.hasProtocol ? <PlainWorkbook /> : null}
+    </Fold>
+  );
+}
+
+export function Studio() {
+  const r = useR();
+  useTitle(r.nav[3]);
+  const { consent } = useSession();
+
+  return (
+    <div className="page">
+      <p className="kicker">{r.studio.kicker}</p>
+      <h1>{r.studio.title}</h1>
+      {consent ? (
+        <Tabs
+          label={r.nav[3]}
+          tabs={[
+            { id: "lay", label: r.sheets.laySummaries, body: <div className="sheet-work"><TrialLaySummary /></div> },
+            {
+              id: "readings",
+              label: r.sheets.readings,
+              body: (
+                <PlainWorkbook>
+                  <SectionRewrite />
+                </PlainWorkbook>
+              ),
+            },
+          ]}
+        />
+      ) : (
+        <div className="sheet-work">
+          <TrialLaySummary />
+        </div>
+      )}
     </div>
   );
 }
 
 export function Lab() {
-  useTitle("Test Lab");
+  const r = useR();
+  useTitle(r.nav[4]);
   const [results, setResults] = useState<Check[] | null>(null);
   const passed = results?.filter((item) => item.passed).length ?? 0;
 
   return (
     <div className="page">
-      <p className="kicker">Checks</p>
-      <h1>Run the checks.</h1>
-      <p className="lede dark">One button. The count comes from that run.</p>
+      <p className="kicker">{r.lab.kicker}</p>
+      <h1>{r.lab.title}</h1>
       <button type="button" className="btn solid dark" onClick={() => setResults(runChecks())}>
-        Run checks
+        {r.lab.run}
       </button>
       {results && (
         <div aria-live="polite">
-          <p className="score">
-            {passed} of {results.length} checks passed.
-          </p>
+          <p className="score">{r.lab.count(passed, results.length)}</p>
           <ul className="stack">
             {results.map((item) => (
               <li key={item.id} className={item.passed ? "pass" : "fail"}>
                 <strong>
-                  {item.passed ? "Passed" : "Failed"} · {item.name}
+                  {item.passed ? r.lab.passed : r.lab.failed} · <span lang="en">{item.name}</span>
                 </strong>
-                <p>{item.detail}</p>
+                <p lang="en">{item.detail}</p>
               </li>
             ))}
           </ul>
@@ -340,15 +361,16 @@ export function Lab() {
 }
 
 export function Documents() {
-  useTitle("Documents & Versions");
-  const { imports, addImport, consent } = useSession();
+  const r = useR();
+  useTitle(r.nav[5]);
+  const { imports, addImport, consent, language } = useSession();
   const [note, setNote] = useState("");
 
   const onFile = async (file: File | undefined) => {
     if (!file) return;
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
     if (ext === "pdf" || file.type === "application/pdf") {
-      setNote("Submit a consent PDF from Home. This page stores the structured text documents.");
+      setNote(r.files.pdf);
       return;
     }
     const rejected = rejectUpload({ name: file.name, type: file.type, size: file.size });
@@ -372,63 +394,54 @@ export function Documents() {
       passageCount: parsed.passages.length,
       passages: parsed.passages,
     });
-    setNote(
-      first.usable
-        ? `Indexed ${parsed.passages.length} sections from ${file.name}. Participant answers still use the submitted consent.`
-        : `Stored ${file.name}, but it is not used for participant answers.`,
-    );
+    setNote(first.usable ? r.files.indexed(parsed.passages.length, file.name) : r.files.storedOnly(file.name));
   };
 
   return (
     <div className="page">
-      <p className="kicker">Versions</p>
-      <h1>What this workspace is reading.</h1>
-      {consent ? (
-        <p className="fine">
-          Answers and citations use {consent.documentId} {consent.version}
-          {consent.sample ? ", the included sample." : ", the file that was submitted."}
-        </p>
-      ) : (
-        <p className="fine">No consent form has been submitted yet. The list below is the included sample set, not the active reading.</p>
-      )}
-      <ul className="stack">
+      <p className="kicker">{r.files.kicker}</p>
+      <h1>{r.files.title}</h1>
+      <VersionStanding version={consent?.version ?? consentDoc.version} language={language} />
+      <section className="file-card-grid" aria-label={r.files.title}>
         {consent && (
-          <li>
+          <article className="file-card active">
+            <p className="kicker">{r.files.submitted}</p>
             <strong>
-              Submitted · {consent.documentId} {consent.version}
+              {consent.documentId} {consent.version}
             </strong>
             <p>
               {consent.filename} · {consent.status}
             </p>
-            <small>This is the version behind answers and citations.</small>
-          </li>
+            <small>{r.files.behind}</small>
+          </article>
         )}
-        {(!consent || consent.hasProtocol) && versions.map((item) => (
-          <li key={`${item.id}-${item.version}`}>
-            <strong>
-              {item.kind} · {item.id} {item.version}
-            </strong>
-            <p>
-              {item.date} · {item.status}
-            </p>
-            <small>{item.note}</small>
-          </li>
-        ))}
+        {(!consent || consent.hasProtocol) &&
+          versions.map((item) => (
+            <article key={`${item.id}-${item.version}`} className="file-card">
+              <p className="kicker">{r.ui.reference}</p>
+              <strong lang="en">
+                {item.kind} · {item.id} {item.version}
+              </strong>
+              <p lang="en">
+                {item.date} · {item.status}
+              </p>
+              <small lang="en">{item.note}</small>
+            </article>
+          ))}
         {imports.map((item) => (
-          <li key={item.id}>
+          <article key={item.id} className="file-card">
+            <p className="kicker">{r.files.imported}</p>
             <strong>
-              Imported · {item.documentId} {item.version}
+              {item.documentId} {item.version}
             </strong>
             <p>
-              {item.filename} · {item.usable ? "Stored" : "Not used for answers"}
+              {item.filename} · {item.usable ? r.files.stored : r.files.notUsed}
             </p>
-            <small>
-              {item.passageCount} sections · study {item.studyId}
-            </small>
-          </li>
+            <small>{r.files.sections(item.passageCount, item.studyId)}</small>
+          </article>
         ))}
-      </ul>
-      <label htmlFor="import-doc">Import a .txt or .md document for {study.id}</label>
+      </section>
+      <label htmlFor="import-doc">{r.files.importLabel(study.id)}</label>
       <input
         id="import-doc"
         type="file"
@@ -439,32 +452,32 @@ export function Documents() {
         }}
       />
       {note ? <p className="fine">{note}</p> : null}
-      <h2>Shared facts</h2>
-      <ul className="stack">
-        {facts.map((fact) => (
-          <li key={fact.id}>
-            <strong>{fact.label}</strong>
-            <p>
-              Protocol: {fact.protocolValue}. Consent: {fact.consentValue}.
-            </p>
-            <small>
-              {fact.protocolSource} · {fact.consentSource}
-            </small>
-          </li>
-        ))}
-      </ul>
-      <VersionStanding version={consentDoc.version} />
-      <RegistryCard />
-      <p className="pack-line">
-        Write Once: v2.1 is the form in the reader. v2.0 is outdated and is not offered as the current
-        consent. Shared facts that disagree stay on Document Integrity until a person reviews them.
-      </p>
+      <div className="sheet-work">
+        <div>
+          <ConsentElements />
+          <Fold title={r.files.facts} meta={facts.length}>
+            <ul className="stack">
+              {facts.map((fact) => (
+                <li key={fact.id}>
+                  <strong lang="en">{fact.label}</strong>
+                  <p>{r.files.factLine(fact.protocolValue, fact.consentValue)}</p>
+                  <small lang="en">
+                    {fact.protocolSource} · {fact.consentSource}
+                  </small>
+                </li>
+              ))}
+            </ul>
+          </Fold>
+          <RegistryCard />
+        </div>
+      </div>
     </div>
   );
 }
 
 export function Settings() {
-  useTitle("Settings & Audit");
+  const r = useR();
+  useTitle(r.nav[6]);
   const { reset, audit } = useSession();
   const [cleared, setCleared] = useState(false);
   const [ollama, setOllama] = useState<OllamaProbe | null>(null);
@@ -483,75 +496,52 @@ export function Settings() {
     };
   }, []);
 
+  const rows: [string, string][] = [
+    [r.settings.model, ollama?.detail ?? r.settings.checkingOllama],
+    [r.settings.guide, gemini === null ? r.settings.checkingGemini : gemini.configured ? r.settings.geminiOn(gemini.model ?? "") : r.settings.geminiOff],
+  ];
+
   return (
     <div className="page">
-      <p className="kicker">Audit</p>
-      <h1>What is connected.</h1>
+      <p className="kicker">{r.settings.kicker}</p>
+      <h1>{r.settings.title}</h1>
       <ul className="stack">
-        <li>
-          <strong>Demo answers</strong>
-          <p>
-            On. If Ollama is running, a question is answered from the retrieved consent passages. Otherwise the
-            local consent rules answer, and the reply says so.
-          </p>
-        </li>
-        <li>
-          <strong>Voice</strong>
-          <p>Listen uses the browser speech engine when it is available. Dictate fills the question box and does not send audio anywhere.</p>
-        </li>
-        <li>
-          <strong>Language model</strong>
-          <p>{ollama?.detail ?? "Checking for Ollama on this computer."}</p>
-        </li>
-        <li>
-          <strong>Aetheria Guide</strong>
-          <p>
-            {gemini === null
-              ? "Checking for Gemini."
-              : gemini.configured
-                ? `Connected to Google’s Gemini API (${gemini.model}, free tier). Guide questions and the matching passages are sent to Google, which may use free-tier data to improve its products. The key stays on this computer’s dev server.`
-                : "Not set up. Add GEMINI_API_KEY to .env.local to turn it on. Until then the Guide answers from the local rules."}
-          </p>
-        </li>
-        <li>
-          <strong>Retention</strong>
-          <p>Review marks, saved questions, and teach-back replies stay in this browser session only.</p>
-        </li>
-        <li>
-          <strong>Roles</strong>
-          <p>
-            Participant entry and the approved access phrase are stored in this browser only. A
-            participant cannot open this workspace, and a research request does not grant it.
-          </p>
-        </li>
+        {rows.map(([name, text]) => (
+          <li key={name}>
+            <strong>{name}</strong>
+            <p>{text}</p>
+          </li>
+        ))}
       </ul>
       <ApprovedList />
-      <h2>Session actions</h2>
-      {audit.length === 0 ? (
-        <p className="empty">No review actions yet in this browser session.</p>
-      ) : (
-        <ul className="stack">
-          {audit.map((event) => (
-            <li key={event.id}>
-              <strong>
-                {event.action} · {event.at}
-              </strong>
-              <p>{event.detail}</p>
-            </li>
-          ))}
-        </ul>
-      )}
-      <button
-        type="button"
-        className="btn on-paper"
-        onClick={() => {
-          reset();
-          setCleared(true);
-        }}
-      >
-        Reset this browser session
-      </button>
-      {cleared && <p className="fine">Session reset.</p>}
+      <div className="sheet-work">
+        <Fold title={r.settings.actions} meta={audit.length}>
+          {audit.length === 0 ? <p className="empty">{r.settings.noActions}</p> : null}
+          <ul className="stack">
+            {audit.map((event) => (
+              <li key={event.id} lang="en">
+                <strong>
+                  {event.action} · {event.at}
+                </strong>
+                <p>{event.detail}</p>
+              </li>
+            ))}
+          </ul>
+        </Fold>
+      </div>
+      <div className="action-row">
+        <button
+          type="button"
+          className="btn on-paper"
+          onClick={() => {
+            reset();
+            setCleared(true);
+          }}
+        >
+          {r.settings.reset}
+        </button>
+      </div>
+      {cleared && <p className="fine">{r.settings.resetDone}</p>}
     </div>
   );
 }

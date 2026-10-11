@@ -54,6 +54,12 @@ export type TeachConcept = {
   phrases: string[];
 };
 
+export type Misconception = {
+  id: string;
+  label: string;
+  phrases: string[];
+};
+
 export type TeachPrompt = {
   id: string;
   sectionId: string;
@@ -61,6 +67,7 @@ export type TeachPrompt = {
   question: string;
   concepts: TeachConcept[];
   reexplain: string;
+  misconceptions?: Misconception[];
 };
 
 export const study = {
@@ -336,6 +343,18 @@ export const teachPrompts: TeachPrompt[] = [
     ],
     reexplain:
       "A chance process picks Aetherol or placebo. During the study, you are not told which one it is, and the study doctor is not told either.",
+    misconceptions: [
+      {
+        id: "will-get-drug",
+        label: "that you will definitely get Aetherol",
+        phrases: ["definitely get", "i'll get the new drug", "i will get the new drug", "i get the new drug", "sure to get", "guaranteed to get"],
+      },
+      {
+        id: "chooser",
+        label: "that someone chooses your group",
+        phrases: ["i get to choose", "i can choose", "i choose", "doctor chooses", "doctor picks", "doctor decides which"],
+      },
+    ],
   },
   {
     id: "withdrawal",
@@ -361,6 +380,18 @@ export const teachPrompts: TeachPrompt[] = [
     ],
     reexplain:
       "You can leave at any time. Leaving does not change the regular care you get from your own doctor. The team may keep safety information that was already recorded.",
+    misconceptions: [
+      {
+        id: "cannot-leave",
+        label: "that you cannot leave once you start",
+        phrases: ["can't leave", "cannot leave", "can not leave", "can't quit", "cannot quit", "can't stop", "cannot stop", "have to stay", "must stay", "have to finish", "must finish"],
+      },
+      {
+        id: "lose-care",
+        label: "that leaving costs you your regular care",
+        phrases: ["lose my care", "lose my doctor", "lose my regular", "lose her care", "lose his care", "lose their care", "no longer treat"],
+      },
+    ],
   },
   {
     id: "risk",
@@ -381,6 +412,157 @@ export const teachPrompts: TeachPrompt[] = [
     ],
     reexplain:
       "The form says Aetherol may cause nausea, dizziness, or fatigue. It also says the study may not help your migraines. There is no promise of benefit.",
+    misconceptions: [
+      {
+        id: "promised-benefit",
+        label: "that the study will help or cure your migraines",
+        phrases: ["will cure", "guaranteed to help", "definitely help", "sure to help", "it will fix"],
+      },
+      {
+        id: "no-risk",
+        label: "that there are no risks",
+        phrases: ["no side effects", "no risks", "no risk", "completely safe", "totally safe"],
+      },
+    ],
+  },
+  {
+    id: "costs",
+    sectionId: "costs",
+    topic: "Costs and payment",
+    question: "In your own words, what do you pay for, what are you paid, and what does the study not cover?",
+    concepts: [
+      {
+        id: "no-cost",
+        label: "The study drug and required visits cost you nothing",
+        phrases: ["no cost", "free", "don't pay", "do not pay", "doesn't cost", "does not cost", "not pay for the study"],
+      },
+      {
+        id: "payment",
+        label: "You receive $50 for each completed visit",
+        phrases: ["$50", "50 dollars", "fifty dollars", "fifty"],
+      },
+      {
+        id: "usual-care",
+        label: "Usual migraine care is not paid by the study",
+        phrases: ["usual", "regular care", "normal care", "not cover", "doesn't cover", "does not cover", "own care"],
+      },
+    ],
+    reexplain:
+      "The study drug, placebo, and required visits cost you nothing. You receive $50 after each clinic visit you complete. The study does not pay for your usual migraine care or extra travel.",
+    misconceptions: [
+      {
+        id: "research-is-care",
+        label: "that the study replaces or pays for your regular care",
+        phrases: ["pays for all my", "pays for my regular", "covers my regular", "covers all my", "replaces my doctor", "instead of my doctor", "instead of my regular", "my regular care is free", "my migraine care is free"],
+      },
+    ],
+  },
+  {
+    id: "privacy",
+    sectionId: "privacy",
+    topic: "Privacy",
+    question: "In your own words, who can see your study records, and is your name shared?",
+    concepts: [
+      {
+        id: "coded",
+        label: "Records use a code instead of your name",
+        phrases: ["code", "coded", "instead of my name", "not my name"],
+      },
+      {
+        id: "reviewers",
+        label: "The sponsor, study doctor, and monitors may review coded records",
+        phrases: ["sponsor", "monitor", "study doctor", "study team"],
+      },
+      {
+        id: "not-public",
+        label: "Your name is not published or in the public listing",
+        phrases: ["not published", "not in the public", "without my name", "name is not", "name isn't", "won't be published", "not shared"],
+      },
+    ],
+    reexplain:
+      "Your records carry a code instead of your name. The sponsor, the study doctor, and monitors may review those coded records. Your name is not published and is not in the public study listing.",
+    misconceptions: [
+      {
+        id: "name-public",
+        label: "that your name will be made public",
+        phrases: ["my name will be published", "my name is public", "everyone can see", "anyone can see", "name will be online"],
+      },
+    ],
+  },
+];
+
+export type PersonaFixture = {
+  id: string;
+  persona: string;
+  promptId: string;
+  response: string;
+  speaker: "participant" | "caregiver";
+  expect: Understanding;
+};
+
+type Understanding =
+  | "Understands the key concept"
+  | "Partially understands"
+  | "Needs clarification"
+  | "Requires human follow-up";
+
+/** The personas named in the Teach It Back starter sheet, written as practice replies. */
+export const personaFixtures: PersonaFixture[] = [
+  {
+    id: "randomization",
+    persona: "Misunderstands randomization",
+    promptId: "randomization",
+    response: "So I'll definitely get the new drug?",
+    speaker: "participant",
+    expect: "Needs clarification",
+  },
+  {
+    id: "cannot-quit",
+    persona: "Thinks they can't quit",
+    promptId: "withdrawal",
+    response: "Once I start I can't quit until the study is over.",
+    speaker: "participant",
+    expect: "Needs clarification",
+  },
+  {
+    id: "research-care",
+    persona: "Confuses research visits with regular care",
+    promptId: "costs",
+    response: "The study pays for all my migraine care now, so it replaces my doctor.",
+    speaker: "participant",
+    expect: "Needs clarification",
+  },
+  {
+    id: "caregiver",
+    persona: "Caregiver speaking for the participant",
+    promptId: "withdrawal",
+    response: "She can leave at any time. Her own doctor still treats her, and the team may keep safety information already recorded.",
+    speaker: "caregiver",
+    expect: "Understands the key concept",
+  },
+  {
+    id: "spanish",
+    persona: "Spanish speaker",
+    promptId: "withdrawal",
+    response: "Puedo salir del estudio en cualquier momento y mi médico sigue atendiéndome.",
+    speaker: "participant",
+    expect: "Partially understands",
+  },
+  {
+    id: "french",
+    persona: "French speaker",
+    promptId: "withdrawal",
+    response: "Je peux partir à tout moment et mon médecin continue à me soigner.",
+    speaker: "participant",
+    expect: "Partially understands",
+  },
+  {
+    id: "mandarin",
+    persona: "Mandarin speaker",
+    promptId: "risk",
+    response: "参加以后就一定会治好我的偏头痛，没有风险。",
+    speaker: "participant",
+    expect: "Needs clarification",
   },
 ];
 

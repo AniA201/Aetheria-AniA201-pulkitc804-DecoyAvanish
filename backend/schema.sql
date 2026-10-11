@@ -10,3 +10,22 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE INDEX IF NOT EXISTS users_email_idx ON users (email);
+
+CREATE TABLE IF NOT EXISTS handoffs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users (id),
+  prompt_id TEXT NOT NULL,
+  topic TEXT NOT NULL,
+  label TEXT NOT NULL,
+  response TEXT NOT NULL,
+  feedback TEXT NOT NULL,
+  speaker TEXT NOT NULL DEFAULT 'participant',
+  misconception TEXT,
+  language TEXT NOT NULL DEFAULT 'en',
+  document_id TEXT NOT NULL,
+  version TEXT NOT NULL,
+  engine TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS handoffs_created_idx ON handoffs (created_at);

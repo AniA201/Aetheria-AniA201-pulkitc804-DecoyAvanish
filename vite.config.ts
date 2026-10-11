@@ -1,5 +1,7 @@
 import { defineConfig, loadEnv, type Connect, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
+import { createGeminiRelay, parseModels } from "./server/gemini-relay";
+import { teamSecrets } from "./server/team-secrets";
 
 const ollamaProxy = {
   "/ollama": {
@@ -14,19 +16,19 @@ const apiProxy = {
   },
 };
 
-function geminiProxy(key: string, model: string): Plugin {
+function geminiProxy(key: string, models: string[]): Plugin {
+  const relay = createGeminiRelay(models);
   const handler: Connect.NextHandleFunction = (req, res, next) => {
     const url = req.url ?? "";
     if (!url.startsWith("/gemini/")) return next();
-    const send = (status: number, body: unknown) => {
+    const send = (status: number, body: string, model?: string) => {
       res.statusCode = status;
       res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify(body));
+      if (model) res.setHeader("X-Gemini-Model", model);
+      res.end(body);
     };
-    if (url === "/gemini/status" && req.method === "GET") return send(200, { configured: Boolean(key), model });
-    if (url !== "/gemini/generate" || req.method !== "POST") return send(404, { error: "Not found" });
-    if (!key) return send(503, { error: "GEMINI_API_KEY is not set in .env.local" });
-
+    if (url === "/gemini/status" && req.method === "GET") return send(200, JSON.stringify(relay.status(key)));
+    if (url !== "/gemini/generate" || req.method !== "POST") return send(404, JSON.stringify({ error: "Not found" }));
     let size = 0;
     const chunks: Buffer[] = [];
     req.on("data", (chunk: Buffer) => {
@@ -35,28 +37,25 @@ function geminiProxy(key: string, model: string): Plugin {
       else chunks.push(chunk);
     });
     req.on("end", async () => {
-      try {
-        const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-          body: Buffer.concat(chunks).toString("utf8"),
-          signal: AbortSignal.timeout(25_000),
-        });
-        res.statusCode = upstream.status;
-        res.setHeader("Content-Type", "application/json");
-        res.end(await upstream.text());
-      } catch {
-        send(502, { error: "Gemini did not respond" });
-      }
+      const result = await relay.generate(key, Buffer.concat(chunks).toString("utf8"));
+      send(result.status, result.body, result.model);
     });
   };
   return { name: "aetheria-gemini-proxy", configureServer(server) { server.middlewares.use(handler); }, configurePreviewServer(server) { server.middlewares.use(handler); } };
 }
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
+  const team = teamSecrets();
+  const local = Object.fromEntries(Object.entries(loadEnv(mode, process.cwd(), "")).filter(([, value]) => value));
+  // Publishable browser values (VITE_*, such as the Supabase URL and publishable key) from the team
+  // file are handed to Vite. A value set in your own .env / .env.local still wins.
+  for (const [name, value] of Object.entries(team)) {
+    if (name.startsWith("VITE_") && !local[name]) process.env[name] = value;
+  }
+  // Server-only values (Gemini) never get a VITE_ prefix and stay on the dev server.
+  const env = { ...team, ...local };
   return {
-    plugins: [react(), geminiProxy(env.GEMINI_API_KEY ?? "", env.GEMINI_MODEL || "gemini-3-flash-preview")],
+    plugins: [react(), geminiProxy(env.GEMINI_API_KEY ?? "", parseModels(env.GEMINI_MODEL))],
     server: { host: "0.0.0.0", port: 5173, proxy: { ...ollamaProxy, ...apiProxy } },
     preview: { proxy: { ...ollamaProxy, ...apiProxy } },
   };

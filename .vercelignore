@@ -1,0 +1,8 @@
+# Never upload personal or decrypted secrets. .env.team is encrypted and is uploaded on purpose.
+.env
+.env.local
+.env.keys
+.env.*.local
+backend/.env
+node_modules
+dist

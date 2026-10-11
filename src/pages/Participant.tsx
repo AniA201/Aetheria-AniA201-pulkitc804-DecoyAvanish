@@ -2,24 +2,62 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { promptsFor } from "../lib/consent";
 import { type Answer } from "../lib/answers";
-import { runAgent, type AgentReply } from "../lib/agent";
+import { runAgent, type AgentEnv, type AgentReply } from "../lib/agent";
 import { assessTeachbackWithGemini, localBriefing, writeBriefingWithGemini, type Briefing } from "../lib/coach";
 import type { SubmittedConsent } from "../lib/consent";
 import { cachedGeminiStatus, type GeminiContent } from "../lib/gemini";
-import { type TeachResult } from "../lib/teachback";
-import { useSession } from "../state/Session";
+import { loadParticipantMessages, sendHandoff, sendHandoffMessage, type HandoffMessage, type SendState } from "../lib/handoff";
+import { useT } from "../lib/i18n";
+import { languageInfo } from "../lib/languages";
+import { askIn, localBriefingIn, translate } from "../lib/multilingual";
+import { assessTeachback, type Speaker, type TeachResult } from "../lib/teachback";
+import { canListen, listenOnce, speak, stopSpeaking } from "../lib/voice";
+import { versionStanding } from "../lib/workbook";
+import { practice, practicePrompt } from "../data/practiceLanguages";
+import { teachPrompts, type SectionId, type TeachPrompt } from "../data/study";
+import { useSession, type Language, type Translation } from "../state/Session";
 import { ListenButton, useTitle } from "../components/Chrome";
-import { VersionStanding } from "../components/SheetPanels";
+import { VersionGate, VersionStanding } from "../components/SheetPanels";
 import { ConsentFile } from "../components/ConsentFile";
 import { ConsentSheet } from "../scene/ConsentSheet";
 
+type Section = SubmittedConsent["sections"][number];
+
+/** A section as the participant sees it in the chosen language. `source` says where the translation came from. */
+type ShownSection = Section & { source: "english" | "practice" | "machine" | "missing"; engine?: string };
+
+/** Spanish machine translations saved before French and Mandarin keep their old key without a language. */
+const translationKey = (consent: SubmittedConsent, sectionId: string, language: Language) =>
+  `${language === "es" ? "" : `${language}:`}${consent.documentId}:${consent.version}:${sectionId}`;
+
+function shown(section: Section, consent: SubmittedConsent, language: Language, translations: Record<string, Translation>): ShownSection {
+  if (language === "en") return { ...section, source: "english" };
+  const reading = consent.sample ? practice[language].sections[section.id as SectionId] : undefined;
+  if (reading) return { ...section, title: reading.title, plain: reading.plain, terms: reading.terms, ask: reading.ask, source: "practice" };
+  const cached = translations[translationKey(consent, section.id, language)];
+  if (cached) return { ...section, title: cached.title, plain: cached.plain, source: "machine", engine: cached.engine };
+  return { ...section, source: "missing" };
+}
+
+function useShown(consent: SubmittedConsent | null) {
+  const { language, translations } = useSession();
+  return (section: Section) => shown(section, consent!, language, translations);
+}
+
+/** The check question in the screen language. Uploaded forms have no non-English answer key. */
+function shownPrompt(prompt: TeachPrompt, language: Language): TeachPrompt {
+  if (language === "en" || !teachPrompts.includes(prompt)) return prompt;
+  return practicePrompt(language, prompt.id) ?? prompt;
+}
+
 function NeedFile({ title }: { title: string }) {
+  const t = useT();
   return (
     <div className="page">
       <h1>{title}</h1>
-      <p className="lede dark">Add the consent form on Start.</p>
+      <p className="lede dark">{t.needFile}</p>
       <Link className="btn solid dark" to="/participant/home">
-        Go to Start
+        {t.goStart}
       </Link>
     </div>
   );
@@ -36,15 +74,19 @@ function PassageText({ text }: { text: string }) {
   );
 }
 
+const studyTitle = (consent: SubmittedConsent, language: Language) => (consent.sample && language !== "en" ? practice[language].studyName : consent.studyName);
+
 export function ParticipantHome() {
-  useTitle("Home");
-  const { reviewed, saved, teach, displayName, consent, clearConsent } = useSession();
+  const t = useT();
+  useTitle(t.home.kicker);
+  const { reviewed, saved, teach, displayName, consent, clearConsent, language } = useSession();
+  const view = useShown(consent);
   if (!consent) {
     return (
       <div className="page">
-        <p className="kicker">Start</p>
-        <h1>{displayName ? `${displayName}, add the consent form.` : "Add the consent form."}</h1>
-        <p className="lede dark">Upload a PDF. Then read it, ask a question, or check a section.</p>
+        <p className="kicker">{t.home.kicker}</p>
+        <h1>{t.home.addTitle(displayName)}</h1>
+        <p className="lede dark">{t.home.addLede}</p>
         <ConsentFile />
       </div>
     );
@@ -53,58 +95,61 @@ export function ParticipantHome() {
 
   return (
     <div className="page">
-      <p className="kicker">{consent.sample ? "Practice form" : consent.filename}</p>
-      <h1>{consent.studyName}</h1>
-      <p className="lede dark">{consent.sections.length} sections.</p>
+      <p className="kicker">{consent.sample ? t.home.practice : consent.filename}</p>
+      <h1>{studyTitle(consent, language)}</h1>
+      <p className="lede dark">{t.home.sections(consent.sections.length)}</p>
       <div className="stat-row">
         <article>
           <strong>
             {reviewed.length}/{consent.sections.length}
           </strong>
-          <span>Sections opened</span>
+          <span>{t.home.opened}</span>
         </article>
         <article>
           <strong>{saved.length}</strong>
-          <span>Saved questions</span>
+          <span>{t.home.saved}</span>
         </article>
         <article>
           <strong>{teach.length}</strong>
-          <span>Teach-back replies</span>
+          <span>{t.home.replies}</span>
         </article>
       </div>
       <div className="action-row">
         <Link className="btn solid dark" to={`/participant/explore-consent/${next.id}`}>
-          Read the form
+          {t.home.read}
         </Link>
         <Link className="btn on-paper" to="/participant/ask">
-          Ask a question
+          {t.home.ask}
         </Link>
         <button className="btn on-paper" type="button" onClick={clearConsent}>
-          Check another form
+          {t.home.another}
         </button>
       </div>
+      <p className="fine">{view(next).title}</p>
     </div>
   );
 }
 
 export function MyStudy() {
-  useTitle("My Study");
-  const { consent } = useSession();
-  if (!consent) return <NeedFile title="No form yet." />;
+  const t = useT();
+  useTitle(t.nav.form);
+  const { consent, language } = useSession();
+  const view = useShown(consent);
+  if (!consent) return <NeedFile title={t.myStudy.none} />;
   return (
     <div className="page">
-      <p className="kicker">Your form</p>
-      <h1>{consent.studyName}</h1>
+      <p className="kicker">{t.myStudy.kicker}</p>
+      <h1>{studyTitle(consent, language)}</h1>
       <p className="lede dark">
         {consent.filename}
-        {consent.sample ? " · practice form" : ""}
+        {consent.sample ? t.myStudy.practice : ""}
       </p>
       <ol className="topic-index">
         {consent.sections.map((section) => (
           <li key={section.id}>
             <Link to={`/participant/explore-consent/${section.id}`}>
               <span>{section.index}</span>
-              <strong>{section.title}</strong>
+              <strong>{view(section).title}</strong>
             </Link>
           </li>
         ))}
@@ -114,25 +159,46 @@ export function MyStudy() {
 }
 
 export function Explore() {
-  useTitle("Explore Consent");
+  const t = useT();
+  useTitle(t.read.title);
   const params = useParams();
-  const { consent, textOnly, markReviewed, reviewed, reducedMotion } = useSession();
+  const { consent, textOnly, markReviewed, reviewed, reducedMotion, approvedVersions, language, setTranslation } = useSession();
+  const view = useShown(consent);
   const [showOriginal, setShowOriginal] = useState(false);
-  if (!consent) return <NeedFile title="Read" />;
+  const [translating, setTranslating] = useState("");
+  if (!consent) return <NeedFile title={t.read.title} />;
+  if (versionStanding(consent.version, approvedVersions) === "not-listed") return <VersionGate version={consent.version} title={t.read.title} language={language} />;
   const sections = consent.sections;
   const known = !params.sectionId || sections.some((section) => section.id === params.sectionId);
   const requested = (known ? params.sectionId : undefined) ?? sections[0].id;
-  const section = sections.find((item) => item.id === requested) ?? sections[0];
+  const raw = sections.find((item) => item.id === requested) ?? sections[0];
   if (!known) {
     return <Navigate to={`/participant/explore-consent/${sections[0].id}`} replace />;
   }
+  const section = view(raw);
   const index = sections.findIndex((item) => item.id === section.id);
   const previous = sections[index - 1];
   const next = sections[index + 1];
 
+  const translateSection = async () => {
+    setTranslating(t.read.translating);
+    const [title, plain] = await Promise.all([translate(raw.title, "en", language), translate(raw.plain, "en", language)]);
+    if (plain.engine === "local") {
+      setTranslating(`${t.read.noTranslation} ${plain.note}`);
+      return;
+    }
+    setTranslation(translationKey(consent, raw.id, language), {
+      title: title.engine === "local" ? raw.title : title.text,
+      plain: plain.text,
+      engine: plain.engine,
+      at: new Date().toISOString(),
+    });
+    setTranslating("");
+  };
+
   return (
     <div className={`reader ${textOnly || !consent.sample ? "text-only" : ""}`}>
-      <aside className="chapter-nav" aria-label="Consent sections">
+      <aside className="chapter-nav" aria-label={t.nav.read}>
         {sections.map((item) => (
           <Link
             key={item.id}
@@ -141,17 +207,15 @@ export function Explore() {
             aria-current={item.id === section.id ? "page" : undefined}
           >
             <span>{item.index}</span>
-            {item.title}
-            {reviewed.includes(item.id) ? <em>Done</em> : null}
+            {view(item).title}
+            {reviewed.includes(item.id) ? <em>{t.read.done}</em> : null}
           </Link>
         ))}
       </aside>
       {!textOnly && (
         <div className="consent-stage">
           <ConsentSheet chapter={index} reducedMotion={reducedMotion} />
-          <p className="stage-caption">
-            Practice form. The text is the section.
-          </p>
+          <p className="stage-caption">{t.read.caption}</p>
         </div>
       )}
       <article className="reading">
@@ -160,28 +224,44 @@ export function Explore() {
         </p>
         <h1>{section.title}</h1>
         <p className="fine">{section.citation}</p>
+        {language !== "en" ? (
+          <p className="fine">
+            {section.source === "practice"
+              ? t.read.practiceNote
+              : section.source === "machine"
+                ? t.read.machineNote(section.engine ?? "")
+                : t.read.noTranslation}{" "}
+            {t.read.officialEnglish}
+          </p>
+        ) : null}
+        {language !== "en" && section.source === "missing" ? (
+          <div className="action-row">
+            <button type="button" className="btn on-paper" onClick={translateSection} disabled={translating === t.read.translating}>
+              {translating === t.read.translating ? t.read.translating : t.read.translate}
+            </button>
+            {translating && translating !== t.read.translating ? <p className="fine">{translating}</p> : null}
+          </div>
+        ) : null}
+        {language !== "en" && section.source === "machine" ? (
+          <button type="button" className="text-button" onClick={() => setTranslation(translationKey(consent, raw.id, language), null)}>
+            {t.read.discard}
+          </button>
+        ) : null}
         <div className="reading-tools">
-          <button
-            type="button"
-            className="btn on-paper"
-            aria-pressed={!showOriginal}
-            onClick={() => setShowOriginal(false)}
-          >
-            Short
+          <button type="button" className="btn on-paper" aria-pressed={!showOriginal} onClick={() => setShowOriginal(false)}>
+            {t.read.short}
           </button>
-          <button
-            type="button"
-            className="btn on-paper"
-            aria-pressed={showOriginal}
-            onClick={() => setShowOriginal(true)}
-          >
-            Full text
+          <button type="button" className="btn on-paper" aria-pressed={showOriginal} onClick={() => setShowOriginal(true)}>
+            {t.read.full}
           </button>
-          <ListenButton text={section.plain} />
+          <ListenButton
+            text={showOriginal ? raw.original : section.plain}
+            lang={showOriginal || section.source === "missing" ? "en" : language}
+          />
         </div>
-        <div className="passage" id="source">
-          <p className="passage-label">{showOriginal ? "From the form" : "Short reading"}</p>
-          <PassageText text={showOriginal ? section.original : section.plain} />
+        <div className="passage" id="source" lang={showOriginal || section.source === "missing" ? "en" : languageInfo[language].html}>
+          <p className="passage-label">{showOriginal ? t.read.fromForm : section.source === "missing" ? t.read.shortUntranslated : t.read.shortLabel}</p>
+          <PassageText text={showOriginal ? raw.original : section.plain} />
         </div>
         <dl className="terms">
           {section.terms.map((term) => (
@@ -192,28 +272,36 @@ export function Explore() {
           ))}
         </dl>
         {consent.sample ? (
-          <figure className="citation">
+          <figure className="citation" lang="en">
             <figcaption>
-              {section.citation} · {section.page}
+              {raw.citation} · {raw.page}
             </figcaption>
-            <blockquote>{section.original}</blockquote>
+            <blockquote>{raw.original}</blockquote>
           </figure>
         ) : null}
         <div className="action-row">
           <button type="button" className="btn solid dark" onClick={() => markReviewed(section.id)}>
-            {reviewed.includes(section.id) ? "Marked as read" : "Mark this section as read"}
+            {reviewed.includes(section.id) ? t.read.marked : t.read.markRead}
           </button>
           <Link className="btn on-paper" to={`/participant/ask?q=${encodeURIComponent(section.ask)}`}>
-            Ask about this section
+            {t.read.askThis}
           </Link>
         </div>
         <div className="pager">
           {previous ? (
-            <Link to={`/participant/explore-consent/${previous.id}`}>Previous · {previous.title}</Link>
+            <Link to={`/participant/explore-consent/${previous.id}`}>
+              {t.read.previous} · {view(previous).title}
+            </Link>
           ) : (
             <span />
           )}
-          {next ? <Link to={`/participant/explore-consent/${next.id}`}>Next · {next.title}</Link> : <span />}
+          {next ? (
+            <Link to={`/participant/explore-consent/${next.id}`}>
+              {t.read.next} · {view(next).title}
+            </Link>
+          ) : (
+            <span />
+          )}
         </div>
       </article>
     </div>
@@ -229,6 +317,8 @@ type ChatMessage = {
   steps?: string[];
   note?: string;
   links?: { to: string; label: string }[];
+  english?: string;
+  how?: string;
 };
 
 function useGeminiModel(): string | undefined {
@@ -263,30 +353,49 @@ function engineNote(answer: Answer, note?: string): string {
   return answer.engine === "ollama" ? "Answered on this computer." : "Answered from the form.";
 }
 
-type SpeechResult = {
-  results: ArrayLike<ArrayLike<{ transcript: string }>>;
-};
+function engineNoteIn(words: { gemini: string; fallback: string; ollama: string; form: string }, answer: Answer, note?: string): string {
+  if (answer.engine === "gemini") return words.gemini;
+  if (note) return words.fallback;
+  return answer.engine === "ollama" ? words.ollama : words.form;
+}
 
-type SpeechRecognizer = {
-  lang: string;
-  onresult: ((event: SpeechResult) => void) | null;
-  onerror: (() => void) | null;
-  start: () => void;
-};
+function useDictation(onText: (text: string) => void, sendLabel: string) {
+  const t = useT();
+  const { language } = useSession();
+  const [note, setNote] = useState("");
+  const start = async () => {
+    if (!canListen()) {
+      setNote(t.dictation.unavailable);
+      return;
+    }
+    setNote(t.dictation.listening);
+    const heard = await listenOnce(language).done;
+    if (heard) {
+      onText(heard);
+      setNote(t.dictation.inBox(sendLabel));
+    } else {
+      setNote(t.dictation.stopped);
+    }
+  };
+  return { note, start };
+}
 
 export function Ask() {
-  useTitle("Ask Aetheria");
-  const { consent, saveQuestion } = useSession();
+  const t = useT();
+  useTitle(t.ask.title);
+  const { consent, saveQuestion, approvedVersions, language } = useSession();
+  const view = useShown(consent);
   const [params] = useSearchParams();
   const starter = params.get("q") ?? "";
   const [draft, setDraft] = useState(starter);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [dictateNote, setDictateNote] = useState("");
+  const dictation = useDictation(setDraft, t.ask.send);
   const [savedId, setSavedId] = useState<string | null>(null);
   const request = useRef(0);
   const history = useRef<GeminiContent[]>([]);
   const model = useGeminiModel();
-  if (!consent) return <NeedFile title="Ask" />;
+  if (!consent) return <NeedFile title={t.ask.title} />;
+  if (versionStanding(consent.version, approvedVersions) === "not-listed") return <VersionGate version={consent.version} title={t.ask.title} language={language} />;
 
   const ask = async (question: string) => {
     const clean = question.trim();
@@ -297,30 +406,27 @@ export function Ask() {
     setMessages((current) => [
       ...current,
       { id: crypto.randomUUID(), role: "person", text: clean },
-      { id: botId, role: "aetheria", text: "Looking in the selected consent form.", question: clean },
+      { id: botId, role: "aetheria", text: t.ask.looking, question: clean },
     ]);
     setDraft("");
     setSavedId(null);
     const links: { to: string; label: string }[] = [];
-    const reply = await runAgent(
-      clean,
-      {
-        role: "participant",
-        consent,
-        reviews: {},
-        model,
-        // On this page the agent suggests a chapter instead of leaving the conversation.
-        navigate: (to) =>
-          links.push({ to, label: to.endsWith("teach-back") ? "Practice this in Check" : "Open this part" }),
-        saveQuestion: (saved, answer) =>
-          saveQuestion({ question: saved, answer, supported: false, documentId: consent.documentId, version: consent.version, followUp: true }),
-      },
-      history.current,
-    );
+    const env: AgentEnv = {
+      role: "participant",
+      consent,
+      reviews: {},
+      model,
+      // On this page the agent suggests a chapter instead of leaving the conversation.
+      navigate: (to) => links.push({ to, label: to.endsWith("teach-back") ? t.ask.practice : t.ask.openPart }),
+      saveQuestion: (saved, answer) =>
+        saveQuestion({ question: saved, answer, supported: false, documentId: consent.documentId, version: consent.version, followUp: true }),
+    };
+    const localized = language !== "en" ? await askIn(language, clean, consent, env, history.current) : null;
+    const reply = localized ? localized.reply : await runAgent(clean, env, history.current);
     if (request.current !== ticket) return;
     history.current = [
       ...history.current,
-      { role: "user", parts: [{ text: clean }] },
+      { role: "user", parts: [{ text: localized?.englishQuestion ?? clean }] },
       { role: "model", parts: [{ text: reply.answer }] },
     ];
     const answer = toAnswer(reply, consent, model);
@@ -328,62 +434,62 @@ export function Ask() {
     setMessages((current) =>
       current.map((item) =>
         item.id === botId
-          ? { ...item, text: answer.answer, answer, question: clean, steps: reply.steps.map((step) => step.summary), note: reply.note, links: extra }
+          ? {
+              ...item,
+              text: localized ? localized.answer : answer.answer,
+              english: localized ? answer.answer : undefined,
+              how: localized?.how,
+              answer,
+              question: clean,
+              steps: reply.steps.map((step) => step.summary),
+              note: reply.note,
+              links: extra,
+            }
           : item,
       ),
     );
   };
 
-  const dictate = () => {
-    const host = window as Window & {
-      SpeechRecognition?: new () => SpeechRecognizer;
-      webkitSpeechRecognition?: new () => SpeechRecognizer;
-    };
-    const Recognizer = host.SpeechRecognition ?? host.webkitSpeechRecognition;
-    if (!Recognizer) {
-      setDictateNote("Dictation is unavailable in this browser. Type the question instead.");
-      return;
-    }
-    const recognition = new Recognizer();
-    recognition.lang = "en-US";
-    recognition.onresult = (event) => {
-      const transcript = event.results[0]?.[0]?.transcript ?? "";
-      if (transcript) setDraft(transcript);
-      setDictateNote("The transcript is in the box. It is not sent until you press Ask.");
-    };
-    recognition.onerror = () => setDictateNote("Dictation stopped. Type the question instead.");
-    recognition.start();
-  };
-
   return (
     <div className="page ask-page">
       <header className="panel-head">
-        <p className="kicker">Ask</p>
-        <h1>Ask about this form.</h1>
-        <p className="lede dark">Answers come only from the file you added.</p>
+        <p className="kicker">{t.ask.title}</p>
+        <h1>{t.ask.heading}</h1>
+        <p className="lede dark">{t.ask.lede}</p>
         <div className="suggestions">
-          {consent.sections.slice(0, 4).map((item) => (
-            <button key={item.id} type="button" className="chip" onClick={() => ask(item.ask)}>
-              {item.title}
-            </button>
-          ))}
+          {consent.sections.slice(0, 4).map((item) => {
+            const local = view(item);
+            return (
+              <button key={item.id} type="button" className="chip" onClick={() => ask(local.ask)}>
+                {local.title}
+              </button>
+            );
+          })}
         </div>
       </header>
       <div className="thread" aria-live="polite">
-        {messages.length === 0 && <p className="empty">Choose a suggested question, or write your own.</p>}
+        {messages.length === 0 && <p className="empty">{t.ask.empty}</p>}
         {messages.map((message) => (
           <article key={message.id} className={`bubble ${message.role}`}>
-            {message.steps && message.steps.length > 0 ? <small>{message.steps.join(" · ")}</small> : null}
+            {!message.english && message.steps && message.steps.length > 0 ? <small>{message.steps.join(" · ")}</small> : null}
             <p>{message.text}</p>
             {message.answer?.supported && message.answer.sectionId && (
-              <div className="cite-card">
+              <div className="cite-card" lang="en">
                 <strong>
                   {message.answer.citation} · {message.answer.page}
                 </strong>
                 <blockquote>{message.answer.quote}</blockquote>
-                <Link to={`/participant/explore-consent/${message.answer.sectionId}#source`}>Open this passage</Link>
+                <Link to={`/participant/explore-consent/${message.answer.sectionId}#source`}>{t.ask.open}</Link>
               </div>
             )}
+            {message.english ? (
+              <details>
+                <summary>{t.ask.original}</summary>
+                <p lang="en">{message.english}</p>
+                {message.steps && message.steps.length > 0 ? <small lang="en">{message.steps.join(" · ")}</small> : null}
+                {message.note ? <small lang="en">{message.note}</small> : null}
+              </details>
+            ) : null}
             {message.answer && (
               <>
                 {message.links?.map((link) => (
@@ -392,7 +498,8 @@ export function Ask() {
                   </Link>
                 ))}
                 <small>
-                  {engineNote(message.answer, message.note)} {message.answer.citation}
+                  {message.how ? `${message.how} ` : ""}
+                  {message.english ? engineNoteIn(t.ask.answered, message.answer, message.note) : engineNote(message.answer, message.note)} {message.answer.citation}
                 </small>
                 <ListenButton text={message.text} />
                 <button
@@ -401,7 +508,7 @@ export function Ask() {
                   onClick={() => {
                     saveQuestion({
                       question: message.question ?? message.text,
-                      answer: message.answer!.answer,
+                      answer: message.text,
                       supported: message.answer!.supported,
                       citation: message.answer!.citation,
                       documentId: message.answer!.documentId,
@@ -411,7 +518,7 @@ export function Ask() {
                     setSavedId(message.id);
                   }}
                 >
-                  {savedId === message.id ? "Saved for the coordinator" : "Save for the coordinator"}
+                  {savedId === message.id ? t.ask.savedNote : t.ask.save}
                 </button>
               </>
             )}
@@ -425,257 +532,550 @@ export function Ask() {
           ask(draft);
         }}
       >
-        <label htmlFor="question">Your question</label>
-        <textarea
-          id="question"
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          rows={3}
-          placeholder="Ask about visits, risks, leaving, payment, or privacy."
-        />
+        <label htmlFor="question">{t.ask.label}</label>
+        <textarea id="question" value={draft} onChange={(event) => setDraft(event.target.value)} rows={3} placeholder={t.ask.placeholder} />
         <button className="btn solid dark" type="submit">
-          Ask
+          {t.ask.send}
         </button>
-        <button className="btn on-paper" type="button" onClick={dictate}>
-          Dictate
+        <button className="btn on-paper" type="button" onClick={dictation.start}>
+          {t.ask.dictate}
         </button>
-        {dictateNote ? <p className="fine">{dictateNote}</p> : null}
+        {dictation.note ? <p className="fine">{dictation.note}</p> : null}
       </form>
     </div>
   );
 }
 
+type VoiceLine = { id: string; who: "voice" | "you" | "note"; text: string };
+
+/** Spoken teach-back: read the section, ask, listen, check, give feedback, and record it. */
+function VoiceCheck({
+  prompts,
+  startAt,
+  judge,
+  onHuman,
+}: {
+  prompts: TeachPrompt[];
+  startAt: number;
+  judge: (prompt: TeachPrompt, response: string) => Promise<TeachResult>;
+  onHuman: (prompt: TeachPrompt, response: string, emergency: boolean) => Promise<void>;
+}) {
+  const t = useT();
+  const { consent, language, narrationRate, translations } = useSession();
+  const [lines, setLines] = useState<VoiceLine[]>([]);
+  const [running, setRunning] = useState(false);
+  const [status, setStatus] = useState("");
+  const stopped = useRef(false);
+  const listener = useRef<{ stop: () => void } | null>(null);
+
+  useEffect(
+    () => () => {
+      stopped.current = true;
+      listener.current?.stop();
+      stopSpeaking();
+    },
+    [],
+  );
+
+  const add = (who: VoiceLine["who"], text: string) => setLines((current) => [...current, { id: crypto.randomUUID(), who, text }]);
+  const short = (text: string) => text.trim().split(/\s+/).length <= 6;
+
+  const run = async () => {
+    if (!consent) return;
+    stopped.current = false;
+    setRunning(true);
+    setLines([]);
+    let rate = narrationRate;
+    let first = true;
+    const say = async (text: string) => {
+      add("voice", text);
+      await speak(text, language, rate, first);
+      first = false;
+    };
+    for (const english of prompts.slice(startAt)) {
+      if (stopped.current) break;
+      const prompt = shownPrompt(english, language);
+      const section = consent.sections.find((item) => item.id === english.sectionId);
+      const reading = section ? shown(section, consent, language, translations) : null;
+      setStatus(t.voice.reading(prompt.topic));
+      if (reading) await say(reading.source === "missing" ? section!.plain : reading.plain);
+      for (let attempt = 0; attempt < 4 && !stopped.current; attempt += 1) {
+        setStatus(t.voice.asking);
+        await say(`${t.voice.askPrompt} ${prompt.question}`);
+        if (stopped.current) break;
+        setStatus(t.voice.listening);
+        const session = listenOnce(language);
+        listener.current = session;
+        const heard = await session.done;
+        listener.current = null;
+        if (stopped.current) break;
+        if (!heard) {
+          add("note", t.voice.nothing);
+          stopped.current = true;
+          break;
+        }
+        add("you", heard);
+        if (t.voice.emergencyWords.test(heard)) {
+          await say(t.voice.emergency);
+          await onHuman(english, heard, true);
+          stopped.current = true;
+          break;
+        }
+        if (short(heard) && t.voice.humanWords.test(heard)) {
+          await say(t.voice.human);
+          await onHuman(english, heard, false);
+          stopped.current = true;
+          break;
+        }
+        if (short(heard) && t.voice.slowerWords.test(heard)) {
+          rate = Math.max(0.7, rate - 0.15);
+          if (reading) await say(reading.source === "missing" ? section!.plain : reading.plain);
+          continue;
+        }
+        if (short(heard) && t.voice.repeatWords.test(heard)) {
+          if (reading) await say(reading.source === "missing" ? section!.plain : reading.plain);
+          continue;
+        }
+        const result = await judge(english, heard);
+        await say(`${t.labels[result.label] ?? result.label}. ${result.feedback}`);
+        break;
+      }
+    }
+    if (!stopped.current) {
+      add("note", t.voice.finished);
+      await say(t.voice.finished);
+    }
+    setStatus("");
+    setRunning(false);
+  };
+
+  const stop = () => {
+    stopped.current = true;
+    listener.current?.stop();
+    stopSpeaking();
+    setRunning(false);
+    setStatus("");
+  };
+
+  return (
+    <section className="voice-check" aria-labelledby="voice-heading">
+      <h2 id="voice-heading">{t.voice.heading}</h2>
+      <p className="fine">{t.voice.intro}</p>
+      {!canListen() ? <p className="notice">{t.voice.unavailable}</p> : null}
+      <div className="action-row">
+        {running ? (
+          <button type="button" className="btn on-paper" onClick={stop}>
+            {t.voice.stop}
+          </button>
+        ) : (
+          <button type="button" className="btn solid dark" onClick={run} disabled={!canListen()}>
+            {t.voice.start}
+          </button>
+        )}
+      </div>
+      {status ? (
+        <p className="fine" aria-live="polite">
+          {status}
+        </p>
+      ) : null}
+      {lines.length > 0 ? (
+        <ol className="voice-log" aria-live="polite">
+          {lines.map((line) => (
+            <li key={line.id} className={line.who}>
+              {line.who === "you" ? t.voice.heard(line.text) : line.text}
+            </li>
+          ))}
+        </ol>
+      ) : null}
+    </section>
+  );
+}
+
 export function Teach() {
-  useTitle("Teach-Back");
-  const { consent, recordTeach } = useSession();
+  const t = useT();
+  useTitle(t.check.title);
+  const { consent, recordTeach, approvedVersions, language } = useSession();
   const prompts = consent ? promptsFor(consent) : [];
   const [promptId, setPromptId] = useState(prompts[0]?.id ?? "");
   const [response, setResponse] = useState("");
+  const [caregiver, setCaregiver] = useState(false);
   const [result, setResult] = useState<TeachResult | null>(null);
   const [checking, setChecking] = useState(false);
-  if (!consent || prompts.length === 0) return <NeedFile title="Check" />;
+  const [sent, setSent] = useState<{ state: SendState; detail: string } | null>(null);
+  const dictation = useDictation(setResponse, t.check.submit);
+  if (!consent || prompts.length === 0) return <NeedFile title={t.check.title} />;
+  if (versionStanding(consent.version, approvedVersions) === "not-listed") return <VersionGate version={consent.version} title={t.check.title} language={language} />;
   const prompt = prompts.find((item) => item.id === promptId) ?? prompts[0];
+  const asked = shownPrompt(prompt, language);
+  const speaker: Speaker = caregiver ? "caregiver" : "participant";
+
+  const deliver = async (next: TeachResult, topic: string) => {
+    setResult(next);
+    recordTeach(next);
+    const outcome = await sendHandoff(next, topic);
+    setSent(language !== "en" && t.sent[outcome.state] ? { ...outcome, detail: t.sent[outcome.state] } : outcome);
+  };
+
+  const judge = async (target: TeachPrompt, reply: string): Promise<TeachResult> => {
+    const local = assessTeachback(target.id, reply, prompts, speaker, language);
+    const judged: TeachResult =
+      local.misconception || (local.language && local.language !== "en")
+        ? { ...local, documentId: consent.documentId, version: consent.version, engine: "local" }
+        : { ...(await assessTeachbackWithGemini(target, reply, consent)), speaker };
+    const next: TeachResult = { ...judged, response: reply };
+    setPromptId(target.id);
+    setResponse(reply);
+    await deliver(next, target.topic);
+    return next;
+  };
 
   const submit = async () => {
     if (checking) return;
     setChecking(true);
-    const next = await assessTeachbackWithGemini(prompt, response, consent);
+    setSent(null);
+    await judge(prompt, response);
     setChecking(false);
-    setResult(next);
-    recordTeach({ ...next, response });
   };
+
+  const askForPerson = async (target: TeachPrompt, heard: string, emergency: boolean) => {
+    const next: TeachResult = {
+      promptId: target.id,
+      label: "Requires human follow-up",
+      matched: [],
+      missing: target.concepts.map((concept) => concept.label),
+      feedback: emergency ? t.voice.emergency : t.voice.human,
+      documentId: consent.documentId,
+      version: consent.version,
+      engine: "local",
+      response: heard,
+      speaker,
+      language,
+      note: emergency ? "Emergency words were heard during the voice check." : "Asked for a person during the voice check.",
+    };
+    setPromptId(target.id);
+    setResponse(heard);
+    await deliver(next, target.topic);
+  };
+
+  const shownMatched = result ? (result.shownMatched ?? result.matched) : [];
+  const shownMissing = result ? (result.shownMissing ?? result.missing) : [];
 
   return (
     <div className="page check-page">
       <header className="panel-head">
-        <p className="kicker">Check</p>
-        <h1>Say it in your own words.</h1>
-        <p className="lede dark">This is not a test and not a signature.</p>
-        <VersionStanding version={consent.version} />
+        <p className="kicker">{t.check.title}</p>
+        <h1>{t.check.heading}</h1>
+        <p className="lede dark">{t.check.lede}</p>
+        <VersionStanding version={consent.version} language={language} />
       </header>
       <div className="check-layout">
-      <form
-        className="teach-form"
-        onSubmit={(event) => {
-          event.preventDefault();
-          submit();
-        }}
-      >
-        <label htmlFor="prompt">Topic</label>
-        <select
-          id="prompt"
-          value={prompt.id}
-          onChange={(event) => {
-            setPromptId(event.target.value);
-            setResult(null);
-            setResponse("");
+        <form
+          className="teach-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            submit();
           }}
         >
-          {prompts.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.topic}
-            </option>
-          ))}
-        </select>
-        <p className="prompt-text">{prompt.question}</p>
-        <label htmlFor="reply">Your explanation</label>
-        <textarea
-          id="reply"
-          rows={5}
-          value={response}
-          onChange={(event) => setResponse(event.target.value)}
-          placeholder="Write what you understood. A short yes is not enough."
-        />
-        <button className="btn solid dark" type="submit" disabled={checking}>
-          {checking ? "Checking…" : "Check this explanation"}
-        </button>
-      </form>
-      {result && (
-        <article className="result" aria-live="polite">
-          <p className="kicker">{result.label}</p>
-          <p>{result.feedback}</p>
-          {result.matched.length > 0 && (
-            <ul>
-              {result.matched.map((item) => (
-                <li key={item}>Covered: {item}</li>
-              ))}
-            </ul>
-          )}
-          {result.missing.length > 0 && (
-            <ul>
-              {result.missing.map((item) => (
-                <li key={item}>Still to clarify: {item}</li>
-              ))}
-            </ul>
-          )}
-          <p>You can change the words above and check again. This is not a pass or fail score.</p>
-          {result.label !== "Understands the key concept" && (
-            <button
-              type="button"
-              className="btn on-paper"
-              onClick={() => {
-                setResult(null);
-                document.getElementById("reply")?.focus();
-              }}
-            >
-              Try again
+          <label htmlFor="prompt">{t.check.topic}</label>
+          <select
+            id="prompt"
+            value={prompt.id}
+            onChange={(event) => {
+              setPromptId(event.target.value);
+              setResult(null);
+              setResponse("");
+            }}
+          >
+            {prompts.map((item) => (
+              <option key={item.id} value={item.id}>
+                {shownPrompt(item, language).topic}
+              </option>
+            ))}
+          </select>
+          <p className="prompt-text">{asked.question}</p>
+          {language !== "en" && asked === prompt ? <p className="fine">{t.check.noKey}</p> : null}
+          <label htmlFor="reply">{t.check.yours}</label>
+          <textarea id="reply" rows={5} value={response} onChange={(event) => setResponse(event.target.value)} placeholder={t.check.placeholder} />
+          <label className="check-row">
+            <input type="checkbox" checked={caregiver} onChange={(event) => setCaregiver(event.target.checked)} />
+            {t.check.caregiver}
+          </label>
+          <div className="action-row">
+            <button className="btn solid dark" type="submit" disabled={checking}>
+              {checking ? t.check.checking : t.check.submit}
             </button>
-          )}
-          <p className="fine">
-            {result.engine === "gemini"
-              ? "Checked by Gemini. It reads for meaning, not exact words."
-              : result.engine === "ollama"
-                ? "Checked on this computer. It reads for meaning, not exact words."
-                : (result.note ?? "Checked against the form’s key ideas.")}
-          </p>
-          <Link to={`/participant/explore-consent/${prompt.sectionId}`}>Reread {prompt.topic.toLowerCase()}</Link>
-        </article>
-      )}
+            <button className="btn on-paper" type="button" onClick={dictation.start}>
+              {t.ask.dictate}
+            </button>
+          </div>
+          {dictation.note ? <p className="fine">{dictation.note}</p> : null}
+        </form>
+        {result && (
+          <article className="result" aria-live="polite">
+            <p className="kicker">{t.labels[result.label] ?? result.label}</p>
+            {result.misconception ? (
+              <p>
+                <strong>{t.check.clear}</strong> {result.shownMisconception ?? result.misconception}
+                {t.fullStop}
+              </p>
+            ) : null}
+            <p>{result.feedback}</p>
+            {shownMatched.length > 0 && (
+              <ul>
+                {shownMatched.map((item) => (
+                  <li key={item}>
+                    {t.check.covered} {item}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {shownMissing.length > 0 && (
+              <ul>
+                {shownMissing.map((item) => (
+                  <li key={item}>
+                    {t.check.toClarify} {item}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p>{t.check.change}</p>
+            {result.label !== "Understands the key concept" && (
+              <button
+                type="button"
+                className="btn on-paper"
+                onClick={() => {
+                  setResult(null);
+                  document.getElementById("reply")?.focus();
+                }}
+              >
+                {t.check.retry}
+              </button>
+            )}
+            <p className="fine">
+              {result.engine === "gemini" ? t.check.byGemini : result.engine === "ollama" ? t.check.byOllama : (result.note ?? t.check.byKey)}
+              {result.speaker === "caregiver" ? t.check.asCaregiver : ""}
+            </p>
+            {result.language === language && t.check.interpreter ? <p className="fine">{t.check.interpreter}</p> : null}
+            {sent ? <p className="fine">{sent.detail}</p> : null}
+            <Link to={`/participant/explore-consent/${prompt.sectionId}`}>{t.check.reread(asked.topic)}</Link>
+          </article>
+        )}
       </div>
+      <VoiceCheck prompts={prompts} startAt={Math.max(0, prompts.indexOf(prompt))} judge={judge} onHuman={askForPerson} />
     </div>
   );
 }
 
 export function Summary() {
-  useTitle("My Summary");
-  const { reviewed, saved, teach, consent } = useSession();
+  const t = useT();
+  useTitle(t.summary.title);
+  const { reviewed, saved, teach, consent, language } = useSession();
+  const view = useShown(consent);
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [writing, setWriting] = useState(false);
   const openTopics = useMemo(() => teach, [teach]);
-  if (!consent) return <NeedFile title="Summary" />;
+  useEffect(() => setBriefing(null), [language]);
+  if (!consent) return <NeedFile title={t.summary.title} />;
+  const prompts = promptsFor(consent);
 
   return (
     <div className="page summary-page">
       <header className="panel-head">
-        <p className="kicker">Summary</p>
-        <h1>What you have read.</h1>
-        <VersionStanding version={consent.version} />
-        <p className="notice">This is not a signature.</p>
+        <p className="kicker">{t.summary.title}</p>
+        <h1>{t.summary.heading}</h1>
+        <VersionStanding version={consent.version} language={language} />
+        <p className="notice">{t.summary.notSignature}</p>
       </header>
       <div className="summary-grid">
-      <section>
-        <h2>For your coordinator</h2>
-        {briefing ? (
-          <>
-            <p>{briefing.summary}</p>
-            {briefing.questions.length === 0 ? (
-              <p className="empty">Nothing is waiting. You can still ask for a conversation.</p>
-            ) : (
-              <ol className="stack">
-                {briefing.questions.map((item) => (
-                  <li key={item.text}>
-                    <strong>{item.text}</strong>
-                    <p>{item.reason}</p>
+        <section>
+          <h2>{t.summary.coordinator}</h2>
+          {briefing ? (
+            <>
+              <p>{briefing.summary}</p>
+              {briefing.questions.length === 0 ? (
+                <p className="empty">{t.summary.nothing}</p>
+              ) : (
+                <ol className="stack">
+                  {briefing.questions.map((item) => (
+                    <li key={item.text}>
+                      <strong>{item.text}</strong>
+                      <p>{item.reason}</p>
+                    </li>
+                  ))}
+                </ol>
+              )}
+              <p className="fine">
+                {briefing.engine === "gemini" ? t.summary.byGemini : briefing.engine === "ollama" ? t.summary.byOllama : (briefing.note ?? t.summary.built)}
+              </p>
+              <ListenButton text={[briefing.summary, ...briefing.questions.map((item) => item.text)].join(" ")} />
+            </>
+          ) : (
+            <p className="empty">{t.summary.empty}</p>
+          )}
+          <button
+            type="button"
+            className="btn on-paper"
+            disabled={writing}
+            onClick={async () => {
+              setWriting(true);
+              const input = { consent, reviewed, saved, teach };
+              setBriefing(language !== "en" ? localBriefingIn(language, input) : await writeBriefingWithGemini(input).catch(() => localBriefing(input)));
+              setWriting(false);
+            }}
+          >
+            {writing ? t.summary.writing : briefing ? t.summary.again : t.summary.write}
+          </button>
+        </section>
+        <section>
+          <h2>{t.summary.readHeading}</h2>
+          <ul className="plain-list">
+            {consent.sections.map((section) => (
+              <li key={section.id}>
+                <span className="summary-title">{view(section).title}</span>
+                <span className={reviewed.includes(section.id) ? "mark done" : "mark"}>{reviewed.includes(section.id) ? t.summary.readMark : t.summary.notYet}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+        <section>
+          <h2>{t.summary.savedHeading}</h2>
+          {saved.length === 0 ? (
+            <p className="empty">{t.summary.noSaved}</p>
+          ) : (
+            <ul className="stack">
+              {saved.map((item) => (
+                <li key={item.id}>
+                  <strong>{item.question}</strong>
+                  <p>{item.answer}</p>
+                  <small>
+                    {item.followUp ? t.summary.followUp : ""}
+                    {item.supported ? item.citation : t.summary.notAnswered}
+                    {item.version ? ` · ${item.version}` : ""}
+                  </small>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+        <section>
+          <h2>{t.summary.handoff}</h2>
+          {openTopics.length === 0 ? (
+            <p className="empty">{t.summary.noChecks}</p>
+          ) : (
+            <ul className="stack">
+              {openTopics.map((item) => {
+                const english = prompts.find((prompt) => prompt.id === item.promptId);
+                return (
+                  <li key={item.promptId}>
+                    <strong>
+                      {english ? shownPrompt(english, language).topic : item.promptId} · {t.labels[item.label] ?? item.label} · {consent.version}
+                    </strong>
+                    {item.speaker === "caregiver" ? <small>{t.summary.byCaregiver}</small> : null}
+                    {item.language && item.language !== "en" ? <small>{t.summary.answeredIn[item.language]}</small> : null}
+                    {item.misconception ? (
+                      <small>
+                        {t.summary.misunderstanding} {item.language === language ? (item.shownMisconception ?? item.misconception) : item.misconception}
+                        {t.fullStop}
+                      </small>
+                    ) : null}
+                    {item.response ? (
+                      <p>
+                        {t.summary.words} {item.response}
+                      </p>
+                    ) : null}
+                    <p>{item.label === "Understands the key concept" ? t.summary.noGap : item.feedback}</p>
                   </li>
-                ))}
-              </ol>
-            )}
-            <p className="fine">
-              {briefing.engine === "gemini"
-                ? "Written by Gemini from this session. It adds no study facts."
-                : briefing.engine === "ollama"
-                  ? "Written on this computer from this session."
-                  : (briefing.note ?? "Built from this session.")}
-            </p>
-            <ListenButton text={[briefing.summary, ...briefing.questions.map((item) => item.text)].join(" ")} />
-          </>
-        ) : (
-          <p className="empty">Turn your saved questions and checks into a short list to bring.</p>
-        )}
-        <button
-          type="button"
-          className="btn on-paper"
-          disabled={writing}
-          onClick={async () => {
-            setWriting(true);
-            const input = { consent, reviewed, saved, teach };
-            setBriefing(await writeBriefingWithGemini(input).catch(() => localBriefing(input)));
-            setWriting(false);
-          }}
-        >
-          {writing ? "Writing…" : briefing ? "Write again" : "Write my questions"}
-        </button>
-      </section>
-      <section>
-        <h2>Sections marked as read</h2>
-        <ul className="plain-list">
-          {consent.sections.map((section) => (
-            <li key={section.id}>
-              <span className="summary-title">{section.title}</span>
-              <span className={reviewed.includes(section.id) ? "mark done" : "mark"}>
-                {reviewed.includes(section.id) ? "Read" : "Not yet"}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
-      <section>
-        <h2>Saved questions</h2>
-        {saved.length === 0 ? (
-          <p className="empty">No questions saved in this browser session.</p>
-        ) : (
-          <ul className="stack">
-            {saved.map((item) => (
-              <li key={item.id}>
-                <strong>{item.question}</strong>
-                <p>{item.answer}</p>
-                <small>
-                  {item.followUp ? "Marked for follow-up. " : ""}
-                  {item.supported ? item.citation : "Not answered from the form"}
-                  {item.version ? ` · ${item.version}` : ""}
-                </small>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-      <section>
-        <h2>Handoff for the coordinator</h2>
-        {openTopics.length === 0 ? (
-          <p className="empty">No explanation has been checked yet. You can still ask for a conversation.</p>
-        ) : (
-          <ul className="stack">
-            {openTopics.map((item) => (
-              <li key={item.promptId}>
-                <strong>
-                  {item.label} · {consent.version}
-                </strong>
-                {item.response ? <p>Their words: {item.response}</p> : null}
-                <p>
-                  {item.label === "Understands the key concept"
-                    ? "No gap on this topic."
-                    : item.feedback}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+        <ParticipantMessages />
       </div>
-      <p className="fine">
-        Document used: {consent.documentId} {consent.version}, {consent.date}. Status: {consent.status}. This summary is a handoff, not a signature.
-      </p>
+      <p className="fine">{t.summary.used(`${consent.documentId} ${consent.version}`, consent.date, consent.status)}</p>
     </div>
   );
 }
 
+function ParticipantMessages() {
+  const [state, setState] = useState<"loading" | "ok" | "signed-out" | "offline">("loading");
+  const [messages, setMessages] = useState<HandoffMessage[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [note, setNote] = useState("");
+  const refresh = () =>
+    loadParticipantMessages().then((result) => {
+      setState(result.state);
+      setMessages(result.messages);
+    });
+
+  useEffect(() => {
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 15000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const grouped = messages.reduce<Record<string, HandoffMessage[]>>((all, message) => {
+    (all[message.handoff_id] ??= []).push(message);
+    return all;
+  }, {});
+
+  return (
+    <section className="participant-messages">
+      <div className="inbox-head">
+        <div>
+          <h2>Messages from your research team</h2>
+          <p className="fine">Replies appear here automatically.</p>
+        </div>
+        <button type="button" className="btn on-paper" onClick={() => void refresh()}>Refresh</button>
+      </div>
+      {state === "loading" ? <p className="fine">Checking for replies…</p> : null}
+      {state === "signed-out" ? <p className="fine">Sign in to see research-team replies.</p> : null}
+      {state === "offline" ? <p className="fine">Messages are unavailable right now.</p> : null}
+      {state === "ok" && Object.keys(grouped).length === 0 ? <p className="empty">No new messages.</p> : null}
+      {note ? <p className="fine" aria-live="polite">{note}</p> : null}
+      <div className="message-list">
+        {Object.entries(grouped).map(([handoffId, thread]) => (
+          <article className="message-card" key={handoffId}>
+            <header>
+              <div>
+                <strong>{thread[0].topic ?? "Your follow-up"}</strong>
+                <p>{thread[0].document_id} {thread[0].version}</p>
+              </div>
+            </header>
+            <div className="message-thread">
+              {thread.map((message) => (
+                <p key={message.id} className={message.author_role === "researcher" ? "from-researcher" : "from-participant"}>
+                  <strong>{message.author_role === "researcher" ? "Research team" : "You"}</strong> {message.message}
+                </p>
+              ))}
+            </div>
+            <div className="reply-row">
+              <label className="sr-only" htmlFor={`participant-reply-${handoffId}`}>Reply to your research team</label>
+              <input
+                id={`participant-reply-${handoffId}`}
+                value={drafts[handoffId] ?? ""}
+                placeholder="Write a reply"
+                onChange={(event) => setDrafts((current) => ({ ...current, [handoffId]: event.target.value }))}
+              />
+              <button
+                type="button"
+                className="btn solid dark"
+                disabled={!drafts[handoffId]?.trim()}
+                onClick={async () => {
+                  const result = await sendHandoffMessage(handoffId, drafts[handoffId].trim());
+                  setNote(result.detail);
+                  if (result.ok) {
+                    setDrafts((current) => ({ ...current, [handoffId]: "" }));
+                    await refresh();
+                  }
+                }}
+              >
+                Reply
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
