@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent, type PointerEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AetheriaMark, useTitle } from "../components/Chrome";
 import { useSession, type Role } from "../state/Session";
+import { consentDoc, sections, study } from "../data/study";
 
 type AccountType = "client" | "researcher";
 type ApiUser = { name: string; role: AccountType };
@@ -82,9 +83,36 @@ export function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const folioRef = useRef<HTMLDivElement>(null);
   const { setRole } = useSession();
   const navigate = useNavigate();
   const copy = accountCopy[accountType];
+
+  function moveFolio(event: PointerEvent<HTMLElement>) {
+    const folio = folioRef.current;
+    if (!folio || event.pointerType === "touch" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const bounds = folio.getBoundingClientRect();
+    const reach = 80;
+    if (event.clientX < bounds.left - reach || event.clientX > bounds.right + reach || event.clientY < bounds.top - reach || event.clientY > bounds.bottom + reach) {
+      resetFolio();
+      return;
+    }
+    const x = Math.max(-1, Math.min(1, (event.clientX - (bounds.left + bounds.width / 2)) / (bounds.width * 0.75)));
+    const y = Math.max(-1, Math.min(1, (event.clientY - (bounds.top + bounds.height / 2)) / (bounds.height * 0.75)));
+    folio.style.setProperty("--folio-tilt-x", `${(-y * 5).toFixed(2)}deg`);
+    folio.style.setProperty("--folio-tilt-y", `${(x * 7).toFixed(2)}deg`);
+    folio.style.setProperty("--folio-shadow-x", `${(8 - x * 9).toFixed(1)}px`);
+    folio.style.setProperty("--folio-shadow-y", `${(12 - y * 7).toFixed(1)}px`);
+  }
+
+  function resetFolio() {
+    const folio = folioRef.current;
+    if (!folio) return;
+    folio.style.removeProperty("--folio-tilt-x");
+    folio.style.removeProperty("--folio-tilt-y");
+    folio.style.removeProperty("--folio-shadow-x");
+    folio.style.removeProperty("--folio-shadow-y");
+  }
 
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -105,18 +133,20 @@ export function Login() {
 
   return <main className="auth-gate auth-reference auth-entry" id="content">
     <section className="auth-reference-layout" aria-label="Account sign in">
-      <aside className="auth-showcase auth-showcase-minimal">
+      <aside className="auth-showcase auth-showcase-minimal" onPointerMove={moveFolio} onPointerLeave={resetFolio}>
         <Link to="/" className="auth-showcase-brand"><AetheriaMark /><strong>Aetheria</strong></Link>
-        <div className="auth-folio-art" aria-hidden="true">
+        <div className="auth-folio-art" aria-hidden="true" ref={folioRef}>
           <div className="auth-folio-back" />
           <div className="auth-folio-middle" />
           <div className="auth-folio-front">
-            <span className="auth-folio-overline">AETHERIA / YOUR COPY</span>
-            <strong>Understanding<br />comes first.</strong>
+            <span className="auth-folio-overline">{study.sponsor.toUpperCase()}</span>
+            <strong>{study.name}</strong>
+            <span className="auth-folio-document">{consentDoc.id} · SAMPLE CONSENT</span>
             <span className="auth-folio-rule" />
-            <span className="auth-folio-line" /><span className="auth-folio-line short" />
+            <span className="auth-folio-section">03 / {sections[2].title}</span>
+            <p>{sections[2].plain.split(". ")[0]}.</p>
             <span className="auth-folio-seal">A</span>
-            <small>READ · ASK · REVIEW</small>
+            <small>{sections[2].citation} · DEMONSTRATION ONLY</small>
           </div>
         </div>
         <div className="auth-showcase-copy"><p className="kicker">{copy.eyebrow}</p><h1>{copy.title}</h1><p>{copy.description}</p></div>

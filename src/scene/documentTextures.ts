@@ -6,7 +6,7 @@ const HEIGHT = 1320;
 const SCALE = 2;
 const paper = "#f8f6ee";
 const ink = "#1c2927";
-const plum = "#70518c";
+const teal = "#0d5b58";
 
 type PageDrawing = (context: CanvasRenderingContext2D) => void;
 
@@ -69,13 +69,13 @@ function footer(context: CanvasRenderingContext2D, label: string) {
   context.font = "500 22px Newsreader, Georgia, serif";
   context.fillStyle = ink;
   context.fillText(label, 72, HEIGHT - 104);
-  context.fillStyle = plum;
+  context.fillStyle = teal;
   context.fillText("SYNTHETIC SAMPLE", WIDTH - 414, HEIGHT - 104);
 }
 
 function sectionPage(context: CanvasRenderingContext2D, index: number) {
   const names = ["Read", "Ask", "Feedback", "Review"];
-  const accent = plum;
+  const accent = teal;
   pageFrame(context, "Aetheria / sample study", names[index], accent, "#fffdf8");
   context.fillStyle = accent;
   context.font = "500 98px Newsreader, Georgia, serif";
