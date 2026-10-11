@@ -4231,3 +4231,76 @@ html:not([data-contrast="high"]) .auth-form-reference input {
 .kicker-file { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 .chapter-nav a span.clamp-3, .chapter-nav a.current span.clamp-3 { color: inherit; font: inherit; letter-spacing: inherit; }
+
+/* Aa reading-preferences dock: the old hover-only participant rules shrank the dock to a clipped
+   2.55rem circle with a painted "Aa", hiding the real button and its menu. Undo them here so the
+   button is clickable/tappable and the menu opens above it. */
+.shell.participant .rail-utilities .type-dock,
+.shell.researcher .rail-utilities .type-dock,
+.shell.participant .rail-utilities .type-dock:hover,
+.shell.participant .rail-utilities .type-dock:focus-within {
+  display: block;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  max-width: none;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.shell.participant .rail-utilities .type-dock::before,
+.shell.researcher .rail-utilities .type-dock::before { content: none; display: none; }
+.shell.participant .rail-utilities .type-dock .type-dock-options { opacity: 0; visibility: hidden; pointer-events: none; }
+.shell.participant .rail-utilities .type-dock.is-open .type-dock-options { opacity: 1; visibility: visible; pointer-events: auto; }
+
+/* Navigation rail: the section links share the full column height, top to bottom, ending above
+   Switch role / Sign out. The rail's bottom padding still keeps the Aa and Ask Aetheria buttons clear. */
+@media (min-width: 901px) {
+  .shell.participant .rail nav,
+  .shell.researcher .rail nav { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .shell.participant .rail nav .rail-link,
+  .shell.researcher .rail nav .rail-link { flex: 1 1 0; min-height: 2.75rem; align-content: center; align-items: center; margin-top: 0; margin-bottom: 0; }
+  .shell.participant .rail nav { gap: .3rem; }
+  .shell.researcher .rail nav { gap: .24rem; }
+  .shell.participant .rail .mode-switch,
+  .shell.researcher .rail .mode-switch { flex: 0 0 auto; }
+}
+@media (min-width: 901px) {
+  .shell.participant .rail nav,
+  .shell.researcher .rail nav { margin-bottom: .9rem; }
+  .shell.researcher .rail .mode-switch { margin-top: .35rem; border-top: 1px solid rgba(16, 43, 53, .14); }
+}
+@media (min-width: 901px) {
+  .shell.participant .rail nav,
+  .shell.researcher .rail nav { min-height: auto; }
+  .shell.participant .rail nav .rail-link,
+  .shell.researcher .rail nav .rail-link { min-height: 2.4rem; padding-top: .35rem; padding-bottom: .35rem; }
+}
+
+/* Ask Aetheria sits in the bottom-right corner, apart from the Aa dock on the left. */
+.shell .rail-utilities .guide-launch {
+  position: fixed !important;
+  inset: auto 1.25rem 1.25rem auto !important;
+  z-index: 45;
+}
+@media (max-width: 900px) {
+  .shell .rail-utilities .guide-launch { inset: auto 1rem 1rem auto !important; }
+}
+
+/* Bigger section names in the rail, and room at the bottom for the open Aa menu so it never
+   covers Switch role / Sign out. Rem units scale with the chosen text size. */
+@media (min-width: 901px) {
+  .shell.participant .rail,
+  .shell.researcher .rail { padding-bottom: 15.5rem; }
+  .shell.participant .rail nav .rail-link { font-size: 1.32rem; }
+  .shell.participant .rail nav .rail-link span:first-child { font-size: .8rem; }
+  .shell.researcher .rail nav .rail-link { font-size: .84rem; }
+  .shell.researcher .rail nav .rail-link span:first-child { font-size: .72rem; }
+}
+@media (min-width: 901px) {
+  .shell.participant .rail nav .rail-link,
+  .shell.researcher .rail nav .rail-link { min-height: 1.9rem; }
+}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 import { strings, useT } from "../lib/i18n";
 import { useR } from "../lib/researchI18n";
@@ -104,6 +104,22 @@ function TypeDock() {
   const { fontScale, setFontScale, narrationRate, lastSpoken, language, setLanguage } = useSession();
   const t = strings[language];
   const [expanded, setExpanded] = useState(false);
+  const dock = useRef<HTMLDivElement>(null);
+
+  // Close on Escape or a click/tap outside the dock.
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (event: KeyboardEvent) => event.key === "Escape" && setExpanded(false);
+    const onPointer = (event: PointerEvent) => {
+      if (dock.current && !dock.current.contains(event.target as Node)) setExpanded(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
+  }, [expanded]);
   const sizes = [
     ["md", t.dock.sizes[0], "0.92rem"],
     ["lg", t.dock.sizes[1], "1.12rem"],
@@ -111,7 +127,7 @@ function TypeDock() {
   ] as const;
 
   return (
-    <div className={`type-dock${expanded ? " is-open" : ""}`}>
+    <div ref={dock} className={`type-dock${expanded ? " is-open" : ""}`}>
       <button
         type="button"
         className="type-dock-trigger"

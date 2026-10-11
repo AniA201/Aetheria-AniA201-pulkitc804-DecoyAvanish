@@ -10,17 +10,17 @@ The included AETHER-01 consent, product, and clinic are fictional. The repositor
 
 ```mermaid
 flowchart TD
-  You["👤 Participant<br/>signs in and adds a consent form"] --> Read["📖 Read<br/>original text beside a simple version"]
-  Read --> Ask["❓ Ask<br/>a question about the form"]
-  Ask --> Find["🔎 Aetheria finds the exact passage<br/>that answers it"]
+  You["Participant<br/>signs in and adds a consent form"] --> Read["Read<br/>original text beside a simple version"]
+  Read --> Ask["Ask<br/>a question about the form"]
+  Ask --> Find["Aetheria finds the exact passage<br/>that answers it"]
   Find --> Brain{"Who writes the answer?"}
-  Brain -->|"first choice"| Gemini["✨ Gemini AI"]
-  Brain -->|"if Gemini is busy or offline"| Local["💻 Built-in rules"]
-  Gemini --> Answer["✅ Answer + the quote it came from<br/>(never makes up doses, cures, or approvals)"]
+  Brain -->|"first choice"| Gemini["Gemini AI"]
+  Brain -->|"if Gemini is busy or offline"| Local["Built-in rules"]
+  Gemini --> Answer["Answer + the quote it came from<br/>(never makes up doses, cures, or approvals)"]
   Local --> Answer
-  Read --> Check["🧠 Check<br/>explain it back in your own words"]
-  Check --> Handoff["📨 Questions and gaps go to the study team"]
-  Handoff --> Team["🧑‍🔬 Researcher<br/>reviews and replies"]
+  Read --> Check["Check<br/>explain it back in your own words"]
+  Check --> Handoff["Questions and gaps go to the study team"]
+  Handoff --> Team["Researcher<br/>reviews and replies"]
   Team --> You
 ```
 
