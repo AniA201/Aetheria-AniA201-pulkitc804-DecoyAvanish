@@ -38,11 +38,11 @@ type LetterPath = { x0: number; y0: number; x1: number; y1: number; size0: numbe
 
 // The title has one visible R. Its second flight is a deliberate afterimage so
 // the word can branch into both Read and Review as the page opens.
-const letterTransfers: Array<{ key: TransferKey; sourceIndex: number; lower: string; upper: string; phase: number }> = [
-  { key: "read", sourceIndex: 5, lower: "r", upper: "R", phase: 0 },
-  { key: "ask", sourceIndex: 0, lower: "a", upper: "A", phase: 1.6 },
-  { key: "evaluation", sourceIndex: 4, lower: "e", upper: "E", phase: 3.1 },
-  { key: "review", sourceIndex: 5, lower: "r", upper: "R", phase: 4.7 },
+const letterTransfers: Array<{ key: TransferKey; sourceIndex: number; lower: string; upper: string; phase: number; sectionIndex: number }> = [
+  { key: "read", sourceIndex: 5, lower: "r", upper: "R", phase: 0, sectionIndex: 0 },
+  { key: "ask", sourceIndex: 0, lower: "a", upper: "A", phase: 1.6, sectionIndex: 1 },
+  { key: "evaluation", sourceIndex: 4, lower: "e", upper: "E", phase: 3.1, sectionIndex: 2 },
+  { key: "review", sourceIndex: 5, lower: "r", upper: "R", phase: 4.7, sectionIndex: 3 },
 ];
 
 function BackgroundQuotes({ quotes }: { quotes: readonly string[] }) {
@@ -203,6 +203,10 @@ export function Landing() {
   const capital = Math.min(1, Math.max(0, (shatterProgress - 0.3) / 0.42));
   const settledFade = Math.min(1, Math.max(0, (shatterProgress - 0.93) / 0.07));
   const motionBlur = Math.sin(Math.PI * transfer) * (1 - settledFade);
+  const titleInitialOpacity = (key: TransferKey) => {
+    const sectionIndex = letterTransfers.find((transfer) => transfer.key === key)?.sectionIndex ?? Number.MAX_SAFE_INTEGER;
+    return Math.max(0.24 + settledFade * 0.76, chapter >= sectionIndex ? 1 : 0);
+  };
 
   return (
     <div className={quiet ? "story is-quiet" : "story"} ref={rootRef}>
@@ -294,7 +298,9 @@ export function Landing() {
               top: path.y0 + (path.y1 - path.y0) * transfer - arc,
               fontSize: path.size0 + (path.size1 - path.size0) * transfer,
               lineHeight: 0.76 + transfer * 0.28,
-              opacity: Math.min(1, shatterProgress * 7) * (1 - settledFade),
+              // The moving glyph remains fully inked through its whole flight.
+              // Only its blur trails dissipate at the title, avoiding a pale letter.
+              opacity: Math.min(1, shatterProgress * 7),
               transform: `rotate(${(1 - transfer) * -8 + Math.cos(transfer * Math.PI * 4 + spec.phase) * 18 * (1 - transfer)}deg)`,
             }}
             aria-hidden="true"
@@ -347,7 +353,7 @@ export function Landing() {
         <section className="folio-split" id="read">
           <BackgroundQuotes quotes={backgroundQuotes.read} />
           <p className="folio-section-label">01 / Read</p>
-          {quiet ? <h2>Read.</h2> : <h2 aria-label="Read."><span ref={(node) => { transferTargets.current.read = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: "0.7em", opacity: 0.24 + settledFade * 0.76 }} aria-hidden="true">R</span><span aria-hidden="true">ead.</span></h2>}
+          {quiet ? <h2>Read.</h2> : <h2 aria-label="Read."><span ref={(node) => { transferTargets.current.read = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: "0.7em", opacity: titleInitialOpacity("read") }} aria-hidden="true">R</span><span aria-hidden="true">ead.</span></h2>}
           <SectionHighlights items={sectionHighlights.read} />
           <p className="sr-only">Read each part of the consent form beside a shorter, plain-language explanation. The original words and page citation stay in view.</p>
         </section>
@@ -356,7 +362,7 @@ export function Landing() {
           <BackgroundQuotes quotes={backgroundQuotes.ask} />
           <div className="folio-chapter-head">
             <p className="folio-section-label">02 / Ask</p>
-            {quiet ? <h2>Ask.</h2> : <h2 aria-label="Ask."><span ref={(node) => { transferTargets.current.ask = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: "0.7em", opacity: 0.24 + settledFade * 0.76 }} aria-hidden="true">A</span><span aria-hidden="true">sk.</span></h2>}
+            {quiet ? <h2>Ask.</h2> : <h2 aria-label="Ask."><span ref={(node) => { transferTargets.current.ask = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: "0.7em", opacity: titleInitialOpacity("ask") }} aria-hidden="true">A</span><span aria-hidden="true">sk.</span></h2>}
           </div>
           <SectionHighlights items={sectionHighlights.ask} />
           <p className="sr-only">{sections.map((section) => `${section.ask} ${section.plain} Source: ${section.citation}, ${section.page}.`).join(" ")}</p>
@@ -365,7 +371,7 @@ export function Landing() {
         <section className="folio-split folio-teach" id="evaluation">
           <BackgroundQuotes quotes={backgroundQuotes.evaluation} />
           <p className="folio-section-label">03 / Evaluation</p>
-          {quiet ? <h2>Evaluation.</h2> : <h2 aria-label="Evaluation."><span ref={(node) => { transferTargets.current.evaluation = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: "0.7em", opacity: 0.24 + settledFade * 0.76 }} aria-hidden="true">E</span><span aria-hidden="true">valuation.</span></h2>}
+          {quiet ? <h2>Evaluation.</h2> : <h2 aria-label="Evaluation."><span ref={(node) => { transferTargets.current.evaluation = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: "0.7em", opacity: titleInitialOpacity("evaluation") }} aria-hidden="true">E</span><span aria-hidden="true">valuation.</span></h2>}
           <SectionHighlights items={sectionHighlights.evaluation} />
           <p className="sr-only">You cannot choose your study group. The sample form says chance assigns Aetherol or placebo. Neither you nor the study doctor knows your group during the study. Source: {sections[0].citation}, {sections[0].page}.</p>
         </section>
@@ -373,7 +379,7 @@ export function Landing() {
         <section className="folio-review" id="review">
           <BackgroundQuotes quotes={backgroundQuotes.review} />
           <p className="folio-section-label">04 / Review</p>
-          {quiet ? <h2>Review.</h2> : <h2 aria-label="Review."><span ref={(node) => { transferTargets.current.review = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: "0.7em", opacity: 0.24 + settledFade * 0.76 }} aria-hidden="true">R</span><span aria-hidden="true">eview.</span></h2>}
+          {quiet ? <h2>Review.</h2> : <h2 aria-label="Review."><span ref={(node) => { transferTargets.current.review = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: "0.7em", opacity: titleInitialOpacity("review") }} aria-hidden="true">R</span><span aria-hidden="true">eview.</span></h2>}
           <SectionHighlights items={sectionHighlights.review} />
           <p className="sr-only">{facts.filter((fact) => fact.kind === "confirmed-textual-difference").map((fact) => `${fact.label}: consent says ${fact.consentValue}; study plan says ${fact.protocolValue}.`).join(" ")}</p>
         </section>
