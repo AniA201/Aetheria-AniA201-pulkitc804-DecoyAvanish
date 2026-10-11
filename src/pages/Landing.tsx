@@ -15,23 +15,35 @@ const wordFlights = [
 const index = [
   { id: "read", number: "01", label: "Read" },
   { id: "ask", number: "02", label: "Ask" },
-  { id: "teach", number: "03", label: "Feedback" },
+  { id: "evaluation", number: "03", label: "Evaluation" },
   { id: "review", number: "04", label: "Review" },
 ];
 
 const backgroundQuotes = {
   read: ["Original words stay visible", "6 clinic visits", "About 16 weeks", "Two hours each", "What does this mean?", "Check the page"],
   ask: ["Can I leave later?", "Who pays for travel?", "Who sees my records?", "What about side effects?", "Is any benefit promised?", "Where does it say that?"],
-  feedback: ["Assigned by chance", "Aetherol or placebo?", "No promised benefit", "Say it your way", "What is still unclear?", "Ask the study team"],
+  evaluation: ["Assigned by chance", "Aetherol or placebo?", "No promised benefit", "Say it your way", "What is still unclear?", "Ask the study team"],
   review: ["6 visits / 8 visits", "16 weeks / 24 weeks", "$50 / $80 per visit", "Which count is right?", "Check the original", "Resolve before using"],
 };
 
 const sectionHighlights = {
   read: ["See the original text.", "Read a short explanation.", "Check the page number."],
   ask: ["Ask about visits.", "Ask about risks.", "Save the answer."],
-  feedback: ["Explain it in your words.", "Find what needs clarity.", "Ask a person for help."],
+  evaluation: ["Explain it in your words.", "Find what needs clarity.", "Ask a person for help."],
   review: ["Compare key details.", "Spot a mismatch.", "Resolve it before using."],
 };
+
+type TransferKey = "read" | "ask" | "evaluation" | "review";
+type LetterPath = { x0: number; y0: number; x1: number; y1: number; size0: number; size1: number };
+
+// The title has one visible R. Its second flight is a deliberate afterimage so
+// the word can branch into both Read and Review as the page opens.
+const letterTransfers: Array<{ key: TransferKey; sourceIndex: number; lower: string; upper: string; phase: number }> = [
+  { key: "read", sourceIndex: 5, lower: "r", upper: "R", phase: 0 },
+  { key: "ask", sourceIndex: 0, lower: "a", upper: "A", phase: 1.6 },
+  { key: "evaluation", sourceIndex: 4, lower: "e", upper: "E", phase: 3.1 },
+  { key: "review", sourceIndex: 5, lower: "r", upper: "R", phase: 4.7 },
+];
 
 function BackgroundQuotes({ quotes }: { quotes: readonly string[] }) {
   return (
@@ -62,14 +74,14 @@ export function Landing() {
   const rootRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
   const wordRef = useRef<HTMLParagraphElement>(null);
-  const readInitialRef = useRef<HTMLSpanElement>(null);
+  const transferTargets = useRef<Partial<Record<TransferKey, HTMLSpanElement>>>({});
   const quiet = reducedMotion || textOnly;
   const [menu, setMenu] = useState(false);
   const [veil, setVeil] = useState(!quiet);
   const [chapter, setChapter] = useState(0);
   const [shatterProgress, setShatterProgress] = useState(0);
   const [shatterTarget, setShatterTarget] = useState(0);
-  const [readLetterPath, setReadLetterPath] = useState<{ x0: number; y0: number; x1: number; y1: number; size0: number; size1: number } | null>(null);
+  const [letterPaths, setLetterPaths] = useState<Partial<Record<TransferKey, LetterPath>>>({});
 
   useEffect(() => {
     const root = rootRef.current;
@@ -91,22 +103,33 @@ export function Landing() {
       const travel = window.innerHeight * 1.15;
       const nextShatter = quiet ? 0 : Math.min(1, Math.max(0, (start - wordTop) / travel));
       setShatterTarget((current) => Math.abs(current - nextShatter) < 0.0005 ? current : nextShatter);
-      const source = wordRef.current?.querySelectorAll("span")[5];
-      const target = readInitialRef.current;
       const main = mainRef.current;
-      if (source && target && main) {
-        const word = wordRef.current!.getBoundingClientRect();
-        const end = target.getBoundingClientRect();
+      const word = wordRef.current;
+      if (word && main) {
+        const wordStyle = getComputedStyle(word);
         const mainBounds = main.getBoundingClientRect();
-        const nextPath = {
-          x0: word.left + source.offsetLeft - mainBounds.left,
-          y0: word.top + source.offsetTop - mainBounds.top,
-          x1: end.left - mainBounds.left,
-          y1: end.top - mainBounds.top,
-          size0: Number.parseFloat(getComputedStyle(wordRef.current!).fontSize),
-          size1: Number.parseFloat(getComputedStyle(target).fontSize),
-        };
-        setReadLetterPath((current) => current && Object.keys(nextPath).every((key) => Math.abs(current[key as keyof typeof current] - nextPath[key as keyof typeof nextPath]) < 0.75) ? current : nextPath);
+        const spans = word.querySelectorAll("span");
+        const nextPaths: Partial<Record<TransferKey, LetterPath>> = {};
+        letterTransfers.forEach((spec) => {
+          const source = spans[spec.sourceIndex];
+          const target = transferTargets.current[spec.key];
+          if (!source || !target) return;
+          const start = source.getBoundingClientRect();
+          const end = target.getBoundingClientRect();
+          nextPaths[spec.key] = {
+            x0: start.left - mainBounds.left,
+            y0: start.top - mainBounds.top,
+            x1: end.left - mainBounds.left,
+            y1: end.top - mainBounds.top,
+            size0: Number.parseFloat(wordStyle.fontSize),
+            size1: Number.parseFloat(getComputedStyle(target).fontSize),
+          };
+        });
+        setLetterPaths((current) => letterTransfers.every(({ key }) => {
+          const previous = current[key];
+          const next = nextPaths[key];
+          return previous && next && Object.keys(next).every((field) => Math.abs(previous[field as keyof LetterPath] - next[field as keyof LetterPath]) < 0.75);
+        }) ? current : nextPaths);
       }
     };
     onScroll();
@@ -178,7 +201,6 @@ export function Landing() {
   const capital = Math.min(1, Math.max(0, (shatterProgress - 0.3) / 0.42));
   const readSpace = Math.min(1, Math.max(0, (shatterProgress - 0.55) / 0.4));
   const settledFade = Math.min(1, Math.max(0, (shatterProgress - 0.67) / 0.23));
-  const transferArc = readLetterPath ? Math.sin(Math.PI * transfer) * Math.min(110, Math.abs(readLetterPath.y1 - readLetterPath.y0) * 0.22) : 0;
   const motionBlur = Math.sin(Math.PI * transfer) * (1 - settledFade);
 
   return (
@@ -258,18 +280,25 @@ export function Landing() {
       )}
 
       <main id="content" ref={mainRef}>
-        {!quiet && readLetterPath && <span
-          className={`folio-transfer-r${shatterProgress > 0.975 ? " is-settled" : ""}`}
-          style={{
-            left: readLetterPath.x0 + (readLetterPath.x1 - readLetterPath.x0) * transfer,
-            top: readLetterPath.y0 + (readLetterPath.y1 - readLetterPath.y0) * transfer - transferArc,
-            fontSize: readLetterPath.size0 + (readLetterPath.size1 - readLetterPath.size0) * transfer,
-            lineHeight: 0.76 + transfer * 0.28,
-            opacity: Math.min(1, shatterProgress * 12) * (1 - settledFade),
-            transform: `rotate(${(1 - transfer) * -8}deg)`,
-          }}
-          aria-hidden="true"
-        ><span className="folio-transfer-glyph"><span className="folio-transfer-lower" style={{ opacity: 1 - capital }}>r</span><span className="folio-transfer-upper" style={{ opacity: capital }}>R</span><span className="folio-transfer-trail" style={{ opacity: motionBlur * .54 }}>R</span><span className="folio-transfer-trail folio-transfer-trail-far" style={{ opacity: motionBlur * .24 }}>R</span></span></span>}
+        {!quiet && letterTransfers.map((spec) => {
+          const path = letterPaths[spec.key];
+          if (!path) return null;
+          const arc = Math.sin(Math.PI * transfer) * Math.min(110, Math.abs(path.y1 - path.y0) * 0.22);
+          const spiral = Math.sin(transfer * Math.PI * 4 + spec.phase) * Math.min(34, Math.abs(path.y1 - path.y0) * 0.035) * Math.sin(Math.PI * transfer);
+          return <span
+            key={spec.key}
+            className={`folio-transfer-letter folio-transfer-${spec.key}${shatterProgress > 0.975 ? " is-settled" : ""}`}
+            style={{
+              left: path.x0 + (path.x1 - path.x0) * transfer + spiral,
+              top: path.y0 + (path.y1 - path.y0) * transfer - arc,
+              fontSize: path.size0 + (path.size1 - path.size0) * transfer,
+              lineHeight: 0.76 + transfer * 0.28,
+              opacity: Math.min(1, shatterProgress * 12) * (1 - settledFade),
+              transform: `rotate(${(1 - transfer) * -8 + Math.cos(transfer * Math.PI * 4 + spec.phase) * 18 * (1 - transfer)}deg)`,
+            }}
+            aria-hidden="true"
+          ><span className="folio-transfer-glyph"><span className="folio-transfer-lower" style={{ opacity: 1 - capital }}>{spec.lower}</span><span className="folio-transfer-upper" style={{ opacity: capital }}>{spec.upper}</span><span className="folio-transfer-trail" style={{ opacity: motionBlur * .54 }}>{spec.upper}</span><span className="folio-transfer-trail folio-transfer-trail-far" style={{ opacity: motionBlur * .24 }}>{spec.upper}</span></span></span>;
+        })}
         <section className="folio-hero">
           <p ref={wordRef} className="folio-word" aria-hidden="true">{"Aetheria".split("").map((letter, index) => {
             const [dx, dy, spin] = wordFlights[index];
@@ -317,7 +346,7 @@ export function Landing() {
         <section className="folio-split" id="read">
           <BackgroundQuotes quotes={backgroundQuotes.read} />
           <p className="folio-section-label">01 / Read</p>
-          {quiet ? <h2>Read.</h2> : <h2 aria-label="Read."><span ref={readInitialRef} className={`folio-read-initial-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: `${readSpace * 0.7}em`, opacity: settledFade }} aria-hidden="true">R</span><span aria-hidden="true">ead.</span></h2>}
+          {quiet ? <h2>Read.</h2> : <h2 aria-label="Read."><span ref={(node) => { transferTargets.current.read = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: `${readSpace * 0.7}em`, opacity: settledFade }} aria-hidden="true">R</span><span aria-hidden="true">ead.</span></h2>}
           <SectionHighlights items={sectionHighlights.read} />
           <p className="sr-only">Read each part of the consent form beside a shorter, plain-language explanation. The original words and page citation stay in view.</p>
         </section>
@@ -326,24 +355,24 @@ export function Landing() {
           <BackgroundQuotes quotes={backgroundQuotes.ask} />
           <div className="folio-chapter-head">
             <p className="folio-section-label">02 / Ask</p>
-            <h2>Ask.</h2>
+            {quiet ? <h2>Ask.</h2> : <h2 aria-label="Ask."><span ref={(node) => { transferTargets.current.ask = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: `${readSpace * 0.7}em`, opacity: settledFade }} aria-hidden="true">A</span><span aria-hidden="true">sk.</span></h2>}
           </div>
           <SectionHighlights items={sectionHighlights.ask} />
           <p className="sr-only">{sections.map((section) => `${section.ask} ${section.plain} Source: ${section.citation}, ${section.page}.`).join(" ")}</p>
         </section>
 
-        <section className="folio-split folio-teach" id="teach">
-          <BackgroundQuotes quotes={backgroundQuotes.feedback} />
-          <p className="folio-section-label">03 / Feedback</p>
-          <h2>Feedback.</h2>
-          <SectionHighlights items={sectionHighlights.feedback} />
+        <section className="folio-split folio-teach" id="evaluation">
+          <BackgroundQuotes quotes={backgroundQuotes.evaluation} />
+          <p className="folio-section-label">03 / Evaluation</p>
+          {quiet ? <h2>Evaluation.</h2> : <h2 aria-label="Evaluation."><span ref={(node) => { transferTargets.current.evaluation = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: `${readSpace * 0.7}em`, opacity: settledFade }} aria-hidden="true">E</span><span aria-hidden="true">valuation.</span></h2>}
+          <SectionHighlights items={sectionHighlights.evaluation} />
           <p className="sr-only">You cannot choose your study group. The sample form says chance assigns Aetherol or placebo. Neither you nor the study doctor knows your group during the study. Source: {sections[0].citation}, {sections[0].page}.</p>
         </section>
 
         <section className="folio-review" id="review">
           <BackgroundQuotes quotes={backgroundQuotes.review} />
           <p className="folio-section-label">04 / Review</p>
-          <h2>Review.</h2>
+          {quiet ? <h2>Review.</h2> : <h2 aria-label="Review."><span ref={(node) => { transferTargets.current.review = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: `${readSpace * 0.7}em`, opacity: settledFade }} aria-hidden="true">R</span><span aria-hidden="true">eview.</span></h2>}
           <SectionHighlights items={sectionHighlights.review} />
           <p className="sr-only">{facts.filter((fact) => fact.kind === "confirmed-textual-difference").map((fact) => `${fact.label}: consent says ${fact.consentValue}; study plan says ${fact.protocolValue}.`).join(" ")}</p>
         </section>
