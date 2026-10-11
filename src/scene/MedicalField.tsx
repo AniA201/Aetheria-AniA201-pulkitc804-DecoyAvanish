@@ -279,7 +279,9 @@ export function MedicalField({
         );
         page.group.rotation.set(0, 0, [-0.018, 0.016, -0.014, 0.02][index] * fan);
         page.group.scale.setScalar(1);
-        const pageReveal = reducedMotion ? 1 : smoothstep((progress - 0.04) / 0.42);
+        // A readable first document anchors the landing stage from the first
+        // frame. Scrolling then fans the rest of the stack outward.
+        const pageReveal = 1;
         (page.face.material as THREE.MeshBasicMaterial).opacity = pageReveal;
         (page.edge.material as THREE.MeshBasicMaterial).opacity = pageReveal;
         // A single opaque page is readable; stacked transparent documents are

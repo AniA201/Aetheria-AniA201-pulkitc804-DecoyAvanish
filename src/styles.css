@@ -777,7 +777,7 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
 .folio-hero h1 {
   width: var(--folio-hero-width);
   max-width: none;
-  font-size: clamp(3.5rem, 5.2vw, 5.8rem);
+  font-size: clamp(3.25rem, 4.55vw, 5rem);
 }
 .folio-hero h1 span { display: block; white-space: nowrap; }
 .folio-lede {
