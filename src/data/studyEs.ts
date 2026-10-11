@@ -3,11 +3,11 @@
 // qualified translator; the English form stays the official consent.
 import type { SectionId, TeachPrompt } from "./study";
 
-export type SectionEs = { title: string; short: string; plain: string; terms: { word: string; meaning: string }[]; ask: string };
+export type PracticeSection = { title: string; short: string; plain: string; terms: { word: string; meaning: string }[]; ask: string };
 
 export const studyNameEs = "Prevención de la migraña episódica";
 
-export const sectionsEs: Record<SectionId, SectionEs> = {
+export const sectionsEs: Record<SectionId, PracticeSection> = {
   procedures: {
     title: "Procedimientos del estudio y tiempo",
     short: "Visitas, tiempo y cómo se asigna el grupo",
@@ -176,5 +176,9 @@ export const topicWordsEs: Record<SectionId, RegExp> = {
   costs: /\b(pago|pagan|pagar|dinero|costo|costos|cuesta|gratis|dolares|compensacion|cobran)\b/,
   privacy: /\b(privacidad|nombre|datos|registros|informacion|confidencial|publica|publicar)\b/,
 };
+
+/** Dose, personal treatment, approval, or cure questions in Spanish. Matched without accents. */
+export const adviceWordsEs =
+  /\b(dosis|miligramos?|mg|embarazada|embarazo|ibuprofeno|mis? medicamentos?|otros? medicamentos?|aprobad[oa]s?|aprobacion|fda|cura|curar|curarme|garantiza|garantia|mejor tratamiento|que tratamiento|(debo|deberia) (tomar|dejar|participar|entrar|unirme|firmar)|me conviene|me recomienda|recomienda|recomendaria)\b/;
 
 export const stripAccents = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");

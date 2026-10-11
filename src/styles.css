@@ -1497,7 +1497,7 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
   background: #f7f4ec;
   border-right: 0;
   box-shadow: 10px 0 28px rgba(16, 43, 53, 0.05);
-  padding: 26px 14px 5.5rem;
+  padding: 26px 14px 8.25rem;
 }
 .shell.participant .rail nav { gap: 0.15rem; margin-top: 1.6rem; }
 .shell.participant .rail-link {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 import { strings, useT } from "../lib/i18n";
+import { languageInfo, languages } from "../lib/languages";
 import { canSpeak, speak, stopSpeaking, type VoiceLang } from "../lib/voice";
 import { versionStanding } from "../lib/workbook";
 import { useSession, type Role } from "../state/Session";
@@ -155,15 +156,19 @@ function TypeDock({ mode }: { mode: Role }) {
         ))}
       </div>
       {mode === "participant" ? (
-        <div role="radiogroup" aria-label="Language / Idioma">
-          {(
-            [
-              ["en", "English"],
-              ["es", "Español"],
-            ] as const
-          ).map(([code, label]) => (
-            <button key={code} type="button" role="radio" aria-label={label} title={label} aria-checked={language === code} onClick={() => setLanguage(code)}>
-              {code.toUpperCase()}
+        <div role="radiogroup" aria-label="Language / Idioma / Langue / 语言" className="language-switch">
+          {languages.map((code) => (
+            <button
+              key={code}
+              type="button"
+              role="radio"
+              lang={languageInfo[code].html}
+              aria-label={languageInfo[code].native}
+              title={languageInfo[code].native}
+              aria-checked={language === code}
+              onClick={() => setLanguage(code)}
+            >
+              {languageInfo[code].dock}
             </button>
           ))}
         </div>
@@ -191,7 +196,7 @@ export function Shell({ mode }: { mode: Role }) {
   const t = useT();
   const links =
     mode === "participant" ? participantNav.map((link) => ({ to: link.to, end: "end" in link ? link.end : undefined, label: t.nav[link.key] })) : researcherNav;
-  const spanish = mode === "participant" && language === "es";
+  const translated = mode === "participant" && language !== "en";
   const blocked = mode === "participant" && consent !== null && versionStanding(consent.version, approvedVersions) === "not-listed";
   const [open, setOpen] = useState(false);
   const location = useLocation();
@@ -231,7 +236,7 @@ export function Shell({ mode }: { mode: Role }) {
           <AetheriaMark />
           <span>
             <strong>Aetheria</strong>
-            <em>{mode === "participant" ? "Participant" : "Research"}</em>
+            <em>{mode === "participant" ? t.roleName : "Research"}</em>
           </span>
         </NavLink>
         <span className="topbar-end">
@@ -251,7 +256,7 @@ export function Shell({ mode }: { mode: Role }) {
           <AetheriaMark />
           <span>
             <strong>Aetheria</strong>
-            <em>{mode === "participant" ? (spanish ? "Participante" : "Participant") : "Research"}</em>
+            <em>{mode === "participant" ? t.roleName : "Research"}</em>
           </span>
         </NavLink>
         <nav aria-label={mode === "participant" ? "Participant" : "Research team"}>
@@ -270,8 +275,8 @@ export function Shell({ mode }: { mode: Role }) {
         </button>
       </aside>
       <div className="workspace">
-        <main id="content" tabIndex={-1} lang={spanish ? "es" : "en"}>
-          {spanish ? (
+        <main id="content" tabIndex={-1} lang={translated ? languageInfo[language].html : "en"}>
+          {translated ? (
             <p className="notice machine-notice" role="note">
               {t.machineNotice}
             </p>
@@ -288,9 +293,10 @@ export function Shell({ mode }: { mode: Role }) {
 
 export function Missing() {
   const t = useT();
+  const { language } = useSession();
   useTitle(t.missing.title);
   return (
-    <main className="missing" id="content" lang={t.langName === "Español" ? "es" : "en"}>
+    <main className="missing" id="content" lang={languageInfo[language].html}>
       <p className="kicker">Aetheria</p>
       <h1>{t.missing.heading}</h1>
       <NavLink to="/" className="btn solid">

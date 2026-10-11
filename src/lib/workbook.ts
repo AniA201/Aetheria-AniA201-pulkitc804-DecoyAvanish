@@ -1,6 +1,7 @@
 import type { Passage } from "../data/documents";
 import { adultSeed, extractValues } from "./blocks";
 import type { SubmittedConsent } from "./consent";
+import type { Language } from "./languages";
 import { toCaregiver, type CheckSource } from "./plainLab";
 
 export type AnnexRow = {
@@ -34,18 +35,31 @@ export function versionStanding(version: string, approved: string[]): VersionSta
   return list.some((item) => item.toLowerCase() === version.trim().toLowerCase()) ? "listed" : "not-listed";
 }
 
-export function versionNote(version: string, approved: string[], language: "en" | "es" = "en"): string {
-  const standing = versionStanding(version, approved);
-  if (language === "es") {
-    if (standing === "unverified") return `${version} no está verificada. Nadie ha ingresado una lista de versiones aprobadas.`;
-    if (standing === "listed") return `${version} está en la lista que una persona ingresó en Configuración.`;
-    return `${version} no está en la lista que una persona ingresó. No se trata como el formulario aprobado actual.`;
-  }
-  if (standing === "unverified") {
-    return `${version} is Unverified. No one has entered an approved-version list.`;
-  }
-  if (standing === "listed") return `${version} is on the list a person entered in Settings.`;
-  return `${version} is not on the list a person entered. It is not treated as the current approved form.`;
+const versionNotes: Record<Language, Record<VersionStanding, (version: string) => string>> = {
+  en: {
+    unverified: (version) => `${version} is Unverified. No one has entered an approved-version list.`,
+    listed: (version) => `${version} is on the list a person entered in Settings.`,
+    "not-listed": (version) => `${version} is not on the list a person entered. It is not treated as the current approved form.`,
+  },
+  es: {
+    unverified: (version) => `${version} no está verificada. Nadie ha ingresado una lista de versiones aprobadas.`,
+    listed: (version) => `${version} está en la lista que una persona ingresó en Configuración.`,
+    "not-listed": (version) => `${version} no está en la lista que una persona ingresó. No se trata como el formulario aprobado actual.`,
+  },
+  fr: {
+    unverified: (version) => `${version} n'est pas vérifiée. Personne n'a saisi de liste de versions approuvées.`,
+    listed: (version) => `${version} figure sur la liste qu'une personne a saisie dans Paramètres.`,
+    "not-listed": (version) => `${version} ne figure pas sur la liste qu'une personne a saisie. Elle n'est pas traitée comme le formulaire approuvé actuel.`,
+  },
+  zh: {
+    unverified: (version) => `${version} 未核实。还没有人输入已批准版本的清单。`,
+    listed: (version) => `${version} 在工作人员于“设置”中输入的清单上。`,
+    "not-listed": (version) => `${version} 不在工作人员输入的清单上，不会被当作当前已批准的表格。`,
+  },
+};
+
+export function versionNote(version: string, approved: string[], language: Language = "en"): string {
+  return versionNotes[language][versionStanding(version, approved)](version);
 }
 
 export type ReadingSource = CheckSource & { title: string; passages: Passage[]; adult: string; caregiver: string };

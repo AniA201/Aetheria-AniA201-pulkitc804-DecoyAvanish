@@ -54,7 +54,7 @@ class HandoffRequest(BaseModel):
     feedback: str = Field(max_length=2000)
     speaker: Literal["participant", "caregiver"] = "participant"
     misconception: Optional[str] = Field(default=None, max_length=300)
-    language: Literal["en", "es"] = "en"
+    language: Literal["en", "es", "fr", "zh"] = "en"
     document_id: str = Field(max_length=80)
     version: str = Field(max_length=40)
     engine: Optional[Literal["gemini", "ollama", "local"]] = None

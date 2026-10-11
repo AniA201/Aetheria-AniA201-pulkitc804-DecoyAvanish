@@ -6,6 +6,7 @@ import { blocks, blocksIn, extractValues, proposeChange, registryFields, render,
 import { draftFromBrief, usdmShape, type Brief } from "../lib/brief";
 import { consentElements } from "../lib/elements";
 import { loadHandoffs, type StoredHandoff } from "../lib/handoff";
+import { isLanguage, languageInfo, type Language } from "../lib/languages";
 import { extractPdfText } from "../lib/pdf";
 import { checkDraft, readability, runPlantedDrafts, traceFigures } from "../lib/plainLab";
 import {
@@ -38,32 +39,45 @@ export function download(name: string, text: string, type = "text/plain") {
   URL.revokeObjectURL(url);
 }
 
-export function VersionStanding({ version, language = "en" }: { version: string; language?: "en" | "es" }) {
+export function VersionStanding({ version, language = "en" }: { version: string; language?: Language }) {
   const { approvedVersions } = useSession();
   return <p className="fine">{versionNote(version, approvedVersions, language)}</p>;
 }
 
-export function VersionGate({ version, title, language = "en" }: { version: string; title: string; language?: "en" | "es" }) {
-  if (language === "es") {
-    return (
-      <div className="page">
-        <p className="kicker">{title}</p>
-        <h1>Este formulario no está en la lista aprobada.</h1>
-        <p className="lede dark">
-          El equipo de investigación ingresó una lista de versiones aprobadas, y {version} no está en ella. Leer, preguntar y comprobar están en pausa para este archivo, para no usar un formulario desactualizado.
-        </p>
-        <p className="fine">Pida el formulario actual al coordinador del estudio. Esta aplicación no decide qué versión está aprobada; una persona ingresó la lista.</p>
-      </div>
-    );
-  }
+const gateText: Record<Language, { heading: string; lede: (version: string) => string; fine: string }> = {
+  en: {
+    heading: "This form is not on the approved list.",
+    lede: (version) =>
+      `The research team entered a list of approved versions, and ${version} is not on it. Reading, asking, and checking are paused for this file so an outdated form is not used.`,
+    fine: "Ask the study coordinator for the current form. This app does not decide which version is approved; a person entered the list.",
+  },
+  es: {
+    heading: "Este formulario no está en la lista aprobada.",
+    lede: (version) =>
+      `El equipo de investigación ingresó una lista de versiones aprobadas, y ${version} no está en ella. Leer, preguntar y comprobar están en pausa para este archivo, para no usar un formulario desactualizado.`,
+    fine: "Pida el formulario actual al coordinador del estudio. Esta aplicación no decide qué versión está aprobada; una persona ingresó la lista.",
+  },
+  fr: {
+    heading: "Ce formulaire ne figure pas sur la liste approuvée.",
+    lede: (version) =>
+      `L'équipe de recherche a saisi une liste de versions approuvées, et ${version} n'y figure pas. Lire, demander et vérifier sont suspendus pour ce fichier, afin de ne pas utiliser un formulaire périmé.`,
+    fine: "Demandez le formulaire actuel au coordinateur de l'étude. Cette application ne décide pas quelle version est approuvée ; une personne a saisi la liste.",
+  },
+  zh: {
+    heading: "这份表格不在已批准的清单上。",
+    lede: (version) => `研究团队输入了已批准版本的清单，${version} 不在其中。为避免使用过时的表格，这个文件的阅读、提问和检查功能已暂停。`,
+    fine: "请向研究协调员索取当前的表格。本应用不决定哪个版本已获批准；清单是由工作人员输入的。",
+  },
+};
+
+export function VersionGate({ version, title, language = "en" }: { version: string; title: string; language?: Language }) {
+  const words = gateText[language];
   return (
     <div className="page">
       <p className="kicker">{title}</p>
-      <h1>This form is not on the approved list.</h1>
-      <p className="lede dark">
-        The research team entered a list of approved versions, and {version} is not on it. Reading, asking, and checking are paused for this file so an outdated form is not used.
-      </p>
-      <p className="fine">Ask the study coordinator for the current form. This app does not decide which version is approved; a person entered the list.</p>
+      <h1>{words.heading}</h1>
+      <p className="lede dark">{words.lede(version)}</p>
+      <p className="fine">{words.fine}</p>
     </div>
   );
 }
@@ -87,8 +101,8 @@ export function StarterSheets() {
     {
       name: "Teach It Back",
       lines: [
-        `${teachPrompts.length} check questions, one per sample section, in English and Spanish`,
-        `${personas} of ${personaFixtures.length} starter-sheet personas get the expected result (the Spanish one is checked against the Spanish answer key)`,
+        `${teachPrompts.length} check questions, one per sample section, in English, Spanish, French, and Mandarin`,
+        `${personas} of ${personaFixtures.length} personas get the expected result (the Spanish, French, and Mandarin replies are checked against their own answer keys)`,
         "Voice session: reads each section, asks, listens, checks, and hands off; “person” stops it and flags the coordinator",
         `${publicNct} posts no consent form, so Teach It Back uses the practice form or an uploaded one`,
       ],
@@ -837,7 +851,7 @@ export function PlainWorkbook() {
       <section>
         <h2>Translation</h2>
         <p>
-          English is the only reviewed language. Participants can switch the screens to machine-written Spanish (labelled as not reviewed, with the English form as the official text). This handoff asks a qualified translator to review a language.
+          English is the only reviewed language. Participants can switch the screens to machine-written Spanish, French, or Mandarin Chinese (labelled as not reviewed, with the English form as the official text). This handoff asks a qualified translator to review a language.
         </p>
         {translationHandoff ? (
           <>
@@ -852,7 +866,7 @@ export function PlainWorkbook() {
         ) : (
           <div className="sheet-form">
             <select aria-label="Language" value={language} onChange={(event) => setLanguage(event.target.value)}>
-              {["Spanish", "Chinese", "Vietnamese", "Arabic", "Haitian Creole"].map((item) => (
+              {["Spanish", "French", "Mandarin Chinese", "Vietnamese", "Arabic", "Haitian Creole"].map((item) => (
                 <option key={item}>{item}</option>
               ))}
             </select>
@@ -953,7 +967,9 @@ export function PersonaResults() {
             <small>
               Expected: {item.expect}.{item.result.misconception ? ` Misunderstanding found: ${item.result.misconception}.` : ""}
               {item.speaker === "caregiver" ? " Answered as a caregiver." : ""}
-              {item.result.language === "es" ? " Checked against the Spanish answer key; the handoff offers an interpreter." : ""}
+              {item.result.language && item.result.language !== "en"
+                ? ` Checked against the ${languageInfo[item.result.language].english} answer key; the handoff offers an interpreter.`
+                : ""}
             </small>
           </li>
         ))}
@@ -996,7 +1012,7 @@ export function StoredHandoffs() {
               <small>
                 {item.document_id} {item.version} · {new Date(`${item.created_at}Z`).toLocaleString()}
                 {item.speaker === "caregiver" ? " · answered by a caregiver" : ""}
-                {item.language === "es" ? " · in Spanish, needs an interpreter" : ""}
+                {item.language !== "en" && isLanguage(item.language) ? ` · in ${languageInfo[item.language].english}, needs an interpreter` : ""}
                 {item.misconception ? ` · misunderstanding: ${item.misconception}` : ""}
               </small>
             </li>

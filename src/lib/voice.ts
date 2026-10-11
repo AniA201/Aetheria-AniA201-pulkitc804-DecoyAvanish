@@ -1,18 +1,25 @@
-// Browser speech: an automated voice and dictation, in English or Spanish. Audio stays in the browser.
-export type VoiceLang = "en" | "es";
+// Browser speech: an automated voice and dictation, in English, Spanish, French, or Mandarin.
+// Audio stays in the browser.
+import { languageInfo, type Language } from "./languages";
+
+export type VoiceLang = Language;
 
 export const disclosure: Record<VoiceLang, string> = {
   en: "This voice is automated. A person still holds the consent conversation.",
   es: "Esta voz es automática. Una persona sigue a cargo de la conversación sobre el consentimiento.",
+  fr: "Cette voix est automatique. Une personne reste responsable de la conversation sur le consentement.",
+  zh: "这是自动语音。知情同意的谈话仍由真人负责。",
 };
 
-const locale: Record<VoiceLang, string> = { en: "en-US", es: "es-US" };
+const locale = (lang: VoiceLang) => languageInfo[lang].voice;
 
+/** The exact locale first, then any voice in the language (Mandarin voices are listed as zh-CN, zh-TW, or cmn). */
 function pickVoice(lang: VoiceLang): SpeechSynthesisVoice | undefined {
   const voices = window.speechSynthesis?.getVoices() ?? [];
+  const prefixes = lang === "zh" ? ["zh", "cmn"] : [lang];
   return (
-    voices.find((voice) => voice.lang === locale[lang]) ??
-    voices.find((voice) => voice.lang.toLowerCase().startsWith(lang)) ??
+    voices.find((voice) => voice.lang === locale(lang)) ??
+    voices.find((voice) => prefixes.some((prefix) => voice.lang.toLowerCase().startsWith(prefix))) ??
     undefined
   );
 }
@@ -28,7 +35,7 @@ export function speak(text: string, lang: VoiceLang, rate: number, withDisclosur
     }
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(withDisclosure ? `${disclosure[lang]} ${text}` : text);
-    utterance.lang = locale[lang];
+    utterance.lang = locale(lang);
     const voice = pickVoice(lang);
     if (voice) utterance.voice = voice;
     utterance.rate = rate;
@@ -63,7 +70,7 @@ export function listenOnce(lang: VoiceLang): { done: Promise<string | null>; sto
   const Recognizer = recognizerClass();
   if (!Recognizer) return { done: Promise.resolve(null), stop: () => undefined };
   const recognition = new Recognizer();
-  recognition.lang = locale[lang];
+  recognition.lang = locale(lang);
   recognition.interimResults = false;
   let heard: string | null = null;
   const done = new Promise<string | null>((resolve) => {

@@ -8,11 +8,12 @@ import type { SubmittedConsent } from "../lib/consent";
 import { cachedGeminiStatus, type GeminiContent } from "../lib/gemini";
 import { sendHandoff, type SendState } from "../lib/handoff";
 import { useT } from "../lib/i18n";
-import { askInSpanish, localBriefingEs, translate } from "../lib/spanish";
-import { assessTeachback, spanishPrompt, type Speaker, type TeachResult } from "../lib/teachback";
+import { languageInfo } from "../lib/languages";
+import { askIn, localBriefingIn, translate } from "../lib/multilingual";
+import { assessTeachback, type Speaker, type TeachResult } from "../lib/teachback";
 import { canListen, listenOnce, speak, stopSpeaking } from "../lib/voice";
 import { versionStanding } from "../lib/workbook";
-import { sectionsEs, studyNameEs } from "../data/studyEs";
+import { practice, practicePrompt } from "../data/practiceLanguages";
 import { teachPrompts, type SectionId, type TeachPrompt } from "../data/study";
 import { useSession, type Language, type Translation } from "../state/Session";
 import { ListenButton, useTitle } from "../components/Chrome";
@@ -22,16 +23,18 @@ import { ConsentSheet } from "../scene/ConsentSheet";
 
 type Section = SubmittedConsent["sections"][number];
 
-/** A section as the participant sees it in the chosen language. `source` says where the Spanish came from. */
-type ShownSection = Section & { source: "english" | "practice-es" | "machine" | "missing"; engine?: string };
+/** A section as the participant sees it in the chosen language. `source` says where the translation came from. */
+type ShownSection = Section & { source: "english" | "practice" | "machine" | "missing"; engine?: string };
 
-const translationKey = (consent: SubmittedConsent, sectionId: string) => `${consent.documentId}:${consent.version}:${sectionId}`;
+/** Spanish machine translations saved before French and Mandarin keep their old key without a language. */
+const translationKey = (consent: SubmittedConsent, sectionId: string, language: Language) =>
+  `${language === "es" ? "" : `${language}:`}${consent.documentId}:${consent.version}:${sectionId}`;
 
 function shown(section: Section, consent: SubmittedConsent, language: Language, translations: Record<string, Translation>): ShownSection {
   if (language === "en") return { ...section, source: "english" };
-  const practice = consent.sample ? sectionsEs[section.id as SectionId] : undefined;
-  if (practice) return { ...section, title: practice.title, plain: practice.plain, terms: practice.terms, ask: practice.ask, source: "practice-es" };
-  const cached = translations[translationKey(consent, section.id)];
+  const reading = consent.sample ? practice[language].sections[section.id as SectionId] : undefined;
+  if (reading) return { ...section, title: reading.title, plain: reading.plain, terms: reading.terms, ask: reading.ask, source: "practice" };
+  const cached = translations[translationKey(consent, section.id, language)];
   if (cached) return { ...section, title: cached.title, plain: cached.plain, source: "machine", engine: cached.engine };
   return { ...section, source: "missing" };
 }
@@ -41,10 +44,10 @@ function useShown(consent: SubmittedConsent | null) {
   return (section: Section) => shown(section, consent!, language, translations);
 }
 
-/** The check question in the screen language. Uploaded forms have no Spanish answer key. */
+/** The check question in the screen language. Uploaded forms have no non-English answer key. */
 function shownPrompt(prompt: TeachPrompt, language: Language): TeachPrompt {
   if (language === "en" || !teachPrompts.includes(prompt)) return prompt;
-  return spanishPrompt(prompt.id) ?? prompt;
+  return practicePrompt(language, prompt.id) ?? prompt;
 }
 
 function NeedFile({ title }: { title: string }) {
@@ -71,7 +74,7 @@ function PassageText({ text }: { text: string }) {
   );
 }
 
-const studyTitle = (consent: SubmittedConsent, language: "en" | "es") => (consent.sample && language === "es" ? studyNameEs : consent.studyName);
+const studyTitle = (consent: SubmittedConsent, language: Language) => (consent.sample && language !== "en" ? practice[language].studyName : consent.studyName);
 
 export function ParticipantHome() {
   const t = useT();
@@ -179,12 +182,12 @@ export function Explore() {
 
   const translateSection = async () => {
     setTranslating(t.read.translating);
-    const [title, plain] = await Promise.all([translate(raw.title, "es"), translate(raw.plain, "es")]);
+    const [title, plain] = await Promise.all([translate(raw.title, "en", language), translate(raw.plain, "en", language)]);
     if (plain.engine === "local") {
       setTranslating(`${t.read.noTranslation} ${plain.note}`);
       return;
     }
-    setTranslation(translationKey(consent, raw.id), {
+    setTranslation(translationKey(consent, raw.id, language), {
       title: title.engine === "local" ? raw.title : title.text,
       plain: plain.text,
       engine: plain.engine,
@@ -221,17 +224,17 @@ export function Explore() {
         </p>
         <h1>{section.title}</h1>
         <p className="fine">{section.citation}</p>
-        {language === "es" ? (
+        {language !== "en" ? (
           <p className="fine">
-            {section.source === "practice-es"
-              ? "Lectura corta en español escrita para esta práctica con las mismas cifras del formulario. No la revisó un traductor calificado."
+            {section.source === "practice"
+              ? t.read.practiceNote
               : section.source === "machine"
-                ? `Traducción automática (${section.engine === "gemini" ? "Gemini" : "modelo local"}); se comprobó que mantiene las cifras y que su largo corresponde al original. No la revisó un traductor calificado.`
+                ? t.read.machineNote(section.engine ?? "")
                 : t.read.noTranslation}{" "}
             {t.read.officialEnglish}
           </p>
         ) : null}
-        {language === "es" && section.source === "missing" ? (
+        {language !== "en" && section.source === "missing" ? (
           <div className="action-row">
             <button type="button" className="btn on-paper" onClick={translateSection} disabled={translating === t.read.translating}>
               {translating === t.read.translating ? t.read.translating : t.read.translate}
@@ -239,9 +242,9 @@ export function Explore() {
             {translating && translating !== t.read.translating ? <p className="fine">{translating}</p> : null}
           </div>
         ) : null}
-        {language === "es" && section.source === "machine" ? (
-          <button type="button" className="text-button" onClick={() => setTranslation(translationKey(consent, raw.id), null)}>
-            Descartar esta traducción
+        {language !== "en" && section.source === "machine" ? (
+          <button type="button" className="text-button" onClick={() => setTranslation(translationKey(consent, raw.id, language), null)}>
+            {t.read.discard}
           </button>
         ) : null}
         <div className="reading-tools">
@@ -256,7 +259,7 @@ export function Explore() {
             lang={showOriginal || section.source === "missing" ? "en" : language}
           />
         </div>
-        <div className="passage" id="source" lang={showOriginal || section.source === "missing" ? "en" : language}>
+        <div className="passage" id="source" lang={showOriginal || section.source === "missing" ? "en" : languageInfo[language].html}>
           <p className="passage-label">{showOriginal ? t.read.fromForm : section.source === "missing" ? t.read.shortUntranslated : t.read.shortLabel}</p>
           <PassageText text={showOriginal ? raw.original : section.plain} />
         </div>
@@ -350,10 +353,10 @@ function engineNote(answer: Answer, note?: string): string {
   return answer.engine === "ollama" ? "Answered on this computer." : "Answered from the form.";
 }
 
-function engineNoteEs(answer: Answer, note?: string): string {
-  if (answer.engine === "gemini") return "Respondido por Gemini a partir del formulario.";
-  if (note) return "Gemini no está disponible; se respondió en esta computadora.";
-  return answer.engine === "ollama" ? "Respondido en esta computadora." : "Respondido a partir del formulario.";
+function engineNoteIn(words: { gemini: string; fallback: string; ollama: string; form: string }, answer: Answer, note?: string): string {
+  if (answer.engine === "gemini") return words.gemini;
+  if (note) return words.fallback;
+  return answer.engine === "ollama" ? words.ollama : words.form;
 }
 
 function useDictation(onText: (text: string) => void, sendLabel: string) {
@@ -418,12 +421,12 @@ export function Ask() {
       saveQuestion: (saved, answer) =>
         saveQuestion({ question: saved, answer, supported: false, documentId: consent.documentId, version: consent.version, followUp: true }),
     };
-    const spanish = language === "es" ? await askInSpanish(clean, consent, env, history.current) : null;
-    const reply = spanish ? spanish.reply : await runAgent(clean, env, history.current);
+    const localized = language !== "en" ? await askIn(language, clean, consent, env, history.current) : null;
+    const reply = localized ? localized.reply : await runAgent(clean, env, history.current);
     if (request.current !== ticket) return;
     history.current = [
       ...history.current,
-      { role: "user", parts: [{ text: spanish?.englishQuestion ?? clean }] },
+      { role: "user", parts: [{ text: localized?.englishQuestion ?? clean }] },
       { role: "model", parts: [{ text: reply.answer }] },
     ];
     const answer = toAnswer(reply, consent, model);
@@ -433,9 +436,9 @@ export function Ask() {
         item.id === botId
           ? {
               ...item,
-              text: spanish ? spanish.answerEs : answer.answer,
-              english: spanish ? answer.answer : undefined,
-              how: spanish?.how,
+              text: localized ? localized.answer : answer.answer,
+              english: localized ? answer.answer : undefined,
+              how: localized?.how,
               answer,
               question: clean,
               steps: reply.steps.map((step) => step.summary),
@@ -481,7 +484,7 @@ export function Ask() {
             )}
             {message.english ? (
               <details>
-                <summary>Respuesta original en inglés</summary>
+                <summary>{t.ask.original}</summary>
                 <p lang="en">{message.english}</p>
                 {message.steps && message.steps.length > 0 ? <small lang="en">{message.steps.join(" · ")}</small> : null}
                 {message.note ? <small lang="en">{message.note}</small> : null}
@@ -496,7 +499,7 @@ export function Ask() {
                 ))}
                 <small>
                   {message.how ? `${message.how} ` : ""}
-                  {message.english ? engineNoteEs(message.answer, message.note) : engineNote(message.answer, message.note)} {message.answer.citation}
+                  {message.english ? engineNoteIn(t.ask.answered, message.answer, message.note) : engineNote(message.answer, message.note)} {message.answer.citation}
                 </small>
                 <ListenButton text={message.text} />
                 <button
@@ -710,13 +713,13 @@ export function Teach() {
     setResult(next);
     recordTeach(next);
     const outcome = await sendHandoff(next, topic);
-    setSent(language === "es" && t.sent[outcome.state] ? { ...outcome, detail: t.sent[outcome.state] } : outcome);
+    setSent(language !== "en" && t.sent[outcome.state] ? { ...outcome, detail: t.sent[outcome.state] } : outcome);
   };
 
   const judge = async (target: TeachPrompt, reply: string): Promise<TeachResult> => {
     const local = assessTeachback(target.id, reply, prompts, speaker, language);
     const judged: TeachResult =
-      local.misconception || local.language === "es"
+      local.misconception || (local.language && local.language !== "en")
         ? { ...local, documentId: consent.documentId, version: consent.version, engine: "local" }
         : { ...(await assessTeachbackWithGemini(target, reply, consent)), speaker };
     const next: TeachResult = { ...judged, response: reply };
@@ -790,9 +793,7 @@ export function Teach() {
             ))}
           </select>
           <p className="prompt-text">{asked.question}</p>
-          {language === "es" && asked === prompt ? (
-            <p className="fine">Este formulario no tiene guía de respuestas en español; una respuesta en español se envía a una persona.</p>
-          ) : null}
+          {language !== "en" && asked === prompt ? <p className="fine">{t.check.noKey}</p> : null}
           <label htmlFor="reply">{t.check.yours}</label>
           <textarea id="reply" rows={5} value={response} onChange={(event) => setResponse(event.target.value)} placeholder={t.check.placeholder} />
           <label className="check-row">
@@ -814,7 +815,8 @@ export function Teach() {
             <p className="kicker">{t.labels[result.label] ?? result.label}</p>
             {result.misconception ? (
               <p>
-                <strong>{t.check.clear}</strong> {result.shownMisconception ?? result.misconception}.
+                <strong>{t.check.clear}</strong> {result.shownMisconception ?? result.misconception}
+                {t.fullStop}
               </p>
             ) : null}
             <p>{result.feedback}</p>
@@ -853,7 +855,7 @@ export function Teach() {
               {result.engine === "gemini" ? t.check.byGemini : result.engine === "ollama" ? t.check.byOllama : (result.note ?? t.check.byKey)}
               {result.speaker === "caregiver" ? t.check.asCaregiver : ""}
             </p>
-            {result.language === "es" && t.check.interpreter ? <p className="fine">{t.check.interpreter}</p> : null}
+            {result.language === language && t.check.interpreter ? <p className="fine">{t.check.interpreter}</p> : null}
             {sent ? <p className="fine">{sent.detail}</p> : null}
             <Link to={`/participant/explore-consent/${prompt.sectionId}`}>{t.check.reread(asked.topic)}</Link>
           </article>
@@ -872,6 +874,7 @@ export function Summary() {
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [writing, setWriting] = useState(false);
   const openTopics = useMemo(() => teach, [teach]);
+  useEffect(() => setBriefing(null), [language]);
   if (!consent) return <NeedFile title={t.summary.title} />;
   const prompts = promptsFor(consent);
 
@@ -916,7 +919,7 @@ export function Summary() {
             onClick={async () => {
               setWriting(true);
               const input = { consent, reviewed, saved, teach };
-              setBriefing(language === "es" ? localBriefingEs(input) : await writeBriefingWithGemini(input).catch(() => localBriefing(input)));
+              setBriefing(language !== "en" ? localBriefingIn(language, input) : await writeBriefingWithGemini(input).catch(() => localBriefing(input)));
               setWriting(false);
             }}
           >
@@ -968,10 +971,11 @@ export function Summary() {
                       {english ? shownPrompt(english, language).topic : item.promptId} · {t.labels[item.label] ?? item.label} · {consent.version}
                     </strong>
                     {item.speaker === "caregiver" ? <small>{t.summary.byCaregiver}</small> : null}
-                    {item.language === "es" ? <small>{t.summary.inSpanish}</small> : null}
+                    {item.language && item.language !== "en" ? <small>{t.summary.answeredIn[item.language]}</small> : null}
                     {item.misconception ? (
                       <small>
-                        {t.summary.misunderstanding} {language === "es" ? (item.shownMisconception ?? item.misconception) : item.misconception}.
+                        {t.summary.misunderstanding} {item.language === language ? (item.shownMisconception ?? item.misconception) : item.misconception}
+                        {t.fullStop}
                       </small>
                     ) : null}
                     {item.response ? (

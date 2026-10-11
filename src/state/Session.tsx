@@ -12,6 +12,7 @@ import type { BlockId } from "../lib/blocks";
 import { practiceBrief, type Brief } from "../lib/brief";
 import type { SubmittedConsent } from "../lib/consent";
 import type { LayAudience, LayCorrection } from "../lib/laySummary";
+import { isLanguage, languageInfo, type Language } from "../lib/languages";
 import type { TrialBlockId } from "../lib/publicTrial";
 import type { TeachResult } from "../lib/teachback";
 import { readingSource } from "../lib/workbook";
@@ -23,7 +24,7 @@ export type LineDecision = "accepted" | "rejected";
 export type Role = "participant" | "researcher";
 export type Audience = "adult" | "caregiver";
 export type CommentTarget = Audience | LayAudience;
-export type Language = "en" | "es";
+export type { Language } from "../lib/languages";
 
 export type Translation = { title: string; plain: string; engine: string; at: string };
 
@@ -318,7 +319,7 @@ function load(): SessionData {
       brief: { ...practiceBrief, ...parsed.brief },
       briefDecisions: parsed.briefDecisions ?? {},
       lastSpoken: parsed.lastSpoken ?? "",
-      language: parsed.language === "es" ? "es" : "en",
+      language: isLanguage(parsed.language) ? parsed.language : "en",
       translations: parsed.translations ?? {},
       trialProposals: parsed.trialProposals ?? [],
       layEdits: parsed.layEdits ?? {},
@@ -534,7 +535,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setData((current) => ({
           ...current,
           language,
-          audit: pushAudit(current, "Language", language === "es" ? "Participant screens switched to Spanish (machine-written, not reviewed)." : "Participant screens switched to English."),
+          audit: pushAudit(
+            current,
+            "Language",
+            language === "en"
+              ? "Participant screens switched to English."
+              : `Participant screens switched to ${languageInfo[language].english} (machine-written, not reviewed).`,
+          ),
         })),
       setTranslation: (key, value) =>
         setData((current) => {

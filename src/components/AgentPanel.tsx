@@ -2,12 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { runAgent, type AgentEnv, type AgentReply } from "../lib/agent";
 import { cachedGeminiStatus, type GeminiContent, type GeminiStatus } from "../lib/gemini";
-import { askInSpanish } from "../lib/spanish";
+import { languageInfo, type OtherLanguage } from "../lib/languages";
+import { askIn } from "../lib/multilingual";
 import { useSession, type Role } from "../state/Session";
 
-type Turn = { id: string; question: string; reply: AgentReply | null; spanish?: { text: string; how: string } };
-
-const startersEs = ["Escuché que hay 8 visitas. ¿Es cierto?", "¿Puedo salir del estudio más adelante?", "¿Qué significa placebo para mí?"];
+type Turn = { id: string; question: string; reply: AgentReply | null; localized?: { text: string; how: string } };
 
 const starters: Record<Role, string[]> = {
   participant: [
@@ -28,15 +27,80 @@ const engineLabel: Record<AgentReply["engine"], string> = {
   rules: "Safety rule",
 };
 
-const engineLabelEs: Record<AgentReply["engine"], string> = {
-  gemini: "Gemini",
-  local: "Esta computadora",
-  rules: "Regla de seguridad",
+type GuideCopy = {
+  starters: string[];
+  launch: string;
+  title: string;
+  checking: string;
+  onComputer: string;
+  close: string;
+  closeLabel: string;
+  notice: string;
+  working: string;
+  original: string;
+  open: string;
+  placeholder: string;
+  send: string;
+  engines: Record<AgentReply["engine"], string>;
+};
+
+const guide: Record<OtherLanguage, GuideCopy> = {
+  es: {
+    starters: ["Escuché que hay 8 visitas. ¿Es cierto?", "¿Puedo salir del estudio más adelante?", "¿Qué significa placebo para mí?"],
+    launch: "Preguntar a la Guía",
+    title: "Guía de Aetheria",
+    checking: "Buscando Gemini…",
+    onComputer: "Respondiendo en esta computadora",
+    close: "Cerrar",
+    closeLabel: "Cerrar la Guía",
+    notice:
+      "Sus preguntas y las partes del formulario que coinciden se envían a Gemini de Google, si está configurado. Google puede usar los datos del nivel gratuito. No escriba detalles de salud. Las respuestas en español son automáticas; el formulario en inglés es el oficial.",
+    working: "Buscando…",
+    original: "Respuesta original en inglés",
+    open: "Abrir",
+    placeholder: "Pregunte sobre su formulario",
+    send: "Preguntar",
+    engines: { gemini: "Gemini", local: "Esta computadora", rules: "Regla de seguridad" },
+  },
+  fr: {
+    starters: ["J'ai entendu dire qu'il y a 8 visites. C'est vrai ?", "Est-ce que je peux quitter l'étude plus tard ?", "Que veut dire placebo pour moi ?"],
+    launch: "Demander au Guide",
+    title: "Guide Aetheria",
+    checking: "Recherche de Gemini…",
+    onComputer: "Réponse sur cet ordinateur",
+    close: "Fermer",
+    closeLabel: "Fermer le Guide",
+    notice:
+      "Vos questions et les parties du formulaire qui correspondent sont envoyées à Gemini de Google, s'il est configuré. Google peut utiliser les données du niveau gratuit. N'écrivez pas de détails sur votre santé. Les réponses en français sont automatiques ; le formulaire en anglais est le texte officiel.",
+    working: "Recherche…",
+    original: "Réponse originale en anglais",
+    open: "Ouvrir",
+    placeholder: "Posez une question sur votre formulaire",
+    send: "Demander",
+    engines: { gemini: "Gemini", local: "Cet ordinateur", rules: "Règle de sécurité" },
+  },
+  zh: {
+    starters: ["我听说有 8 次就诊，对吗？", "我以后可以退出吗？", "安慰剂对我来说是什么意思？"],
+    launch: "问问向导",
+    title: "Aetheria 向导",
+    checking: "正在查找 Gemini…",
+    onComputer: "在这台电脑上回答",
+    close: "关闭",
+    closeLabel: "关闭向导",
+    notice: "如果已配置，您的问题和表格中相关的部分会发送给 Google 的 Gemini。Google 可能会使用免费层级的数据。请不要输入健康细节。中文回答是自动生成的；英文表格是正式文本。",
+    working: "正在查找…",
+    original: "英文原始回答",
+    open: "打开",
+    placeholder: "就您的表格提问",
+    send: "提问",
+    engines: { gemini: "Gemini", local: "这台电脑", rules: "安全规则" },
+  },
 };
 
 export function AgentPanel({ role }: { role: Role }) {
   const session = useSession();
-  const spanish = role === "participant" && session.language === "es";
+  const other: OtherLanguage | null = role === "participant" && session.language !== "en" ? session.language : null;
+  const words = other ? guide[other] : null;
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<GeminiStatus | null>(null);
@@ -76,15 +140,15 @@ export function AgentPanel({ role }: { role: Role }) {
           version: session.consent?.version,
         }),
     };
-    const inSpanish = spanish && session.consent ? await askInSpanish(question, session.consent, env, history.current) : null;
-    const reply = inSpanish ? inSpanish.reply : await runAgent(question, env, history.current);
+    const localized = other && session.consent ? await askIn(other, question, session.consent, env, history.current) : null;
+    const reply = localized ? localized.reply : await runAgent(question, env, history.current);
     history.current = [
       ...history.current,
-      { role: "user", parts: [{ text: inSpanish?.englishQuestion ?? question }] },
+      { role: "user", parts: [{ text: localized?.englishQuestion ?? question }] },
       { role: "model", parts: [{ text: reply.answer }] },
     ];
     setTurns((current) =>
-      current.map((turn) => (turn.id === id ? { ...turn, reply, spanish: inSpanish ? { text: inSpanish.answerEs, how: inSpanish.how } : undefined } : turn)),
+      current.map((turn) => (turn.id === id ? { ...turn, reply, localized: localized ? { text: localized.answer, how: localized.how } : undefined } : turn)),
     );
     setBusy(false);
   };
@@ -92,36 +156,32 @@ export function AgentPanel({ role }: { role: Role }) {
   if (!open) {
     return (
       <button type="button" className="guide-launch" onClick={() => setOpen(true)}>
-        {spanish ? "Preguntar a la Guía" : "Ask the Guide"}
+        {words ? words.launch : "Ask the Guide"}
       </button>
     );
   }
 
   return (
-    <aside className="guide-panel" aria-label="Aetheria Guide">
+    <aside className="guide-panel" aria-label={words ? words.title : "Aetheria Guide"} lang={other ? languageInfo[other].html : "en"}>
       <header className="guide-head">
         <div>
-          <strong>{spanish ? "Guía de Aetheria" : "Aetheria Guide"}</strong>
+          <strong>{words ? words.title : "Aetheria Guide"}</strong>
           <small>
             {status === null
-              ? spanish
-                ? "Buscando Gemini…"
-                : "Checking for Gemini…"
+              ? (words?.checking ?? "Checking for Gemini…")
               : status.configured
                 ? `Gemini · ${status.model}`
-                : spanish
-                  ? "Respondiendo en esta computadora"
-                  : "Answering on this computer"}
+                : (words?.onComputer ?? "Answering on this computer")}
           </small>
         </div>
-        <button type="button" className="guide-close" onClick={() => setOpen(false)} aria-label={spanish ? "Cerrar la Guía" : "Close the Guide"}>
-          {spanish ? "Cerrar" : "Close"}
+        <button type="button" className="guide-close" onClick={() => setOpen(false)} aria-label={words ? words.closeLabel : "Close the Guide"}>
+          {words ? words.close : "Close"}
         </button>
       </header>
 
       <p className="guide-notice">
-        {spanish
-          ? "Sus preguntas y las partes del formulario que coinciden se envían a Gemini de Google, si está configurado. Google puede usar los datos del nivel gratuito. No escriba detalles de salud. Las respuestas en español son automáticas; el formulario en inglés es el oficial."
+        {words
+          ? words.notice
           : role === "participant"
             ? "Questions and the matching parts of your form go to Google’s Gemini. Free-tier data may be used by Google. Do not type health details."
             : "Questions and matching passages go to Google’s Gemini. Free-tier data may be used by Google. The Guide cannot change a review."}
@@ -130,7 +190,7 @@ export function AgentPanel({ role }: { role: Role }) {
       <div className="guide-log" aria-live="polite">
         {turns.length === 0 ? (
           <div className="guide-starters">
-            {(spanish ? startersEs : starters[role]).map((text) => (
+            {(words ? words.starters : starters[role]).map((text) => (
               <button key={text} type="button" className="chip" onClick={() => ask(text)}>
                 {text}
               </button>
@@ -141,25 +201,25 @@ export function AgentPanel({ role }: { role: Role }) {
           <div key={turn.id} className="guide-turn">
             <p className="guide-question">{turn.question}</p>
             {turn.reply === null ? (
-              <p className="guide-thinking">{spanish ? "Buscando…" : "Working…"}</p>
+              <p className="guide-thinking">{words ? words.working : "Working…"}</p>
             ) : (
               <div className="guide-reply">
-                {turn.reply.steps.length > 0 && !turn.spanish ? (
+                {turn.reply.steps.length > 0 && !turn.localized ? (
                   <ol className="guide-steps">
                     {turn.reply.steps.map((step, index) => (
                       <li key={index}>{step.summary}</li>
                     ))}
                   </ol>
                 ) : null}
-                {turn.spanish ? (
+                {turn.localized ? (
                   <>
-                    <p>{turn.spanish.text}</p>
+                    <p>{turn.localized.text}</p>
                     <details>
-                      <summary>Respuesta original en inglés</summary>
+                      <summary>{words?.original ?? "Original English answer"}</summary>
                       <p lang="en">{turn.reply.answer}</p>
                       {turn.reply.steps.length > 0 ? <small lang="en">{turn.reply.steps.map((step) => step.summary).join(" · ")}</small> : null}
                     </details>
-                    <small className="guide-engine">{turn.spanish.how}</small>
+                    <small className="guide-engine">{turn.localized.how}</small>
                   </>
                 ) : (
                   <p>{turn.reply.answer}</p>
@@ -172,14 +232,14 @@ export function AgentPanel({ role }: { role: Role }) {
                       {role === "participant" && quote.kind === "consent" ? (
                         <>
                           {" · "}
-                          <Link to={`/participant/explore-consent/${quote.sectionId}`}>{turn.spanish ? "Abrir" : "Open"}</Link>
+                          <Link to={`/participant/explore-consent/${quote.sectionId}`}>{turn.localized && words ? words.open : "Open"}</Link>
                         </>
                       ) : null}
                     </cite>
                   </blockquote>
                 ))}
                 <small className="guide-engine">
-                  {turn.spanish ? engineLabelEs[turn.reply.engine] : (turn.reply.note ?? engineLabel[turn.reply.engine])}
+                  {turn.localized && words ? words.engines[turn.reply.engine] : (turn.reply.note ?? engineLabel[turn.reply.engine])}
                 </small>
               </div>
             )}
@@ -196,17 +256,17 @@ export function AgentPanel({ role }: { role: Role }) {
         }}
       >
         <label className="sr-only" htmlFor="guide-input">
-          {spanish ? "Preguntar a la Guía" : "Ask the Guide"}
+          {words ? words.launch : "Ask the Guide"}
         </label>
         <input
           id="guide-input"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          placeholder={spanish ? "Pregunte sobre su formulario" : role === "participant" ? "Ask about your form" : "Ask about the documents"}
+          placeholder={words ? words.placeholder : role === "participant" ? "Ask about your form" : "Ask about the documents"}
           disabled={busy}
         />
         <button type="submit" className="btn" disabled={busy || !draft.trim()}>
-          {spanish ? "Preguntar" : "Ask"}
+          {words ? words.send : "Ask"}
         </button>
       </form>
     </aside>

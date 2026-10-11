@@ -1,3 +1,4 @@
+import type { Language } from "./languages";
 import type { TeachResult } from "./teachback";
 
 const tokenKey = "aetheria_token";
@@ -13,7 +14,7 @@ export type StoredHandoff = {
   feedback: string;
   speaker: "participant" | "caregiver";
   misconception: string | null;
-  language: "en" | "es";
+  language: Language;
   document_id: string;
   version: string;
   engine: string | null;

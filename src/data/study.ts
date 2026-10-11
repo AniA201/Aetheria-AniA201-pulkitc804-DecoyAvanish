@@ -548,6 +548,22 @@ export const personaFixtures: PersonaFixture[] = [
     speaker: "participant",
     expect: "Partially understands",
   },
+  {
+    id: "french",
+    persona: "French speaker",
+    promptId: "withdrawal",
+    response: "Je peux partir à tout moment et mon médecin continue à me soigner.",
+    speaker: "participant",
+    expect: "Partially understands",
+  },
+  {
+    id: "mandarin",
+    persona: "Mandarin speaker",
+    promptId: "risk",
+    response: "参加以后就一定会治好我的偏头痛，没有风险。",
+    speaker: "participant",
+    expect: "Needs clarification",
+  },
 ];
 
 export const teachFixtures: { promptId: string; response: string; note: string }[] = [
