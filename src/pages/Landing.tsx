@@ -89,7 +89,9 @@ export function Landing() {
       // Keep each letter on screen long enough for its helix path to read as a
       // transition, rather than as a brief flash during a fast scroll.
       const travel = window.innerHeight * 2.15;
-      const nextShatter = quiet ? 0 : Math.min(1, Math.max(0, (start - wordTop) / travel));
+      // The complete word remains still while the landing page opens. Its
+      // flight may only start from a deliberate user scroll.
+      const nextShatter = quiet || window.scrollY < 12 ? 0 : Math.min(1, Math.max(0, (start - wordTop) / travel));
       setShatterTarget((current) => Math.abs(current - nextShatter) < 0.0005 ? current : nextShatter);
       const main = mainRef.current;
       const word = wordRef.current;
@@ -118,7 +120,9 @@ export function Landing() {
           // reaches the reading area, rather than all four settling together.
           const settleAt = end.top + window.scrollY - window.innerHeight * 0.62;
           const duration = Math.max(window.innerHeight * 0.35, settleAt - flightStart);
-          nextProgress[spec.key] = quiet ? 0 : Math.min(1, Math.max(0, (window.scrollY - flightStart) / duration));
+          nextProgress[spec.key] = quiet || window.scrollY < 12
+            ? 0
+            : Math.min(1, Math.max(0, (window.scrollY - flightStart) / duration));
         });
         setLetterPaths((current) => letterTransfers.every(({ key }) => {
           const previous = current[key];
@@ -283,8 +287,9 @@ export function Landing() {
           const progress = letterProgress[spec.key] ?? 0;
           const transfer = progress * progress * (3 - 2 * progress);
           const capital = Math.min(1, Math.max(0, (progress - 0.3) / 0.42));
-          const settledFade = Math.min(1, Math.max(0, (progress - 0.93) / 0.07));
-          const motionBlur = Math.sin(Math.PI * transfer) * (1 - settledFade);
+          // The soft depth shadow on the glyph is sufficient here. Separate
+          // trail copies made a visible horizontal artifact around the title.
+          const motionBlur = 0;
           const arc = Math.sin(Math.PI * transfer) * Math.min(110, Math.abs(path.y1 - path.y0) * 0.22);
           const spiral = Math.sin(transfer * Math.PI * 4 + spec.phase) * Math.min(34, Math.abs(path.y1 - path.y0) * 0.035) * Math.sin(Math.PI * transfer);
           return <span
@@ -313,6 +318,7 @@ export function Landing() {
               filter: `blur(${flight * 1.6}px)`,
             }}>{letter}</span>;
           })}</p>
+          <div className="folio-sheet-mark" aria-hidden="true"><AetheriaMark /></div>
           <p className="folio-kicker">Clinical study documents</p>
           <h1><span>Long forms.</span><span>Plain words.</span></h1>
           <p className="folio-lede">

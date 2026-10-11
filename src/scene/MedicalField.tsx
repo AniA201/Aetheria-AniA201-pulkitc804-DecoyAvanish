@@ -112,36 +112,52 @@ export function MedicalField({
       if (!context) throw new Error("Unable to draw folder cover");
       context.fillStyle = color;
       context.fillRect(0, 0, canvas.width, canvas.height);
+      context.strokeStyle = "rgba(207, 235, 221, 0.78)";
+      context.lineWidth = 7;
+      context.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
       if (marked) {
-        context.strokeStyle = "#cfeedd";
-        context.lineWidth = 14;
+        // Exact construction of /public/aetheria-mark.svg, drawn directly on
+        // the cover canvas so it remains visible above this WebGL sheet.
+        const s = canvas.width / 64;
+        context.save();
+        context.scale(s, s);
+        const left = new Path2D("M6 10c9 6 16 8 22 8v36c-6 0-13 2-22 8V10Z");
+        context.fillStyle = "#0D5B58";
+        context.fill(left);
+        // Use a solid mirrored right page. This reads more reliably than a
+        // stroked curve after the sheet is tilted in the WebGL scene.
+        context.beginPath();
+        context.moveTo(58, 10);
+        context.lineTo(36, 18);
+        context.lineTo(36, 54);
+        context.lineTo(58, 62);
+        context.closePath();
+        context.fillStyle = "#EEF9F0";
+        context.fill();
+        context.strokeStyle = "#083F3E";
+        context.lineWidth = 2;
+        context.lineJoin = "round";
+        context.stroke(new Path2D("M7 10c8.7 5.7 15.5 7.7 21 8v36c-5.5 0-12.3 2.3-21 8"));
+        context.stroke(new Path2D("M57 10c-8.7 5.7-15.5 7.7-21 8v36c5.5 0 12.3 2.3 21 8"));
+        context.strokeStyle = "#CFEBDD";
+        context.lineWidth = 2.5;
         context.lineCap = "round";
-        context.beginPath();
-        context.moveTo(138, 160);
-        context.quadraticCurveTo(200, 196, 224, 202);
-        context.lineTo(224, 376);
-        context.quadraticCurveTo(188, 380, 138, 410);
-        context.closePath();
-        context.stroke();
-        context.beginPath();
-        context.moveTo(374, 160);
-        context.quadraticCurveTo(312, 196, 288, 202);
-        context.lineTo(288, 376);
-        context.quadraticCurveTo(324, 380, 374, 410);
-        context.closePath();
-        context.stroke();
-        context.beginPath();
-        context.moveTo(166, 250); context.lineTo(204, 250);
-        context.moveTo(166, 292); context.lineTo(204, 292);
-        context.moveTo(308, 250); context.lineTo(346, 250);
-        context.moveTo(308, 292); context.lineTo(346, 292);
-        context.stroke();
+        [23, 29, 35, 41].forEach((y) => { context.beginPath(); context.moveTo(13, y); context.lineTo(23, y); context.stroke(); });
+        context.strokeStyle = "#0D5B58";
+        [23, 29, 35, 41].forEach((y) => { context.beginPath(); context.moveTo(41, y); context.lineTo(51, y); context.stroke(); });
+        const star = new Path2D("M32 27l2.6 4.4 4.4 2.6-4.4 2.6-2.6 4.4-2.6-4.4-4.4-2.6 4.4-2.6L32 27Z");
+        context.fillStyle = "#CFEBDD";
+        context.fill(star);
+        context.strokeStyle = "#083F3E";
+        context.lineWidth = 1.3;
+        context.stroke(star);
+        context.restore();
       }
       const texture = track(new THREE.CanvasTexture(canvas));
       texture.colorSpace = THREE.SRGBColorSpace;
-      const material = track(new THREE.SpriteMaterial({ map: texture, transparent: true, toneMapped: false }));
-      const panel = new THREE.Sprite(material);
-      panel.scale.set(2.04, 2.32, 1);
+      const material = track(new THREE.MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false, side: THREE.DoubleSide, depthWrite: false }));
+      const panel = new THREE.Mesh(track(new THREE.PlaneGeometry(1, 1)), material);
+      panel.scale.set(2.12, 2.74, 1);
       return { panel, material };
     };
     // One physical cover is enough for this short reveal. A second panel was
@@ -149,8 +165,9 @@ export function MedicalField({
     // applied, so the cover itself supplies the entire opening gesture.
     const folderFrontHinge = new THREE.Group();
     folderFrontHinge.position.set(1.02, 0.04, 0.08);
-    const { panel: folderFront, material: navyFront } = makeFolderPanel("#063f4a", true);
+    const { panel: folderFront, material: navyFront } = makeFolderPanel("#063f4a");
     folderFront.position.x = -1.02;
+    folderFront.renderOrder = 1;
     folderFrontHinge.add(folderFront);
     folder.add(folderFrontHinge);
     folio.add(folder);
