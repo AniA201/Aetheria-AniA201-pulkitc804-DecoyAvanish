@@ -21,6 +21,9 @@ configured_database_url = os.environ.get("DATABASE_URL", f"sqlite:///{base_dir /
 # from whichever shell happened to launch the FastAPI process.
 if configured_database_url.startswith("sqlite:///./"):
     DATABASE_URL = f"sqlite:///{base_dir / configured_database_url.removeprefix('sqlite:///./')}"
+elif configured_database_url.startswith(("postgres://", "postgresql://")):
+    # Hosted Postgres (for example Neon on Vercel) hands out postgres:// URLs; use the psycopg 3 driver.
+    DATABASE_URL = "postgresql+psycopg://" + configured_database_url.split("://", 1)[1]
 else:
     DATABASE_URL = configured_database_url
 APP_ENV = os.environ.get("APP_ENV", "development").lower()
@@ -134,9 +137,26 @@ def initialise_database():
         connection.execute(text("CREATE INDEX IF NOT EXISTS handoff_messages_handoff_idx ON handoff_messages (handoff_id, created_at)"))
 
 
+_database_ready = False
+
+
+def ensure_database():
+    # Serverless hosts may not run startup events, so tables are also created on first use.
+    global _database_ready
+    if not _database_ready:
+        initialise_database()
+        _database_ready = True
+
+
 @app.on_event("startup")
 def startup():
-    initialise_database()
+    ensure_database()
+
+
+@app.middleware("http")
+async def database_ready(request, call_next):
+    ensure_database()
+    return await call_next(request)
 
 
 @app.get("/api/health")

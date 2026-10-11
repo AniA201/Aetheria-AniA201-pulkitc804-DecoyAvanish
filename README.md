@@ -6,6 +6,28 @@ The application is a demo. It does not provide medical advice, collect an inform
 
 The included AETHER-01 consent, product, and clinic are fictional. The repository also contains a stored copy of public material for NCT03238781 for the research workspace. The public trial material is kept separate from the practice consent.
 
+## How it works, in plain words
+
+```mermaid
+flowchart TD
+  You["👤 Participant<br/>signs in and adds a consent form"] --> Read["📖 Read<br/>original text beside a simple version"]
+  Read --> Ask["❓ Ask<br/>a question about the form"]
+  Ask --> Find["🔎 Aetheria finds the exact passage<br/>that answers it"]
+  Find --> Brain{"Who writes the answer?"}
+  Brain -->|"first choice"| Gemini["✨ Gemini AI"]
+  Brain -->|"if Gemini is busy or offline"| Local["💻 Built-in rules"]
+  Gemini --> Answer["✅ Answer + the quote it came from<br/>(never makes up doses, cures, or approvals)"]
+  Local --> Answer
+  Read --> Check["🧠 Check<br/>explain it back in your own words"]
+  Check --> Handoff["📨 Questions and gaps go to the study team"]
+  Handoff --> Team["🧑‍🔬 Researcher<br/>reviews and replies"]
+  Team --> You
+```
+
+- **The consent form is the only source.** Every answer shows the passage it came from.
+- **Gemini is optional.** If it is busy, out of free quota, or not set up, the built-in rules still answer.
+- **People decide.** Aetheria explains; it never signs anyone up or says someone has consented.
+
 ## What it does
 
 Participants can:
@@ -142,22 +164,27 @@ npm run demo
 
 The PDF test suite needs the repository dependencies to resolve from the active checkout. If Vite reports a denied `pdfjs-dist` path from a different checkout, reinstall dependencies in the current worktree before treating it as a product failure.
 
-## Deploying the frontend
+## Deploying to Vercel
 
-A Vercel deployment can host the Vite frontend. The FastAPI service and SQLite database do not run inside a static Vercel deployment, so account registration, sign-in, saved handoffs, and messages need a separately deployed API and durable database before a public release.
+Everything runs on one Vercel project:
 
-Before deployment:
+```mermaid
+flowchart LR
+  Browser["Browser"] --> Site["Vercel: website (React + Vite)"]
+  Site -->|"/api/auth, /api/handoffs, /api/messages"| API["Vercel Python function: FastAPI"]
+  API --> DB[("Neon Postgres<br/>accounts, handoffs, messages")]
+  Site -->|"/gemini"| Relay["Vercel function: Gemini relay<br/>(key stays on the server)"]
+  Relay --> Gemini["Google Gemini"]
+```
 
-1. Build the frontend with `npm run build`.
-2. Deploy the FastAPI service to a server or serverless runtime with a persistent database.
-3. Set the API service to production mode with a strong `JWT_SECRET`.
-4. Set `CORS_ORIGINS` to the public frontend URL.
-5. Configure the frontend to send `/api` traffic to the deployed API, or place both behind the same reverse proxy.
-6. Add the optional Gemini key only to server-side configuration.
+- `api/backend.py` serves the FastAPI app. `api/gemini.ts` relays Gemini requests so the key never reaches the browser bundle.
+- The Neon integration on Vercel supplies `DATABASE_URL`. Locally, the API still defaults to SQLite.
+- Production settings live in Vercel environment variables: `APP_ENV=production`, a strong `JWT_SECRET`, `CORS_ORIGINS` set to the site URL, `RESEARCHER_REGISTRATION_KEY` (server-side only), and `DOTENV_PRIVATE_KEY_TEAM` to unlock `.env.team` for Gemini.
+- Deploy with `vercel deploy --prod`.
 
 ## Data handling
 
-The browser keeps reading state and saved questions in session storage. The local API stores accounts, handoffs, and messages in SQLite. Uploaded document text is processed in the browser for the normal workflow. When Gemini or Ollama is enabled, the application sends only the passages needed for that request. Voice audio is not stored by this project.
+The browser keeps reading state and saved questions in session storage. The API stores accounts, handoffs, and messages in SQLite locally and in Neon Postgres when deployed. Uploaded document text is processed in the browser for the normal workflow. When Gemini or Ollama is enabled, the application sends only the passages needed for that request. Voice audio is not stored by this project.
 
 ## Limits
 
