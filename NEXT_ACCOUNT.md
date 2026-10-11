@@ -19,6 +19,7 @@ Current review: [PR #6](https://github.com/AniA201/Aetheria/pull/6), branch `cod
 - [x] Make the Ask globe respond to cursor movement with damped spin, while keeping reduced-motion mode static. Center the Ask input text and circular controls, avoid clipped tops, and soften their dark shadows. Use a subtle translucent purple inset tint on button hover/focus while preserving text-only prompt hover.
 - [x] Expand the empty Start upload card to fill the available page space, round its edges, and give its file target a soft paper treatment with a clear hover/focus state.
 - [x] Center the fifth “Your form at a glance” item across the two-column Start list when the section count is odd.
+- [x] Move the floating guide launch button to the lower-left corner of the participant content area and label it Ask Aetheria (with localized equivalents).
 - [x] Restore this checkout's existing ignored Gemini credentials from the older local Aetheria checkout. `/gemini/status` now reports configured and a real generation request succeeded. Add startup diagnostics and a short client retry interval so a key added after startup does not leave Gemini disabled for the whole browser session.
 - [x] Keep the local preview open and push completed work to PR #6.
 

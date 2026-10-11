@@ -2534,6 +2534,9 @@ html[data-contrast="high"] .shell.participant .mark {
   box-shadow: 0 16px 36px rgba(16, 43, 53, 0.12);
 }
 .guide-launch:hover { background: #000; color: var(--paper); }
+.shell.participant .guide-launch { left: calc(232px + 1.25rem); right: auto; }
+.shell.participant.rail-compact .guide-launch { left: 1.25rem; }
+@media (max-width: 900px) { .shell.participant .guide-launch { left: 1rem; right: auto; } }
 .guide-panel {
   position: fixed; right: 1rem; bottom: 1rem; z-index: 40;
   width: min(25rem, calc(100vw - 2rem)); height: min(38rem, calc(100vh - 2rem));
