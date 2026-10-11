@@ -20,7 +20,6 @@ import { ListenButton, useTitle } from "../components/Chrome";
 import { VersionGate, VersionStanding } from "../components/SheetPanels";
 import { ConsentFile } from "../components/ConsentFile";
 import { ConsentSheet } from "../scene/ConsentSheet";
-import { AskOrb3D } from "../scene/AskOrb3D";
 
 type Section = SubmittedConsent["sections"][number];
 
@@ -384,7 +383,7 @@ function useDictation(onText: (text: string) => void, sendLabel: string) {
 export function Ask() {
   const t = useT();
   useTitle(t.ask.title);
-  const { consent, saveQuestion, approvedVersions, language, reducedMotion } = useSession();
+  const { consent, saveQuestion, approvedVersions, language } = useSession();
   const view = useShown(consent);
   const [params] = useSearchParams();
   const starter = params.get("q") ?? "";
@@ -455,7 +454,6 @@ export function Ask() {
     <div className="page ask-page ask-studio">
       <header className="panel-head">
         <div className="ask-greeting" aria-hidden="true">
-          <AskOrb3D reducedMotion={reducedMotion} />
           <strong>Ask Aetheria</strong>
         </div>
       </header>

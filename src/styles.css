@@ -2111,14 +2111,6 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
   letter-spacing: -0.07em;
   text-shadow: 3px 4px 0 rgba(8,63,62,.24), 0 14px 25px rgba(7,63,60,.16);
 }
-.shell.participant .ask-greeting .ask-orb {
-  position: absolute;
-  top: -2.7rem;
-  right: -1.2rem;
-  width: clamp(6rem, 14vw, 11rem);
-  height: clamp(6rem, 14vw, 11rem);
-  opacity: .72;
-}
 .shell.participant .ask-studio .thread {
   grid-column: 1;
   display: grid;
@@ -2143,34 +2135,31 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
   grid-column: 1;
   grid-row: 3;
   position: static;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: .65rem;
-  align-items: center;
+  display: block;
   width: min(92%, 56rem);
   min-height: 0;
   justify-self: center;
   margin: 0 0 clamp(1rem, 3vw, 2.2rem);
-  padding: .5rem .55rem .5rem 1.25rem;
-  border: 1px solid rgba(13,91,88,.23);
-  border-radius: 999px;
-  background: rgba(255,253,248,.95);
-  box-shadow: 0 13px 0 rgba(13,91,88,.12), 0 25px 48px rgba(13,91,88,.18);
-}
-.shell.participant .ask-studio textarea {
-  grid-column: 1;
-  min-height: 3.7rem;
-  height: 3.7rem;
-  padding: 1rem 0;
+  padding: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+}
+.shell.participant .ask-studio textarea {
+  display: block;
+  min-height: 3.7rem;
+  height: 3.7rem;
+  padding: 1rem 9.2rem 1rem 1.6rem;
+  border: 1px solid rgba(13,91,88,.24);
+  border-radius: 999px;
+  background: #fffcf3;
+  box-shadow: 0 13px 0 rgba(13,91,88,.12), 0 25px 48px rgba(13,91,88,.18);
   resize: none;
   font-size: clamp(1.05rem, 1.8vw, 1.35rem);
 }
-.shell.participant .ask-studio textarea:focus { border: 0; box-shadow: none; }
-.shell.participant .ask-form-actions { grid-column: 2; padding: 0; display: flex; gap: .35rem; }
+.shell.participant .ask-studio textarea:focus { border-color: #0d5b58; box-shadow: 0 0 0 4px rgba(13,91,88,.12), 0 13px 0 rgba(13,91,88,.12), 0 25px 48px rgba(13,91,88,.18); }
+.shell.participant .ask-form-actions { position: absolute; top: .42rem; right: .45rem; padding: 0; display: flex; gap: .35rem; }
 .shell.participant .ask-form-actions .btn {
   display: grid;
   place-items: center;
