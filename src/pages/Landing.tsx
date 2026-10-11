@@ -4,6 +4,7 @@ import { AetheriaMark, useTitle } from "../components/Chrome";
 import { consentDoc, facts, sections } from "../data/study";
 import { MedicalField } from "../scene/MedicalField";
 import { useSession } from "../state/Session";
+import { TechNote } from "../components/TechNote";
 
 const wordFlights = [
   [-0.16, -0.12, -0.12], [-0.12, 0.1, 0.1], [-0.08, -0.14, -0.08],
@@ -380,6 +381,7 @@ export function Landing() {
           <p>
             The sample is fictional. Aetheria does not collect a signature or make a medical decision.
           </p>
+          <TechNote note="landing" />
         </section>
       </main>
     </div>

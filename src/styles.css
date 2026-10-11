@@ -4304,3 +4304,43 @@ html:not([data-contrast="high"]) .auth-form-reference input {
   .shell.participant .rail nav .rail-link,
   .shell.researcher .rail nav .rail-link { min-height: 1.9rem; }
 }
+
+/* "How this works" notes: the technology and the protection or governance rule for each screen. */
+.tech-note {
+  margin: 2rem 0 0;
+  max-width: 46rem;
+  padding: .85rem 1.05rem;
+  border: 1px solid rgba(16, 43, 53, .16);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--powder, #f7f7f2) 88%, transparent);
+  box-shadow: 0 8px 22px rgba(16, 43, 53, .07);
+  color: #1a2b30;
+  font-size: .92rem;
+  line-height: 1.45;
+  text-align: left;
+}
+.tech-note summary {
+  cursor: pointer;
+  font-size: .72rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #0d5b58;
+}
+.tech-note summary span { letter-spacing: .08em; color: #536665; }
+.tech-note p { margin: .55rem 0 0; }
+.tech-note strong {
+  display: inline-block;
+  min-width: 6.4rem;
+  margin-right: .35rem;
+  font-size: .7rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #102b35;
+}
+.auth-login-shell .tech-note { margin: 1.2rem auto 0; max-width: 34rem; }
+.folio-close .tech-note { margin: 1.6rem auto 0; }
+html[data-contrast="high"] .tech-note { background: #000; color: #fff; border-color: #fff; }
+html[data-contrast="high"] .tech-note strong,
+html[data-contrast="high"] .tech-note summary,
+html[data-contrast="high"] .tech-note summary span { color: #fff; }
+.shell main > .tech-note { width: min(46rem, calc(100% - 3.2rem)); margin: 2.2rem auto 5.5rem; }
