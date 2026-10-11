@@ -264,9 +264,9 @@ export function MedicalField({
       const spacing = narrow ? 0.12 : 0.47;
       const lanes = [
         { restX: 0, restY: 0, restZ: 0.1, outX: 0, outY: 0, outZ: 0.1 },
-        { restX: -0.09, restY: 0.025, restZ: 0.04, outX: spacing, outY: 0.07, outZ: 0.04 },
-        { restX: -0.18, restY: 0.05, restZ: -0.02, outX: spacing * 2, outY: 0.14, outZ: -0.02 },
-        { restX: -0.27, restY: 0.075, restZ: -0.08, outX: spacing * 3, outY: 0.21, outZ: -0.08 },
+        { restX: -0.16, restY: 0.04, restZ: 0.04, outX: spacing, outY: 0.07, outZ: 0.04 },
+        { restX: -0.32, restY: 0.08, restZ: -0.02, outX: spacing * 2, outY: 0.14, outZ: -0.02 },
+        { restX: -0.48, restY: 0.12, restZ: -0.08, outX: spacing * 3, outY: 0.21, outZ: -0.08 },
       ];
       const visibleIndex = selectedPaperRef.current < 0 ? 0 : selectedPaperRef.current;
       pages.forEach((page, index) => {
