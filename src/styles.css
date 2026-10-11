@@ -2012,14 +2012,14 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
 .shell.participant .participant-home::before { content: "01"; }
 .shell.participant .participant-form::before { content: "FORM"; font-size: clamp(4rem, 12vw, 10rem); }
 .shell.participant .participant-home h1,
-.shell.participant .participant-form h1 { position: relative; z-index: 1; font-size: clamp(2.7rem, 5vw, 4.7rem); max-width: 11ch; text-shadow: 3px 4px 0 rgba(255, 253, 248, 0.75); }
+.shell.participant .participant-form h1 { position: relative; z-index: 1; font-size: clamp(2.7rem, 5vw, 4.7rem); max-width: 11ch; text-shadow: 3px 4px 0 rgba(8,63,62,.22), 0 11px 20px rgba(7,63,60,.12); }
 .shell.participant .participant-home .lede,
 .shell.participant .participant-form .lede { position: relative; z-index: 1; font-size: 1.12rem; line-height: 1.55; }
 .shell.participant .participant-form .topic-index { position: relative; z-index: 1; max-width: 48rem; }
 .shell.participant .participant-reader .reading { border-top: 4px solid #0d5b58; box-shadow: 12px 14px 0 rgba(13, 91, 88, 0.12), 0 20px 38px rgba(16, 43, 53, 0.1); }
 .shell.participant .ask-studio { width: min(1180px, 100%); min-height: calc(100vh - 4.5rem); grid-template-columns: minmax(0, 0.84fr) minmax(0, 1.16fr); grid-template-rows: auto minmax(16rem, 1fr) minmax(23rem, 0.9fr); gap: 0; padding-top: 0; overflow: hidden; }
 .shell.participant .ask-studio .panel-head { grid-column: 1 / -1; padding: clamp(2rem, 5vw, 5rem) clamp(1.1rem, 4vw, 4.2rem) 1.4rem; border-bottom: 1px solid rgba(13, 91, 88, 0.26); background: linear-gradient(110deg, rgba(255,253,248,.68), transparent 55%); }
-.shell.participant .ask-studio .panel-head h1 { max-width: 10ch; margin: 0.3rem 0 0; color: #083f3e; font-size: clamp(3rem, 6vw, 6.2rem); line-height: 0.84; letter-spacing: -0.065em; text-shadow: 4px 5px 0 rgba(255,253,248,.85), 10px 15px 24px rgba(7,63,60,.12); }
+.shell.participant .ask-studio .panel-head h1 { max-width: 10ch; margin: 0.3rem 0 0; color: #083f3e; font-size: clamp(3rem, 6vw, 6.2rem); line-height: 0.84; letter-spacing: -0.065em; text-shadow: 4px 5px 0 rgba(8,63,62,.24), 10px 15px 24px rgba(7,63,60,.12); }
 .shell.participant .ask-greeting { display: flex; align-items: baseline; gap: 0.5rem; color: #0d5b58; font-family: var(--serif); line-height: 1; }
 .shell.participant .ask-greeting span { font-size: 1.15rem; }
 .shell.participant .ask-greeting strong { font-size: clamp(2rem, 4vw, 3.7rem); font-weight: 500; letter-spacing: -0.05em; }
@@ -2055,7 +2055,7 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
   .shell.participant .ask-studio textarea { min-height: 11rem; }
 }
 .shell.participant .check-studio .panel-head { max-width: 48rem; padding: 1.5rem 0 1.25rem; border-bottom: 1px solid rgba(13,91,88,.28); }
-.shell.participant .check-studio .panel-head h1 { font-size: clamp(2.7rem, 5vw, 5rem); color: #083f3e; text-shadow: 3px 4px 0 rgba(255,253,248,.75); }
+.shell.participant .check-studio .panel-head h1 { font-size: clamp(2.7rem, 5vw, 5rem); color: #083f3e; text-shadow: 3px 4px 0 rgba(8,63,62,.22), 0 11px 20px rgba(7,63,60,.12); }
 .shell.participant .check-studio .teach-form { position: relative; overflow: hidden; padding: clamp(1.4rem, 3vw, 2.5rem); border: 1px solid rgba(13,91,88,.22); border-radius: 1.5rem; background: #fffcf3; box-shadow: 12px 14px 0 rgba(13,91,88,.11), 0 24px 46px rgba(13,91,88,.1); }
 .shell.participant .check-studio .teach-form::before { content: "Check it in your own words."; display: block; margin-bottom: 0.8rem; color: #0d5b58; font-family: var(--serif); font-size: clamp(1.6rem, 3vw, 2.5rem); line-height: 1; }
 .shell.participant .check-studio .teach-form textarea { border-radius: 1rem; background: #fff; box-shadow: inset 0 1px 0 #fff, 0 8px 17px rgba(13,91,88,.06); }
@@ -2081,6 +2081,108 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
 .shell.participant .type-dock button:hover { transform: translateY(-2px); background: rgba(13,91,88,.1); }
 .shell.participant .type-dock button[aria-checked="true"],
 .shell.participant .type-dock button[aria-pressed="true"] { background: #0d5b58; box-shadow: 0 4px 9px rgba(6,62,60,.25); }
+
+/* Ask is a single calm prompt, not a stack of labels and panels. */
+.shell.participant .ask-studio {
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(10rem, .55fr) minmax(18rem, 1fr) auto;
+}
+.shell.participant .ask-studio .panel-head {
+  grid-column: 1;
+  display: grid;
+  place-items: end center;
+  padding: clamp(2rem, 7vw, 5.8rem) 1rem 1rem;
+  border: 0;
+  background: radial-gradient(circle at 50% 100%, rgba(255,253,248,.55), transparent 18rem);
+}
+.shell.participant .ask-greeting {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(100%, 40rem);
+  min-height: 7rem;
+}
+.shell.participant .ask-greeting strong {
+  position: relative;
+  z-index: 1;
+  color: #083f3e;
+  font-size: clamp(3.5rem, 8vw, 7.5rem);
+  font-weight: 500;
+  letter-spacing: -0.07em;
+  text-shadow: 3px 4px 0 rgba(8,63,62,.24), 0 14px 25px rgba(7,63,60,.16);
+}
+.shell.participant .ask-greeting .ask-orb {
+  position: absolute;
+  top: -2.7rem;
+  right: -1.2rem;
+  width: clamp(6rem, 14vw, 11rem);
+  height: clamp(6rem, 14vw, 11rem);
+  opacity: .72;
+}
+.shell.participant .ask-studio .thread {
+  grid-column: 1;
+  display: grid;
+  min-height: 0;
+  padding: 1.3rem clamp(1.1rem, 4vw, 4.2rem);
+  background: transparent;
+}
+.shell.participant .ask-empty-state {
+  align-self: center;
+  justify-self: center;
+  width: min(100%, 46rem);
+  text-align: center;
+}
+.shell.participant .ask-empty-state > p {
+  margin: 0 0 1.6rem;
+  color: #315c55;
+  font-family: var(--serif);
+  font-size: clamp(1.35rem, 2.5vw, 2rem);
+}
+.shell.participant .ask-empty-state .suggestions { justify-content: center; }
+.shell.participant .ask-studio .ask-form {
+  grid-column: 1;
+  grid-row: 3;
+  position: static;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .65rem;
+  align-items: center;
+  width: min(92%, 56rem);
+  min-height: 0;
+  justify-self: center;
+  margin: 0 0 clamp(1rem, 3vw, 2.2rem);
+  padding: .5rem .55rem .5rem 1.25rem;
+  border: 1px solid rgba(13,91,88,.23);
+  border-radius: 999px;
+  background: rgba(255,253,248,.95);
+  box-shadow: 0 13px 0 rgba(13,91,88,.12), 0 25px 48px rgba(13,91,88,.18);
+}
+.shell.participant .ask-studio textarea {
+  grid-column: 1;
+  min-height: 3.7rem;
+  height: 3.7rem;
+  padding: 1rem 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  resize: none;
+  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+}
+.shell.participant .ask-studio textarea:focus { border: 0; box-shadow: none; }
+.shell.participant .ask-form-actions { grid-column: 2; padding: 0; display: flex; gap: .35rem; }
+.shell.participant .ask-form-actions .btn {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  width: 3.7rem;
+  height: 3.7rem;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 0;
+}
+.shell.participant .ask-form-actions .btn::before { content: "↑"; font-family: var(--serif); font-size: 1.5rem; }
+.shell.participant .ask-form-actions .btn.on-paper::before { content: "◌"; }
 @media (max-width: 540px) {
   .shell.participant .type-dock { left: 0.75rem; bottom: 0.75rem; max-width: 12.5rem; }
   .shell.participant .type-dock button { width: 1.9rem; height: 1.9rem; font-size: .85rem; }

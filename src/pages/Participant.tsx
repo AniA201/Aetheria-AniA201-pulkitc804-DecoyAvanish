@@ -455,25 +455,26 @@ export function Ask() {
     <div className="page ask-page ask-studio">
       <header className="panel-head">
         <div className="ask-greeting" aria-hidden="true">
-          <span>Ask</span>
-          <strong>Aetheria</strong>
-        </div>
-        <p className="kicker">{t.ask.title}</p>
-        <h1>{t.ask.heading}</h1>
-        <p className="lede dark">Ask about a sentence, visit, side effect, payment, or anything else in your study form.</p>
-        <div className="suggestions">
-          {consent.sections.slice(0, 4).map((item) => {
-            const local = view(item);
-            return (
-              <button key={item.id} type="button" className="chip" onClick={() => ask(local.ask)}>
-                {local.title}
-              </button>
-            );
-          })}
+          <AskOrb3D reducedMotion={reducedMotion} />
+          <strong>Ask Aetheria</strong>
         </div>
       </header>
       <div className="thread" aria-live="polite">
-        {messages.length === 0 && <p className="empty">{t.ask.empty}</p>}
+        {messages.length === 0 && (
+          <div className="ask-empty-state">
+            <p>What would you like to understand?</p>
+            <div className="suggestions">
+              {consent.sections.slice(0, 4).map((item) => {
+                const local = view(item);
+                return (
+                  <button key={item.id} type="button" className="chip" onClick={() => ask(local.ask)}>
+                    {local.title}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
         {messages.map((message) => (
           <article key={message.id} className={`bubble ${message.role}`}>
             {!message.english && message.steps && message.steps.length > 0 ? <small>{message.steps.join(" · ")}</small> : null}
@@ -537,12 +538,8 @@ export function Ask() {
           ask(draft);
         }}
       >
-        <AskOrb3D reducedMotion={reducedMotion} />
-        <div className="ask-form-heading">
-          <label htmlFor="question">Your question</label>
-          <span>Answers point back to the form</span>
-        </div>
-        <textarea id="question" value={draft} onChange={(event) => setDraft(event.target.value)} rows={6} placeholder="For example: What happens if I stop taking part?" />
+        <label className="sr-only" htmlFor="question">Your question</label>
+        <textarea id="question" value={draft} onChange={(event) => setDraft(event.target.value)} rows={1} placeholder="Ask about your study form" />
         <div className="ask-form-actions">
           <button className="btn solid dark" type="submit">
             {t.ask.send}
