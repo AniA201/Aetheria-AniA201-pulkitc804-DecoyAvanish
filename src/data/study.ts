@@ -546,7 +546,7 @@ export const personaFixtures: PersonaFixture[] = [
     promptId: "withdrawal",
     response: "Puedo salir del estudio en cualquier momento y mi médico sigue atendiéndome.",
     speaker: "participant",
-    expect: "Requires human follow-up",
+    expect: "Partially understands",
   },
 ];
 

@@ -11,6 +11,8 @@ import { setExtraPassages } from "../data/documents";
 import type { BlockId } from "../lib/blocks";
 import { practiceBrief, type Brief } from "../lib/brief";
 import type { SubmittedConsent } from "../lib/consent";
+import type { LayAudience, LayCorrection } from "../lib/laySummary";
+import type { TrialBlockId } from "../lib/publicTrial";
 import type { TeachResult } from "../lib/teachback";
 import { readingSource } from "../lib/workbook";
 
@@ -20,6 +22,22 @@ export type AudienceState = DraftState | "in-review" | "stale";
 export type LineDecision = "accepted" | "rejected";
 export type Role = "participant" | "researcher";
 export type Audience = "adult" | "caregiver";
+export type CommentTarget = Audience | LayAudience;
+export type Language = "en" | "es";
+
+export type Translation = { title: string; plain: string; engine: string; at: string };
+
+export type TrialProposal = {
+  id: string;
+  block: TrialBlockId;
+  from: string;
+  to: string;
+  label: string;
+  createdAt: string;
+  decisions: Record<string, LineDecision>;
+};
+
+export type LayVersion = { id: string; audience: LayAudience; text: string; state: AudienceState; at: string; reason: string };
 
 export type Proposal = {
   id: string;
@@ -32,7 +50,7 @@ export type Proposal = {
 
 export type ReviewerComment = {
   id: string;
-  audience: Audience;
+  audience: CommentTarget;
   reviewer: "Medical" | "Legal" | "Patient advocate";
   stance: "approve" | "change";
   text: string;
@@ -109,6 +127,14 @@ type SessionData = {
   brief: Brief;
   briefDecisions: Record<string, LineDecision>;
   lastSpoken: string;
+  language: Language;
+  translations: Record<string, Translation>;
+  trialProposals: TrialProposal[];
+  layEdits: Partial<Record<LayAudience, string>>;
+  layState: Partial<Record<LayAudience, AudienceState>>;
+  layHistory: LayVersion[];
+  layCorrection: LayCorrection;
+  layHandoff: TranslationHandoff;
 };
 
 type SessionApi = SessionData & {
@@ -142,6 +168,14 @@ type SessionApi = SessionData & {
   setBrief: (brief: Brief) => void;
   decideBrief: (id: string, decision: LineDecision) => void;
   setLastSpoken: (text: string) => void;
+  setLanguage: (language: Language) => void;
+  setTranslation: (key: string, value: Translation | null) => void;
+  addTrialProposal: (proposal: Omit<TrialProposal, "id" | "createdAt" | "decisions">) => void;
+  decideTrialLine: (proposalId: string, lineId: string, decision: LineDecision) => void;
+  setLayEdit: (audience: LayAudience, text: string | null) => void;
+  setLayState: (audience: LayAudience, state: AudienceState) => void;
+  setLayCorrection: (correction: LayCorrection, reason: string, current: Partial<Record<LayAudience, string>>) => void;
+  setLayHandoff: (handoff: TranslationHandoff) => void;
   reset: () => void;
 };
 
@@ -202,7 +236,37 @@ const empty: SessionData = {
   brief: practiceBrief,
   briefDecisions: {},
   lastSpoken: "",
+  language: "en",
+  translations: {},
+  trialProposals: [],
+  layEdits: {},
+  layState: {},
+  layHistory: [],
+  layCorrection: null,
+  layHandoff: null,
 };
+
+const layComments: ReviewerComment[] = [
+  { id: "seed-lay-adult", audience: "lay-adult", reviewer: "Medical", stance: "approve", text: "Practice comment: the numbers match the registry results.", at: "practice" },
+  { id: "seed-lay-physician-medical", audience: "lay-physician", reviewer: "Medical", stance: "approve", text: "Practice comment: the statistics are reported as posted.", at: "practice" },
+  {
+    id: "seed-lay-physician-legal",
+    audience: "lay-physician",
+    reviewer: "Legal",
+    stance: "change",
+    text: "Practice comment: say that the confidence intervals are the registry's, not recalculated here.",
+    at: "practice",
+  },
+  {
+    id: "seed-lay-es",
+    audience: "lay-es",
+    reviewer: "Patient advocate",
+    stance: "change",
+    text: "Practice comment: a qualified medical translator must review this before any Spanish reader sees it.",
+    at: "practice",
+  },
+];
+empty.comments = [...empty.comments, ...layComments];
 
 function regenerated(current: SessionData, consent: SubmittedConsent | null, reason: string) {
   const source = readingSource(consent);
@@ -246,12 +310,22 @@ function load(): SessionData {
       audienceText: parsed.audienceText ?? empty.audienceText,
       audienceState: parsed.audienceState ?? empty.audienceState,
       audienceHistory: parsed.audienceHistory ?? [],
-      comments: parsed.comments ?? empty.comments,
+      comments: parsed.comments
+        ? [...parsed.comments, ...layComments.filter((seed) => !parsed.comments!.some((item) => item.id === seed.id))]
+        : empty.comments,
       translationHandoff: parsed.translationHandoff ?? null,
       proposals: parsed.proposals ?? [],
       brief: { ...practiceBrief, ...parsed.brief },
       briefDecisions: parsed.briefDecisions ?? {},
       lastSpoken: parsed.lastSpoken ?? "",
+      language: parsed.language === "es" ? "es" : "en",
+      translations: parsed.translations ?? {},
+      trialProposals: parsed.trialProposals ?? [],
+      layEdits: parsed.layEdits ?? {},
+      layState: parsed.layState ?? {},
+      layHistory: parsed.layHistory ?? [],
+      layCorrection: parsed.layCorrection ?? null,
+      layHandoff: parsed.layHandoff ?? null,
     };
   } catch {
     return empty;
@@ -456,6 +530,83 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           audit: pushAudit(current, "Design brief", `${id} → ${decision}. This is not a protocol approval.`),
         })),
       setLastSpoken: (lastSpoken) => setData((current) => ({ ...current, lastSpoken })),
+      setLanguage: (language) =>
+        setData((current) => ({
+          ...current,
+          language,
+          audit: pushAudit(current, "Language", language === "es" ? "Participant screens switched to Spanish (machine-written, not reviewed)." : "Participant screens switched to English."),
+        })),
+      setTranslation: (key, value) =>
+        setData((current) => {
+          const translations = { ...current.translations };
+          if (value) translations[key] = value;
+          else delete translations[key];
+          return { ...current, translations };
+        }),
+      addTrialProposal: (proposal) =>
+        setData((current) => ({
+          ...current,
+          trialProposals: [
+            { ...proposal, id: `CR-${String(current.trialProposals.length + 1).padStart(3, "0")}`, createdAt: new Date().toISOString(), decisions: {} },
+            ...current.trialProposals,
+          ].slice(0, 12),
+          audit: pushAudit(current, "Change request", `${proposal.block}: ${proposal.from} → ${proposal.to}. The posted documents were not edited.`),
+        })),
+      decideTrialLine: (proposalId, lineId, decision) =>
+        setData((current) => ({
+          ...current,
+          trialProposals: current.trialProposals.map((proposal) =>
+            proposal.id === proposalId ? { ...proposal, decisions: { ...proposal.decisions, [lineId]: decision } } : proposal,
+          ),
+          audit: pushAudit(current, "Change request", `${proposalId} · ${lineId} → ${decision}.`),
+        })),
+      setLayEdit: (audience, text) =>
+        setData((current) => {
+          const layEdits = { ...current.layEdits };
+          if (text === null) delete layEdits[audience];
+          else layEdits[audience] = text;
+          const state = current.layState[audience];
+          return { ...current, layEdits, layState: { ...current.layState, [audience]: state === "accepted" ? "stale" : "draft" } };
+        }),
+      setLayState: (audience, state) =>
+        setData((current) => ({
+          ...current,
+          layState: { ...current.layState, [audience]: state },
+          audit: pushAudit(current, "Lay summary decision", `${audience} → ${state}.`),
+        })),
+      setLayCorrection: (layCorrection, reason, shown) =>
+        setData((current) => {
+          const at = new Date().toISOString();
+          const history: LayVersion[] = (Object.keys(shown) as LayAudience[]).map((audience) => ({
+            id: crypto.randomUUID(),
+            audience,
+            text: shown[audience] ?? "",
+            state: current.layState[audience] ?? "draft",
+            at,
+            reason,
+          }));
+          const layState = Object.fromEntries(
+            Object.entries(current.layState).map(([key, value]) => [key, value === "accepted" || value === "in-review" ? "stale" : value]),
+          ) as Partial<Record<LayAudience, AudienceState>>;
+          return {
+            ...current,
+            layCorrection,
+            layEdits: {},
+            layState,
+            layHistory: [...history, ...current.layHistory].slice(0, 30),
+            audit: pushAudit(current, "Lay summaries regenerated", `${reason}. Earlier drafts are in the version history.`),
+          };
+        }),
+      setLayHandoff: (layHandoff) =>
+        setData((current) => ({
+          ...current,
+          layHandoff,
+          audit: pushAudit(
+            current,
+            "Lay summary translation handoff",
+            layHandoff ? `Spanish draft marked ready for a ${layHandoff.language} translation reviewer.` : "Handoff withdrawn.",
+          ),
+        })),
       addImport: (document) =>
         setData((current) => ({
           ...current,

@@ -4,6 +4,14 @@ Aetheria is a synthetic demo that helps a participant read a clinical-trial cons
 
 The study AETHER-01, the product Aetherol, and Northwind Clinical Research are fictional. Visit count, study length, and payment were planted so the document check has a known mismatch. Approval status stays unverified because this preview has no authorized approval list.
 
+One real trial is used for the research-team tools: **NCT03238781** (Amgen, AMG 301 for migraine prevention, Phase 2a, completed, 343 enrolled, results posted). Its registry record, protocol (Amendment 2, 17 Oct 2017, 132 PDF pages), statistical analysis plan, and 24 similar completed Phase 2 migraine-prevention trials were downloaded from ClinicalTrials.gov on 10 Oct 2026 and stored in `public/trials/NCT03238781/` with each source URL and retrieval time. Its results are never presented as AETHER-01's, and the app does not approve its protocol. Refresh the copy with:
+
+```bash
+npm run fetch-trial
+```
+
+The protocol PDF uses a font whose text layer is shifted by a fixed number of code points on some pages; `scripts/fetch-public-trial.mjs` decodes those pages and keeps the page numbers.
+
 ## Run
 
 The web app and the FastAPI account service run together. One-time backend setup:
@@ -45,7 +53,7 @@ GEMINI_API_KEY=your-key
 GEMINI_MODEL=gemini-3-flash-preview
 ```
 
-Restart `npm run dev`. The key is read by the dev server only and never reaches the browser. Guide questions and the matching passages go to Google, and Google may use free-tier data to improve its products. Dose, approval, and cure questions are refused before Gemini is called. Gemini may cite only passages its tools returned, and the quotation on screen is the stored passage. Gemini also runs Ask, Check, and the Summary question list.
+Restart `npm run dev:all`. Until this file exists, every Gemini step falls back to the engines below and the screen says so. The key is read by the dev server only and never reaches the browser. Guide questions and the matching passages go to Google, and Google may use free-tier data to improve its products. Dose, approval, and cure questions are refused before Gemini is called. Gemini may cite only passages its tools returned, and the quotation on screen is the stored passage. Gemini also runs Ask, Check, and the Summary question list.
 
 If Gemini can't answer, the next engine takes over, and the screen says which one answered:
 
@@ -65,26 +73,46 @@ If Ollama is not running, Ask Aetheria still answers from the local consent rule
 
 `npm run demo` repeats the scripted workflow checks.
 
+### Spanish (participant side)
+
+The **EN / ES** switch in the bottom-left dock turns the participant screens into Spanish. A banner on every page says: *Traducción automática, no revisada. El formulario en inglés es el oficial.* The research workspace stays in English.
+
+- **Read.** The included sample has a Spanish short reading for each of its five sections, written for this practice app with the same figures (6 visits, about 16 weeks, about 2 hours, $50, 1 in 10, 15 years). For an uploaded form, **Traducir esta sección** asks Gemini, or Ollama, to translate. The translation is kept only if every number in the source appears in it, it adds no number, its length is close to the source, and it is not the source repeated. A heading that fails stays in English, and **Descartar esta traducción** removes a bad one. The full text and the citation stay in English because the English form is the official text.
+- **Ask and the Guide.** A Spanish question about a dose, a personal treatment choice, approval, or a cure is refused in Spanish before anything else runs. Otherwise the question is put into English by a model, or matched by Spanish keywords when no model can translate. The same agent answers from the English form, the English quotation is shown, and the answer is given in Spanish: the section's Spanish reading for the sample, or a number-checked translation for an upload. The English answer is under **Respuesta original en inglés**.
+- **Check.** The five sample questions have a Spanish answer key with the same concept ids as the English key, plus Spanish misunderstandings ("pierdo la atención de mi médico", "no puedo salir", "me van a dar Aetherol"…), negation ("no pierdo…", "no promete que…"), caregiver replies ("ella puede salir"), and short yes/"no sé". The research team sees English labels, the participant's own words, and the tag "in Spanish, needs an interpreter". A Spanish reply to an uploaded form, which has no Spanish key, goes to a person.
+- **Voice.** **Empezar por voz** on Check reads each section, asks the question, listens (browser speech recognition, es-US or en-US), checks the reply, and speaks the feedback. Say "repetir", "más despacio", or "persona". An emergency word ends the session with "call 911". Voice audio is not stored, and every spoken session starts by saying it is an automated voice.
+- **Summary.** The coordinator list is built in Spanish from the session and offers a qualified interpreter.
+
 ## Judge walkthrough
 
 1. Create a participant account (Client) and sign in. Create a research account with the registration key set in `backend/.env`.
 2. As the participant, on Start, submit a consent file or press Use included sample. Read a section and switch between the short reading and the original clause. The sample source is ICF-AETHER-01 v2.1.
 3. Ask “How many clinic visits are in this study?” The reply cites the consent passage. Ask “Can my cousin enroll with me next week?” The reply says the form does not answer that.
-4. On Check, pick Leaving the study and type “Once I start I can't quit.” It is marked Needs clarification and names the misunderstanding. Tick the caregiver box and answer “She can leave at any time, her own doctor still treats her, and the team may keep safety information.” It is read as the participant's answer. A reply in Spanish is routed to a person. Each result is sent to the research team.
-5. As the researcher, Questions lists those handoffs from the backend with the participant's name, and runs the five starter-sheet personas.
-6. Compare: every shared block is read from the files and rebuilt from its template. Propose any value for any block; every sentence that uses it is listed with its owner, and each line can be accepted or rejected. Download the redline. Below it, the pre-flight checklist, findings, planted-error result, amendment-risk areas, and the design brief.
-7. Plain language: two readings (adult and caregiver) with Flesch scores, figure checks, a trace to the consent passage, reviewer comments, and the planted-error test. Reviewer disagreement blocks Accept.
-8. Files: the 21 CFR 50.25 element check and the registry card. Settings: enter `v2.0` as the only approved version, then open Read, Ask, or Check as the participant — v2.1 is refused.
-9. Checks runs the same checks as `npm test` and counts the result from that run.
+4. On Check, pick Leaving the study and type “Once I start I can't quit.” It is marked Needs clarification and names the misunderstanding. Tick the caregiver box and answer “She can leave at any time, her own doctor still treats her, and the team may keep safety information.” It is read as the participant's answer. Each result is sent to the research team.
+5. Press **ES** in the bottom-left dock. Read shows the Spanish short reading. Ask “¿Cuántas visitas hay?” and “¿Me pagan por venir?”; ask “¿Cuál es el mejor tratamiento para mi migraña?” and it is refused. On Check, answer “Si me salgo del estudio pierdo la atención de mi médico.” It is marked Necesita aclaración. Summary builds the coordinator list in Spanish. Press **EN** to go back.
+6. As the researcher, Questions lists those handoffs from the backend with the participant's name and a Spanish/interpreter tag, and runs the five starter-sheet personas (5 of 5).
+7. Start shows the real-trial numbers for NCT03238781. Compare: **Protocol Pre-Flight** and **Write Once** on the real protocol, SAP, and registry, then the same tools on the practice pair, then the design brief filled from the registry with similar trials.
+8. Plain language: the NCT03238781 lay results summary (five readers, EU CTR Annex V, GLSP steps, fact trace, reviewer comments), then the practice consent's two readings.
+9. Files: the 21 CFR 50.25 element check and the registry card. Settings: enter `v2.0` as the only approved version, then open Read, Ask, or Check as the participant — v2.1 is refused.
+10. Checks runs the same checks as `npm test` and counts the result from that run.
 
 ## What the starter sheets do here
 
-The supplied Regeneron pack contains many sheets. This app uses the four that match the consent product. Everything below is computed from the stored text on each run; the numbers quoted are what the sample produces today.
+The supplied Regeneron pack contains many sheets. This app uses the four that match the consent product (Teach It Back, Say It Plainly, Write Once, Protocol Pre-Flight; the design brief is part of Pre-Flight). Everything below is computed from the stored text on each run; the numbers quoted are what the app produces today.
 
-- **Teach It Back.** Read, Ask, Check, and Summary. There is a teach-back question for each of the five sample sections, and for every section of an uploaded consent. Replies are judged for the key ideas (Gemini or Ollama when available, phrase rules otherwise). Named misunderstandings — "I'll definitely get the new drug", "I can't quit", "the study replaces my doctor", "no risks", "my name will be published" — are flagged even when other ideas are present, unless negated. Caregiver answers are read about the participant. Spanish replies are routed to a person, because no reviewed Spanish form exists. Results go to the backend (`POST /api/handoffs`) and appear on the researcher's Questions page. Dictation works on Ask and Check. The five sheet personas pass as expected (5 of 5). If a person enters an approved-version list, unlisted versions are refused in Read, Ask, Check, and the Guide.
-- **Say It Plainly.** Two readings, adult and caregiver, generated from the consent; submitting a new consent regenerates both and keeps the old ones in a version history. Flesch Reading Ease and grade are computed with the formula shown on screen (sample: source 79, adult 89, caregiver 86). Each reading must keep 6 times, about 16 weeks, and $50, add no figure the source lacks, and use none of the protocol's 8 visits, 24 weeks, or $80. Each figure is traced to the passage that contains it. Medical, Legal, and Patient-advocate comments can approve or ask for a change; a disagreement blocks Accept. The planted-error test catches 5 of 5 (changed number, protocol number, promotional word, omitted allergic-reaction risk, swapped blinding) with 0 false alarms on a faithful control. Translation is a persisted handoff to a human reviewer; no translation is generated. The lay results summary lists the EU CTR Annex V headings and stays empty because the study has no results.
+**Real trial (NCT03238781).** NCT03238781 posts a protocol, an SAP, and results, but no consent form. So Teach It Back uses the practice consent or a form the participant uploads, and the research-team sheets run on the real documents:
+
+- **Protocol Pre-Flight (Compare).** The real protocol scores 69 on the M11 + SPIRIT 2025 checklist, shown with its formula and labelled a checklist count. Findings come from the protocol text. A planted-error test on the real text catches 5 of 5. Two amendments are listed; Amendment 1's summary is only partly posted (page 1 of 16), and the screen says so. The 24 similar trials give enrollment and arm counts. The visit-burden estimate lists its assumptions. The 15-visit schedule cannot be compared with the similar trials because the registry does not hold their schedules.
+- **Write Once (Compare).** Eight facts are read from the protocol, SAP, and registry and compared, with quotes. One real wording difference is found: the SAP writes "QM" where the protocol and registry write Q4W. A planted test catches 8 of 8. A change request (CR-001…) lists every place a value appears, and each line can be accepted or rejected.
+- **Design brief and precedent (Compare).** The brief can be filled from the registry and lists similar trials as precedent.
+- **Say It Plainly (Plain language).** A lay results summary for five readers: adult, caregiver, teen, physician, and a Spanish adult draft. It follows the four GLSP steps and covers the 10 EU CTR Annex V elements. Each reading checks its figures against 76 registry facts, traces each figure, and shows its readability. Reviewer comments can block acceptance, and accepted summaries export as Markdown. The Spanish draft is labelled machine-written and can be sent to a translation reviewer. A planted-error test catches 5 of 5. A practice correction (one placebo serious adverse event added) regenerates the summaries and marks them stale.
+
+**Practice consent and protocol (synthetic).**
+
+- **Teach It Back.** Read, Ask, Check, and Summary. There is a teach-back question for each of the five sample sections, and for every section of an uploaded consent. Replies are judged for the key ideas (Gemini or Ollama when available, phrase rules otherwise; Spanish replies always use the Spanish phrase key). Named misunderstandings — "I'll definitely get the new drug", "I can't quit", "the study replaces my doctor", "no risks", "my name will be published" — are flagged even when other ideas are present, unless negated, and words inside the wrong statement are not credited. Caregiver answers are read about the participant. Spanish is described above. Results go to the backend (`POST /api/handoffs`) and appear on the researcher's Questions page. Dictation works on Ask and Check, and a voice session reads, asks, listens, and gives feedback. The five sheet personas pass as expected (5 of 5). If a person enters an approved-version list, unlisted versions are refused in Read, Ask, Check, and the Guide.
+- **Say It Plainly.** Two readings, adult and caregiver, generated from the consent; submitting a new consent regenerates both and keeps the old ones in a version history. Flesch Reading Ease and grade are computed with the formula shown on screen (sample: source 79, adult 89, caregiver 86). Each reading must keep 6 times, about 16 weeks, and $50, add no figure the source lacks, and use none of the protocol's 8 visits, 24 weeks, or $80. Each figure is traced to the passage that contains it. Medical, Legal, and Patient-advocate comments can approve or ask for a change; a disagreement blocks Accept. The planted-error test catches 5 of 5 (changed number, protocol number, promotional word, omitted allergic-reaction risk, swapped blinding) with 0 false alarms on a faithful control. Translation of these readings is a persisted handoff to a human reviewer. AETHER-01 has no results, so the lay results summary uses NCT03238781.
 - **Write Once.** Five blocks (visits, weeks, payment, blood volume, retention) are read from the protocol and consent text. Each protocol, consent, plain-language, and registry sentence is a template; tests prove each template reproduces the stored sentence exactly. Proposing any value for any block lists every affected sentence with its owner, warns when a sentence names a visit that would no longer exist, records accept/reject per line with a version history, and exports a redline. The source files are never edited.
-- **Protocol Pre-Flight.** The checklist is computed from protocol text against 24 ICH M11 headings and all 34 SPIRIT 2025 items. Any protocol (PDF, `.txt`, `.md`) can be uploaded. The coverage figure is shown with its formula, (present + 0.5 × thin) ÷ items × 100, and is labeled a checklist count, not an approval or quality grade; the 5-section practice protocol scores 10. Internal checks compare the treatment period with the last visit and each endpoint's week with the schedule. Cross-checks compare each block with the consent. The planted-error test catches 8 of 8 with 0 false alarms. Amendment-risk areas are named from the gaps; no amendment rate is predicted. A typed design brief drafts M11-numbered sections only from what it states and exports USDM-shaped JSON that is not validated against the CDISC schema. Similar public trials are not loaded; an NCT id is only noted.
+- **Protocol Pre-Flight.** The checklist is computed from protocol text against 24 ICH M11 headings and all 34 SPIRIT 2025 items. Any protocol (PDF, `.txt`, `.md`) can be uploaded. The coverage figure is shown with its formula, (present + 0.5 × thin) ÷ items × 100, and is labeled a checklist count, not an approval or quality grade; the 5-section practice protocol scores 10. Internal checks compare the treatment period with the last visit and each endpoint's week with the schedule. Cross-checks compare each block with the consent. The planted-error test catches 8 of 8 with 0 false alarms. Amendment-risk areas are named from the gaps; no amendment rate is predicted. A typed design brief drafts M11-numbered sections only from what it states and exports USDM-shaped JSON that is not validated against the CDISC schema.
 
 Sources: SPIRIT 2025 statement, Table 1 (Chan et al., 2025; PMC12035670). ICH M11 Clinical electronic Structured Harmonised Protocol (FDA copy; ICH adoption 19 Nov 2025). 21 CFR 50.25. EU Regulation 536/2014, Annex V.
 
@@ -95,7 +123,10 @@ Sources: SPIRIT 2025 statement, Table 1 (Chan et al., 2025; PMC12035670). ICH M1
 | Consent reader, plain language, original clause, version label | Working from the file the participant submits, or from the included sample |
 | Ask, with citations | Working. Ollama when it is running; otherwise labeled local rules |
 | Missing-answer fallback | Working. Dose, approval, and unrelated questions are not invented |
-| Teach-back concept check | Working for every section. Misunderstandings, caregiver answers, and Spanish routing. Supportive labels, not a pass/fail certificate |
+| Teach-back concept check | Working for every section. Misunderstandings, caregiver answers, Spanish answer key for the sample. Supportive labels, not a pass/fail certificate |
+| Spanish participant screens | Working. Machine-written and labelled; the English form stays official. Uploads are translated on request and number-checked |
+| Voice session | Working where the browser supports speech recognition (Chrome, Edge, Safari). No phone line |
+| Real trial NCT03238781 | Working from the stored ClinicalTrials.gov copy. No consent form is posted for it |
 | Teach-back handoff to the research team | Working through the FastAPI service and SQLite |
 | Saved questions and follow-up | Working in this browser session |
 | Plain-language readings for two audiences | Working, with Flesch scores, figure checks, trace, reviewer comments, history |
@@ -106,9 +137,9 @@ Sources: SPIRIT 2025 statement, Table 1 (Chan et al., 2025; PMC12035670). ICH M1
 | Consent file | PDF text is extracted page by page. `.txt` and `.md` still work. A scanned PDF is not indexed as empty. DOCX is not read |
 | Audit trail | Working in this browser session |
 | Test Lab | Working. Counts a real run |
-| ClinicalTrials.gov, PDF OCR, phone calls, translation | Not connected. A PDF must already contain text |
+| Live ClinicalTrials.gov, PDF OCR, phone calls, reviewed translation | Not connected. Trial data is a stored copy refreshed with `npm run fetch-trial`. A PDF must already contain text |
 | Protocol approval | Intentionally absent. The coverage figure is a checklist count |
 
 ## Data and privacy
 
-Session state stays in this browser’s session storage. Uploaded text is parsed locally. Accounts and teach-back handoffs (topic, label, the participant's words, feedback) are stored by the local FastAPI service in `backend/aetheria.db`; only a research-team account can read handoffs. When Ollama is running, only the retrieved passages for a question are sent to `127.0.0.1`. When a Gemini key is set, Guide, Ask, Check, and Summary requests go to Google as described above. Voice audio is not stored.
+Session state stays in this browser’s session storage. Uploaded text is parsed locally. Accounts and teach-back handoffs (topic, label, the participant's words, feedback) are stored by the local FastAPI service in `backend/aetheria.db`; only a research-team account can read handoffs. When Ollama is running, only the retrieved passages for a question are sent to `127.0.0.1`. When a Gemini key is set, Guide, Ask, Check, Summary, and translation requests go to Google as described above. Voice audio is not stored; speech recognition is done by the browser, which may use its vendor's service.

@@ -26,6 +26,7 @@ import {
   PersonaResults,
   PlainWorkbook,
   PreFlight,
+  RealTrialWork,
   RegistryCard,
   StarterSheets,
   StoredHandoffs,
@@ -33,6 +34,8 @@ import {
 } from "../components/SheetPanels";
 import { useSession, type ReviewState } from "../state/Session";
 import { useTitle } from "../components/Chrome";
+import { TrialLaySummary } from "../components/TrialPanels";
+import { publicNct } from "../lib/publicTrial";
 
 function pace(text: string) {
   const words = text.trim().split(/\s+/).filter(Boolean);
@@ -93,6 +96,7 @@ export function Integrity() {
         <p className="kicker">Evidence</p>
         <h1>Protocol against consent.</h1>
         <p className="lede dark">No consent form has been submitted in this browser yet. The protocol checks below run on the practice protocol or a file you add.</p>
+        <RealTrialWork />
         <div className="sheet-work">
           <PreFlight />
           <DesignBrief />
@@ -106,6 +110,7 @@ export function Integrity() {
         <p className="kicker">Evidence</p>
         <h1>Protocol against consent.</h1>
         <p className="lede dark">This file has no protocol next to it, so there is nothing to compare. The protocol checks below run on the practice protocol or a file you add.</p>
+        <RealTrialWork />
         <div className="sheet-work">
           <PreFlight />
           <DesignBrief />
@@ -250,8 +255,11 @@ export function Studio() {
     return (
       <div className="page">
         <p className="kicker">Plain language studio</p>
-        <h1>Submit a consent form first.</h1>
-        <p className="lede dark">A shorter reading sits beside the original. Accepting it does not change the file.</p>
+        <h1>Plain language.</h1>
+        <p className="lede dark">Consent readings appear after a consent form is submitted. The {publicNct} lay summaries below need no submission.</p>
+        <div className="sheet-work">
+          <TrialLaySummary />
+        </div>
       </div>
     );
   }

@@ -489,7 +489,15 @@ export function sectionsFromText(pages: { number: number; text: string }[], name
       const line = raw.trim();
       if (!line) continue;
       const numbered = /^\d{1,2}(\.\d{1,2}){0,3}\.?\s+[A-Z][^.]{2,90}$/.test(line);
-      const capitals = line.length >= 4 && line.length <= 80 && line === line.toUpperCase() && /[A-Z]{3}/.test(line);
+      const letters = line.replace(/[^A-Za-z]/g, "").length;
+      const capitals =
+        line.length >= 4 &&
+        line.length <= 80 &&
+        line === line.toUpperCase() &&
+        /[A-Z]{3}/.test(line) &&
+        letters >= 6 &&
+        !/\d{3}/.test(line) &&
+        !/\sX$/.test(line);
       if (numbered || capitals) {
         current = { id: `s${out.length + 1}`, heading: line, page: `p. ${page.number}`, citation: `${name}: ${line}`, text: "" };
         out.push(current);

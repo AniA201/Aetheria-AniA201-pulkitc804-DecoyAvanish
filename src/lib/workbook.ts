@@ -34,8 +34,13 @@ export function versionStanding(version: string, approved: string[]): VersionSta
   return list.some((item) => item.toLowerCase() === version.trim().toLowerCase()) ? "listed" : "not-listed";
 }
 
-export function versionNote(version: string, approved: string[]): string {
+export function versionNote(version: string, approved: string[], language: "en" | "es" = "en"): string {
   const standing = versionStanding(version, approved);
+  if (language === "es") {
+    if (standing === "unverified") return `${version} no está verificada. Nadie ha ingresado una lista de versiones aprobadas.`;
+    if (standing === "listed") return `${version} está en la lista que una persona ingresó en Configuración.`;
+    return `${version} no está en la lista que una persona ingresó. No se trata como el formulario aprobado actual.`;
+  }
   if (standing === "unverified") {
     return `${version} is Unverified. No one has entered an approved-version list.`;
   }

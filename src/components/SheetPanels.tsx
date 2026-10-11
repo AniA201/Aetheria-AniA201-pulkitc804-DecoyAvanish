@@ -24,10 +24,12 @@ import {
   type ProtocolSection,
 } from "../lib/protocolCheck";
 import { assessTeachback } from "../lib/teachback";
-import { annexV, readingSource, versionNote } from "../lib/workbook";
-import { useSession, type Audience, type ReviewerComment } from "../state/Session";
+import { readingSource, versionNote } from "../lib/workbook";
+import { publicNct } from "../lib/publicTrial";
+import { TrialLaySummary, TrialPreFlight, TrialPrecedent, TrialWriteOnce, useTrialSummary } from "./TrialPanels";
+import { useSession, type CommentTarget, type ReviewerComment } from "../state/Session";
 
-function download(name: string, text: string, type = "text/plain") {
+export function download(name: string, text: string, type = "text/plain") {
   const url = URL.createObjectURL(new Blob([text], { type }));
   const link = document.createElement("a");
   link.href = url;
@@ -36,12 +38,24 @@ function download(name: string, text: string, type = "text/plain") {
   URL.revokeObjectURL(url);
 }
 
-export function VersionStanding({ version }: { version: string }) {
+export function VersionStanding({ version, language = "en" }: { version: string; language?: "en" | "es" }) {
   const { approvedVersions } = useSession();
-  return <p className="fine">{versionNote(version, approvedVersions)}</p>;
+  return <p className="fine">{versionNote(version, approvedVersions, language)}</p>;
 }
 
-export function VersionGate({ version, title }: { version: string; title: string }) {
+export function VersionGate({ version, title, language = "en" }: { version: string; title: string; language?: "en" | "es" }) {
+  if (language === "es") {
+    return (
+      <div className="page">
+        <p className="kicker">{title}</p>
+        <h1>Este formulario no está en la lista aprobada.</h1>
+        <p className="lede dark">
+          El equipo de investigación ingresó una lista de versiones aprobadas, y {version} no está en ella. Leer, preguntar y comprobar están en pausa para este archivo, para no usar un formulario desactualizado.
+        </p>
+        <p className="fine">Pida el formulario actual al coordinador del estudio. Esta aplicación no decide qué versión está aprobada; una persona ingresó la lista.</p>
+      </div>
+    );
+  }
   return (
     <div className="page">
       <p className="kicker">{title}</p>
@@ -67,13 +81,16 @@ export function StarterSheets() {
   const personas = personaFixtures.filter(
     (fixture) => assessTeachback(fixture.promptId, fixture.response, teachPrompts, fixture.speaker).label === fixture.expect,
   ).length;
+  const real = useTrialSummary();
+  const wait = `Loading ${publicNct}…`;
   const cards = [
     {
       name: "Teach It Back",
       lines: [
-        `${teachPrompts.length} check questions, one per sample section`,
-        `${personas} of ${personaFixtures.length} starter-sheet personas get the expected result`,
-        "Misunderstandings, caregiver answers, and Spanish replies are flagged for a person",
+        `${teachPrompts.length} check questions, one per sample section, in English and Spanish`,
+        `${personas} of ${personaFixtures.length} starter-sheet personas get the expected result (the Spanish one is checked against the Spanish answer key)`,
+        "Voice session: reads each section, asks, listens, checks, and hands off; “person” stops it and flags the coordinator",
+        `${publicNct} posts no consent form, so Teach It Back uses the practice form or an uploaded one`,
       ],
       links: [
         { to: "/researcher/insights#handoffs", label: "Handoffs from participants" },
@@ -83,33 +100,41 @@ export function StarterSheets() {
     {
       name: "Say It Plainly",
       lines: [
-        "Adult and caregiver readings with Flesch scores and figure tracing",
-        `Planted-error test: ${lab.caught} of ${lab.planted} caught, ${lab.falseAlarms} false alarms`,
-        "Reviewer comments; a disagreement blocks Accept",
+        real
+          ? `${publicNct} lay summary from ${real.facts} registry facts: 5 versions (adult, caregiver, teen, physician, Spanish), Annex V headings`
+          : wait,
+        real ? `Planted-error test on the real results: ${real.lay.caught} of ${real.lay.planted} caught, ${real.lay.falseAlarms} false alarms` : wait,
+        `Practice consent readings: planted-error test ${lab.caught} of ${lab.planted} caught, ${lab.falseAlarms} false alarms`,
+        "Reviewer comments; a disagreement blocks Accept; regenerate keeps a version history",
       ],
-      links: [{ to: "/researcher/plain-language#say-it-plainly", label: "Open the two readings" }],
+      links: [
+        { to: "/researcher/plain-language#lay-summary", label: `${publicNct} lay summaries` },
+        { to: "/researcher/plain-language#say-it-plainly", label: "Practice consent readings" },
+      ],
     },
     {
       name: "Write Once",
       lines: [
-        `${blocks.length} shared blocks read from the files`,
-        `${matching} of ${bound.length} source sentences rebuilt exactly from their templates`,
-        "Propose any value; every affected sentence is listed with its owner",
+        real ? `${publicNct}: ${real.rows} facts compared across protocol, SAP, and registry; ${real.differs} real wording difference${real.differs === 1 ? "" : "s"} found` : wait,
+        real ? `Planted-error test: ${real.writePlants.caught} of ${real.writePlants.planted} caught, ${real.writePlants.falseAlarms} false alarms` : wait,
+        "Change one block (for example, add a week-36 visit) and every affected sentence and page is listed with its owner",
+        `Practice pair: ${blocks.length} blocks, ${matching} of ${bound.length} source sentences rebuilt exactly`,
       ],
       links: [
-        { to: "/researcher/document-integrity#write-once", label: "Blocks and proposals" },
-        { to: "/researcher/documents#registry", label: "Registry card" },
+        { to: "/researcher/document-integrity#nct-write-once", label: `${publicNct} Write Once` },
+        { to: "/researcher/document-integrity#write-once", label: "Practice blocks" },
       ],
     },
     {
       name: "Protocol Pre-Flight",
       lines: [
-        `Checklist count on the practice protocol: ${score.value} of 100 (M11 + SPIRIT 2025, ${score.total} items)`,
-        `Planted-error test: ${planted.caught} of ${planted.planted} caught, ${planted.falseAlarms} false alarms`,
-        "Upload any protocol; design brief drafts M11 sections",
+        real ? `${publicNct} protocol (${real.pages} PDF pages): checklist count ${real.score.value} of 100 (M11 + SPIRIT 2025, ${real.score.total} items)` : wait,
+        real ? `Planted-error test on the real protocol: ${real.plants.caught} of ${real.plants.planted} caught, ${real.plants.falseAlarms} false alarms` : wait,
+        real ? `${real.amendments.length} real amendments read from the PDF; compared with ${real.peers} similar completed trials` : wait,
+        `Practice protocol: ${score.value} of 100; planted-error test ${planted.caught} of ${planted.planted}`,
       ],
       links: [
-        { to: "/researcher/document-integrity#pre-flight", label: "Pre-flight check" },
+        { to: "/researcher/document-integrity#nct-pre-flight", label: `${publicNct} pre-flight` },
         { to: "/researcher/document-integrity#design-brief", label: "Design brief" },
       ],
     },
@@ -118,14 +143,17 @@ export function StarterSheets() {
   return (
     <section className="sheet-cards" aria-label="Starter sheets">
       <h2>Starter sheets</h2>
-      <p className="fine">Computed now from the stored files. These are checks on synthetic documents, not study results or approvals.</p>
+      <p className="fine">
+        Computed now from the stored files. {publicNct} numbers come from its public ClinicalTrials.gov record and posted PDFs{real ? `, retrieved ${new Date(real.retrieved).toLocaleDateString()}` : ""}. The practice
+        study is synthetic. Nothing here is an approval.
+      </p>
       <div className="sheet-card-grid">
         {cards.map((card) => (
           <article key={card.name} className="fact">
             <h3>{card.name}</h3>
             <ul>
-              {card.lines.map((line) => (
-                <li key={line}>{line}</li>
+              {card.lines.map((line, index) => (
+                <li key={index}>{line}</li>
               ))}
             </ul>
             <div className="action-row">
@@ -358,7 +386,7 @@ async function readProtocol(file: File): Promise<ProtocolSource | string> {
   return sections.length === 0 ? "No text was found in that file." : { name: file.name, sections, meta: {}, practice: false };
 }
 
-function FindingList({ findings }: { findings: Finding[] }) {
+export function FindingList({ findings }: { findings: Finding[] }) {
   return (
     <ul className="stack">
       {findings.map((finding) => (
@@ -376,7 +404,7 @@ function FindingList({ findings }: { findings: Finding[] }) {
   );
 }
 
-function ChecklistTable({ rows }: { rows: ChecklistResult[] }) {
+export function ChecklistTable({ rows }: { rows: ChecklistResult[] }) {
   return (
     <>
       {(["ICH M11", "SPIRIT 2025"] as const).map((list) => {
@@ -540,7 +568,7 @@ const briefFields: { key: keyof Brief; label: string }[] = [
 ];
 
 export function DesignBrief() {
-  const { brief, setBrief, briefDecisions, decideBrief, publicStudyId, setPublicStudyId } = useSession();
+  const { brief, setBrief, briefDecisions, decideBrief } = useSession();
   const sections = draftFromBrief(brief);
   const accepted = new Set(Object.entries(briefDecisions).filter(([, value]) => value === "accepted").map(([key]) => key));
 
@@ -585,25 +613,35 @@ export function DesignBrief() {
         Download USDM-shaped JSON
       </button>
       <p className="fine">Loosely follows CDISC USDM names. It has not been validated against the USDM schema.</p>
-      <label htmlFor="public-study">Similar public trial (ClinicalTrials.gov NCT id)</label>
-      <input id="public-study" value={publicStudyId} onChange={(event) => setPublicStudyId(event.target.value)} placeholder="Not loaded" />
-      <p className="fine">
-        {publicStudyId.trim()
-          ? `${publicStudyId.trim()} is noted, but its record has not been downloaded, so nothing above uses it as precedent.`
-          : "No public trial is loaded, so no section above uses precedent."}
-      </p>
+      <TrialPrecedent />
     </section>
+  );
+}
+
+/** Pre-Flight and Write Once on the real public trial, then the same tools on the practice pair. */
+export function RealTrialWork() {
+  return (
+    <div className="sheet-work">
+      <p className="pack-line">
+        Real trial first: {publicNct} (Amgen, Phase 2a migraine prevention, completed). Its protocol, SAP, and registry record are public. Below it, the same tools run on the synthetic practice pair.
+      </p>
+      <TrialPreFlight />
+      <TrialWriteOnce />
+    </div>
   );
 }
 
 export function CompareWorkbook() {
   return (
-    <div className="sheet-work">
-      <BlockLibrary />
-      <ProposeChange />
-      <PreFlight />
-      <DesignBrief />
-    </div>
+    <>
+      <RealTrialWork />
+      <div className="sheet-work">
+        <BlockLibrary />
+        <ProposeChange />
+        <PreFlight />
+        <DesignBrief />
+      </div>
+    </>
   );
 }
 
@@ -611,7 +649,7 @@ export function CompareWorkbook() {
 
 const reviewers: ReviewerComment["reviewer"][] = ["Medical", "Legal", "Patient advocate"];
 
-function Comments({ audience }: { audience: Audience }) {
+export function Comments({ audience }: { audience: CommentTarget }) {
   const { comments, addComment, removeComment } = useSession();
   const [reviewer, setReviewer] = useState<ReviewerComment["reviewer"]>("Legal");
   const [stance, setStance] = useState<ReviewerComment["stance"]>("change");
@@ -798,7 +836,9 @@ export function PlainWorkbook() {
 
       <section>
         <h2>Translation</h2>
-        <p>English is the only reviewed language. No translation is generated here.</p>
+        <p>
+          English is the only reviewed language. Participants can switch the screens to machine-written Spanish (labelled as not reviewed, with the English form as the official text). This handoff asks a qualified translator to review a language.
+        </p>
         {translationHandoff ? (
           <>
             <p>
@@ -828,18 +868,7 @@ export function PlainWorkbook() {
         )}
       </section>
 
-      <section>
-        <h2>Lay summary of results</h2>
-        <p className="fine">The ten headings a lay results summary covers (EU CTR 536/2014, Annex V). This practice study has no results, so every heading stays empty.</p>
-        <ul className="stack">
-          {annexV.map((row) => (
-            <li key={row.id}>
-              <strong>{row.element}</strong>
-              <p>{row.state}</p>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <TrialLaySummary />
     </div>
   );
 }
@@ -924,7 +953,7 @@ export function PersonaResults() {
             <small>
               Expected: {item.expect}.{item.result.misconception ? ` Misunderstanding found: ${item.result.misconception}.` : ""}
               {item.speaker === "caregiver" ? " Answered as a caregiver." : ""}
-              {item.result.language === "es" ? " Routed to a Spanish speaker." : ""}
+              {item.result.language === "es" ? " Checked against the Spanish answer key; the handoff offers an interpreter." : ""}
             </small>
           </li>
         ))}

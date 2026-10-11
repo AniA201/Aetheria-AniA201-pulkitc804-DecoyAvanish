@@ -12,7 +12,7 @@ export type Readability = { sentences: number; words: number; readingEase: numbe
 
 /** Flesch Reading Ease and Flesch-Kincaid grade. A formula estimate; it does not replace testing with readers. */
 export function readability(text: string): Readability {
-  const sentences = Math.max(1, text.split(/[.!?]+/).filter((part) => part.trim()).length);
+  const sentences = Math.max(1, text.split(/[.!?]+(?=\s|$)/).filter((part) => part.trim()).length);
   const list = text.split(/\s+/).filter((word) => /[a-z0-9]/i.test(word));
   const words = Math.max(1, list.length);
   const syl = list.reduce((sum, word) => sum + syllables(word), 0);

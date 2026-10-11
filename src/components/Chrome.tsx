@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
+import { strings, useT } from "../lib/i18n";
+import { canSpeak, speak, stopSpeaking, type VoiceLang } from "../lib/voice";
 import { versionStanding } from "../lib/workbook";
 import { useSession, type Role } from "../state/Session";
 import { AgentPanel } from "./AgentPanel";
@@ -10,35 +12,32 @@ export function useTitle(title: string) {
   }, [title]);
 }
 
-export function ListenButton({ text }: { text: string }) {
-  const { narrationRate, setLastSpoken } = useSession();
+/** Reads `text` aloud in `lang` (defaults to the screen language) after the automated-voice notice. */
+export function ListenButton({ text, lang }: { text: string; lang?: VoiceLang }) {
+  const { narrationRate, setLastSpoken, language } = useSession();
+  const t = useT();
   const [state, setState] = useState<"idle" | "playing" | "unavailable">("idle");
+  const voiceLang = lang ?? language;
 
   useEffect(() => {
     return () => {
-      window.speechSynthesis?.cancel();
+      stopSpeaking();
     };
   }, []);
 
-  const speak = () => {
-    if (!window.speechSynthesis) {
+  const play = async () => {
+    if (!canSpeak()) {
       setState("unavailable");
       return;
     }
-    window.speechSynthesis.cancel();
     setLastSpoken(text);
-    const utterance = new SpeechSynthesisUtterance(
-      `This voice is automated. A person still holds the consent conversation. ${text}`,
-    );
-    utterance.rate = narrationRate;
-    utterance.onend = () => setState("idle");
-    utterance.onerror = () => setState("unavailable");
     setState("playing");
-    window.speechSynthesis.speak(utterance);
+    const ok = await speak(text, voiceLang, narrationRate);
+    setState(ok ? "idle" : "unavailable");
   };
 
   const stop = () => {
-    window.speechSynthesis?.cancel();
+    stopSpeaking();
     setState("idle");
   };
 
@@ -46,27 +45,27 @@ export function ListenButton({ text }: { text: string }) {
     <div className="listen">
       {state === "playing" ? (
         <button type="button" className="btn on-paper" onClick={stop}>
-          Stop voice
+          {t.listen.stop}
         </button>
       ) : (
-        <button type="button" className="btn on-paper" onClick={speak}>
-          Listen
+        <button type="button" className="btn on-paper" onClick={play}>
+          {t.listen.play}
         </button>
       )}
-      {state === "unavailable" ? <p>Voice is off. The text stays on the page.</p> : null}
-      <p className="fine">Listen is an automated voice. It does not replace a person.</p>
+      {state === "unavailable" ? <p>{t.listen.off}</p> : null}
+      <p className="fine">{t.listen.note}</p>
     </div>
   );
 }
 
 const participantNav = [
-  { to: "/participant/home", label: "Start", end: true },
-  { to: "/participant/my-study", label: "Your form" },
-  { to: "/participant/explore-consent", label: "Read" },
-  { to: "/participant/ask", label: "Ask" },
-  { to: "/participant/teach-back", label: "Check" },
-  { to: "/participant/summary", label: "Summary" },
-];
+  { to: "/participant/home", key: "start", end: true },
+  { to: "/participant/my-study", key: "form" },
+  { to: "/participant/explore-consent", key: "read" },
+  { to: "/participant/ask", key: "ask" },
+  { to: "/participant/teach-back", key: "check" },
+  { to: "/participant/summary", key: "summary" },
+] as const;
 
 const researcherNav = [
   { to: "/researcher/overview", label: "Start", end: true },
@@ -107,17 +106,18 @@ export function CornerMark() {
   );
 }
 
-function TypeDock() {
-  const { fontScale, setFontScale, contrast, setContrast, narrationRate, setNarrationRate, lastSpoken } = useSession();
+function TypeDock({ mode }: { mode: Role }) {
+  const { fontScale, setFontScale, contrast, setContrast, narrationRate, setNarrationRate, lastSpoken, language, setLanguage } = useSession();
+  const t = strings[mode === "participant" ? language : "en"];
   const sizes = [
-    ["md", "Default", "0.92rem"],
-    ["lg", "Large", "1.12rem"],
-    ["xl", "Larger", "1.35rem"],
+    ["md", t.dock.sizes[0], "0.92rem"],
+    ["lg", t.dock.sizes[1], "1.12rem"],
+    ["xl", t.dock.sizes[2], "1.35rem"],
   ] as const;
 
   return (
     <div className="type-dock">
-      <div role="radiogroup" aria-label="Text size">
+      <div role="radiogroup" aria-label={t.dock.size}>
         {sizes.map(([size, label, sample]) => (
           <button
             key={size}
@@ -136,17 +136,17 @@ function TypeDock() {
         type="button"
         className="contrast-toggle"
         aria-pressed={contrast === "high"}
-        aria-label={contrast === "high" ? "Standard contrast" : "Higher contrast"}
+        aria-label={contrast === "high" ? t.dock.contrastOff : t.dock.contrastOn}
         onClick={() => setContrast(contrast === "high" ? "paper" : "high")}
       >
         <span aria-hidden="true" />
       </button>
-      <div role="radiogroup" aria-label="Reading speed">
+      <div role="radiogroup" aria-label={t.dock.speed}>
         {(
           [
-            [0.85, "Slower"],
-            [1, "Steady"],
-            [1.15, "Faster"],
+            [0.85, t.dock.speeds[0]],
+            [1, t.dock.speeds[1]],
+            [1.15, t.dock.speeds[2]],
           ] as const
         ).map(([rate, label]) => (
           <button
@@ -161,21 +161,30 @@ function TypeDock() {
           </button>
         ))}
       </div>
-      <button type="button" disabled aria-label="English only. A reviewed translation is not loaded.">
-        EN
-      </button>
+      {mode === "participant" ? (
+        <div role="radiogroup" aria-label="Language / Idioma">
+          {(
+            [
+              ["en", "English"],
+              ["es", "Español"],
+            ] as const
+          ).map(([code, label]) => (
+            <button key={code} type="button" role="radio" aria-label={label} title={label} aria-checked={language === code} onClick={() => setLanguage(code)}>
+              {code.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <button type="button" disabled aria-label="The research workspace is in English.">
+          EN
+        </button>
+      )}
       <button
         type="button"
-        aria-label="Repeat the last reading"
+        aria-label={t.dock.repeat}
         disabled={!lastSpoken}
         onClick={() => {
-          if (!lastSpoken || !window.speechSynthesis) return;
-          window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(
-            `This voice is automated. A person still holds the consent conversation. ${lastSpoken}`,
-          );
-          utterance.rate = narrationRate;
-          window.speechSynthesis.speak(utterance);
+          if (lastSpoken) void speak(lastSpoken, mode === "participant" ? language : "en", narrationRate);
         }}
       >
         ↺
@@ -185,8 +194,11 @@ function TypeDock() {
 }
 
 export function Shell({ mode }: { mode: Role }) {
-  const { setRole, consent, approvedVersions } = useSession();
-  const links = mode === "participant" ? participantNav : researcherNav;
+  const { setRole, consent, approvedVersions, language } = useSession();
+  const t = useT();
+  const links =
+    mode === "participant" ? participantNav.map((link) => ({ to: link.to, end: "end" in link ? link.end : undefined, label: t.nav[link.key] })) : researcherNav;
+  const spanish = mode === "participant" && language === "es";
   const blocked = mode === "participant" && consent !== null && versionStanding(consent.version, approvedVersions) === "not-listed";
   const [open, setOpen] = useState(false);
   const location = useLocation();
@@ -249,7 +261,7 @@ export function Shell({ mode }: { mode: Role }) {
           <span className="folio-seal" aria-hidden="true" />
           <span>
             <strong>Aetheria</strong>
-            <em>{mode === "participant" ? "Participant" : "Research"}</em>
+            <em>{mode === "participant" ? (spanish ? "Participante" : "Participant") : "Research"}</em>
           </span>
         </NavLink>
         <nav aria-label={mode === "participant" ? "Participant" : "Research team"}>
@@ -261,32 +273,38 @@ export function Shell({ mode }: { mode: Role }) {
           ))}
         </nav>
         <NavLink className="mode-switch" to="/login">
-          Switch role
+          {mode === "participant" ? t.nav.switchRole : "Switch role"}
         </NavLink>
         <button type="button" className="mode-switch sign-out" onClick={signOut}>
-          Sign out
+          {mode === "participant" ? t.nav.signOut : "Sign out"}
         </button>
       </aside>
       <div className="workspace">
-        <main id="content" tabIndex={-1}>
+        <main id="content" tabIndex={-1} lang={spanish ? "es" : "en"}>
+          {spanish ? (
+            <p className="notice machine-notice" role="note">
+              {t.machineNotice}
+            </p>
+          ) : null}
           <Outlet />
         </main>
       </div>
       {blocked ? null : <AgentPanel role={mode} />}
       <CornerMark />
-      <TypeDock />
+      <TypeDock mode={mode} />
     </div>
   );
 }
 
 export function Missing() {
-  useTitle("Page not found");
+  const t = useT();
+  useTitle(t.missing.title);
   return (
-    <main className="missing" id="content">
+    <main className="missing" id="content" lang={t.langName === "Español" ? "es" : "en"}>
       <p className="kicker">Aetheria</p>
-      <h1>That page is not in Aetheria.</h1>
+      <h1>{t.missing.heading}</h1>
       <NavLink to="/" className="btn solid">
-        Back to the start
+        {t.missing.back}
       </NavLink>
     </main>
   );
