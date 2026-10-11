@@ -4195,7 +4195,7 @@ html:not([data-contrast="high"]) .auth-form-reference input {
 
 /* Registration keeps one quiet, pointer-responsive 3D mark in the open field. */
 .auth-reference:not(.auth-entry) .registration-orbit-3d {
-  top: 44%;
+  top: 32%;
   left: 50%;
   right: auto;
   width: min(15rem, 38%);
