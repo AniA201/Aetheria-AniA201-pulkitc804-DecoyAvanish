@@ -1934,16 +1934,16 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
 /* Registration gets a single blurred mark in the open left field, rather
    than the former stack of animated pages. */
 .auth-reference:not(.auth-entry) .auth-showcase.auth-showcase-minimal::after {
-  top: 25%;
-  right: 12%;
-  width: min(24rem, 52%);
+  top: 32%;
+  right: 50%;
+  width: min(23rem, 46%);
   aspect-ratio: 1;
   border: 0;
   background: url("/aetheria-mark.svg") center / contain no-repeat;
   box-shadow: none;
   filter: blur(7px);
   opacity: .28;
-  transform: rotate(-7deg);
+  transform: translateX(50%);
 }
 .auth-reference:not(.auth-entry) { overflow-x: hidden; }
 .auth-reference:not(.auth-entry) .auth-reference-layout {
@@ -3176,20 +3176,27 @@ html:not([data-contrast="high"]) .shell.participant .ask-studio textarea:focus {
   content: "";
   display: block;
   position: absolute;
-  top: 24%;
-  right: 11%;
-  width: min(23rem, 52%);
+  top: 32%;
+  right: 50%;
+  width: min(23rem, 46%);
   aspect-ratio: 1;
   border: 0;
   background: url("/aetheria-mark.svg") center / contain no-repeat;
   box-shadow: none;
   filter: blur(7px);
   opacity: .27;
-  transform: rotate(-7deg);
+  transform: translateX(50%);
   pointer-events: none;
   z-index: 1;
 }
 .auth-showcase-word { left: clamp(.75rem, 3vw, 2.75rem); color: rgba(13, 91, 88, .42); text-shadow: 2px 5px 10px rgba(13, 91, 88, .14); }
+.auth-reference:not(.auth-entry) .auth-showcase.auth-showcase-minimal { container-type: inline-size; }
+.auth-reference:not(.auth-entry) .auth-showcase-word {
+  left: 5%;
+  right: 5%;
+  max-width: none;
+  font-size: clamp(4.5rem, 13cqi, 11rem);
+}
 .registration-orbit-3d { position: absolute; z-index: 2; top: 17%; right: 8%; width: min(30vw, 19rem); aspect-ratio: 1; pointer-events: none; filter: drop-shadow(0 14px 18px rgba(60, 63, 68, .2)); }
 .auth-login-shell::before { display: none; }
 .auth-login-icon { display: flex; align-items: center; justify-content: center; gap: .3rem; width: auto; min-width: 3.5rem; padding: .35rem .48rem; }
