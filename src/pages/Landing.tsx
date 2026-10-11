@@ -13,10 +13,10 @@ const index = [
 ];
 
 const backgroundQuotes = {
-  read: ["6 visits or 8?", "About 2 hours each", "Blood draws at three visits"],
-  ask: ["Can I leave later?", "Who pays for travel?", "Who sees my records?"],
-  feedback: ["Who chooses my group?", "Aetherol or placebo?", "No promised benefit"],
-  review: ["6 visits / 8 visits", "16 weeks / 24 weeks", "$50 / $80 per visit"],
+  read: ["Original words stay visible", "6 clinic visits", "About 16 weeks", "Two hours each", "What does this mean?", "Check the page"],
+  ask: ["Can I leave later?", "Who pays for travel?", "Who sees my records?", "What about side effects?", "Is any benefit promised?", "Where does it say that?"],
+  feedback: ["Assigned by chance", "Aetherol or placebo?", "No promised benefit", "Say it your way", "What is still unclear?", "Ask the study team"],
+  review: ["6 visits / 8 visits", "16 weeks / 24 weeks", "$50 / $80 per visit", "Which count is right?", "Check the original", "Resolve before using"],
 };
 
 function BackgroundQuotes({ quotes }: { quotes: readonly string[] }) {
@@ -108,7 +108,7 @@ export function Landing() {
       {veil && (
         <div className="veil" aria-hidden="true">
           <AetheriaMark />
-          <p>Informed consent</p>
+          <p>Study documents</p>
           <div className="veil-rule">
             <span />
           </div>
@@ -124,7 +124,7 @@ export function Landing() {
           <AetheriaMark />
           <span>
             <strong>Aetheria</strong>
-            <em>Informed consent</em>
+            <em>Study documents</em>
           </span>
         </Link>
         <nav aria-label="Sections">
@@ -178,24 +178,24 @@ export function Landing() {
       <main id="content">
         <section className="folio-hero">
           <p className="folio-word" aria-hidden="true">Aetheria</p>
-          <p className="folio-kicker">Before you agree to a study</p>
-          <h1>Read the form. Then decide.</h1>
+          <p className="folio-kicker">Clinical study documents</p>
+          <h1>Long forms. Plain words.</h1>
           <p className="folio-lede">
-            See the consent form beside a shorter explanation. Check the visits, risks, costs, and privacy terms. Save questions for the study team.
+            Long study forms are hard to read. Aetheria puts a shorter explanation beside the original text, with sources you can check. Ask about visits, risks, costs, or privacy before you decide.
           </p>
           <p className="folio-vertical">ICF-AETHER-01</p>
           <div className="folio-hero-actions">
             <Link className="folio-preview" to="/login?as=participant">
               <span className="folio-preview-sheet" aria-hidden="true">
-                <span className="folio-preview-eyebrow">AETHER-01 / CONSENT</span>
-                <strong>Informed consent</strong>
+                <span className="folio-preview-eyebrow">AETHER-01 / STUDY FORM</span>
+                <strong>Study form</strong>
                 <i />
                 <i />
                 <i />
                 <span className="folio-preview-signature">Your copy · 05 sections</span>
               </span>
               <span>
-                Your consent form
+                Your study form
                 <em>Sign in to upload →</em>
               </span>
             </Link>
@@ -215,7 +215,7 @@ export function Landing() {
           <BackgroundQuotes quotes={backgroundQuotes.read} />
           <p className="folio-section-label">01 / Read</p>
           <h2>Read.</h2>
-          <p className="sr-only">The sample consent form says six clinic visits. The study plan says eight. Compare the original wording before relying on either number.</p>
+          <p className="sr-only">Read each part of the consent form beside a shorter, plain-language explanation. The original words and page citation stay in view.</p>
         </section>
 
         <section className="folio-chapters" id="ask">
@@ -246,7 +246,7 @@ export function Landing() {
             Sign in to read
           </Link>
           <p>
-            The sample is fictional. Aetheria does not record your consent or make a medical decision.
+            The sample is fictional. Aetheria does not collect a signature or make a medical decision.
           </p>
         </section>
       </main>

@@ -127,8 +127,8 @@ function sectionPage(context: CanvasRenderingContext2D, index: number) {
   };
 
   if (index === 0) {
-    block("The form says 6 visits", "The consent form describes 6 clinic visits over about 16 weeks, around 2 hours each.", facts[0].consentSource);
-    block("The plan says 8 visits", "The protocol lists 8 visits over 24 weeks. Ask which schedule is correct before agreeing.", facts[0].protocolSource);
+    block("Original wording", "You will come to the study clinic 6 times over about 16 weeks. Each visit lasts about 2 hours.", sections[0].citation + " · " + sections[0].page);
+    block("In plain words", "The form asks you to make 6 clinic trips in about 16 weeks. Plan on roughly 2 hours for each visit.");
   } else if (index === 1) {
     block("How many visits?", "The consent says 6; the plan says 8. Ask the study team which count applies.", sections[0].citation + " · " + sections[0].page);
     block("Can I leave?", "Yes. The form says leaving will not change care from your own doctor.", sections[2].citation + " · " + sections[2].page);

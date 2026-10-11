@@ -36,7 +36,7 @@ async function apiRequest(path: string, body: Record<string, string>): Promise<{
 }
 
 function AuthHeader({ label }: { label: string }) {
-  return <header className="auth-header"><Link to="/" className="folio-brand"><AetheriaMark /><span><strong>Aetheria</strong><em>Informed consent</em></span></Link><p>{label}</p></header>;
+  return <header className="auth-header"><Link to="/" className="folio-brand"><AetheriaMark /><span><strong>Aetheria</strong><em>Study documents</em></span></Link><p>{label}</p></header>;
 }
 
 function AuthFooter() {
@@ -45,22 +45,22 @@ function AuthFooter() {
 
 const accountCopy = {
   client: {
-    eyebrow: "For people considering a study",
-    title: <>Read the form.<br />Then decide.</>,
-    description: "Check the visits, risks, costs, and privacy terms in the consent form. Save what you want to ask the study team.",
+    eyebrow: "Study documents for participants",
+    title: <>The long form.<br />In plain words.</>,
+    description: "Read a shorter explanation beside each part of the original form. Check the source, ask what a passage means, and save questions for the study team.",
     trust: "For study participants",
     trustDetail: "Reading here does not sign the form.",
-    signInNote: "Sign in to read a form and save your questions.",
-    registerTitle: <>Read your<br />consent form.</>,
-    registerNote: "Create an account, then upload a form or open the sample.",
+    signInNote: "Sign in to read a study form in shorter sections.",
+    registerTitle: <>Make sense of<br />the study form.</>,
+    registerNote: "Create an account to add a text-based form or try the sample. The original text stays beside each shorter reading.",
   },
   researcher: {
-    eyebrow: "For teams reviewing consent forms",
-    title: <>Check the form.<br />Check the plan.</>,
-    description: "Compare what participants are told with the study protocol. Review differences in visits, study length, and payment.",
+    eyebrow: "For teams reviewing study documents",
+    title: <>Check the words.<br />Check the facts.</>,
+    description: "Review shorter readings against the original study form. Compare the form with the protocol and resolve differences before participants rely on it.",
     trust: "For research teams",
     trustDetail: "A reviewer decides which figures are correct.",
-    signInNote: "Sign in to compare documents and review participant questions.",
+    signInNote: "Sign in to compare source documents and review questions.",
     registerTitle: <>Review the<br />study documents.</>,
     registerNote: "Use the key from your study lead to create a research account.",
   },
@@ -68,7 +68,7 @@ const accountCopy = {
 
 function RoleSwitch({ value, onChange }: { value: AccountType; onChange: (role: AccountType) => void }) {
   return <div className="auth-role-switch" role="radiogroup" aria-label="Account type">
-    <button type="button" role="radio" aria-checked={value === "client"} className={value === "client" ? "on" : ""} onClick={() => onChange("client")}><span>01</span><strong>Participant</strong><small>Read my consent form</small></button>
+    <button type="button" role="radio" aria-checked={value === "client"} className={value === "client" ? "on" : ""} onClick={() => onChange("client")}><span>01</span><strong>Participant</strong><small>Read my study form</small></button>
     <button type="button" role="radio" aria-checked={value === "researcher"} className={value === "researcher" ? "on" : ""} onClick={() => onChange("researcher")}><span>02</span><strong>Researcher</strong><small>Review study documents</small></button>
   </div>;
 }
@@ -139,7 +139,7 @@ export function Login() {
           <div className="auth-folio-front">
             <span className="auth-folio-overline">{study.sponsor.toUpperCase()}</span>
             <strong>{study.name}</strong>
-            <span className="auth-folio-document">{consentDoc.id} · SAMPLE CONSENT</span>
+            <span className="auth-folio-document">{consentDoc.id} · SAMPLE STUDY FORM</span>
             <span className="auth-folio-rule" />
             <span className="auth-folio-section">03 / {sections[2].title}</span>
             <p>{sections[2].plain.split(". ")[0]}.</p>
