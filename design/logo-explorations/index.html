@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <title>Aetheria · Logo directions</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+    <style>
+      :root { font-family: Newsreader, Georgia, serif; color: #173c39; background: #d0f0dc; }
+      * { box-sizing: border-box; }
+      body { margin: 0; }
+      main { width: min(1300px, calc(100% - 44px)); margin: 0 auto; padding: 60px 0 90px; }
+      header { display: grid; grid-template-columns: 1fr minmax(220px, 420px); align-items: end; gap: 24px; margin-bottom: 38px; }
+      .eyebrow, .number, .palette-label { font: 600 11px/1.2 Georgia, serif; letter-spacing: .16em; text-transform: uppercase; }
+      h1 { margin: 12px 0 0; font-size: clamp(3.4rem, 6vw, 6.8rem); font-weight: 500; line-height: .9; letter-spacing: -.055em; text-transform: uppercase; }
+      header p { margin: 0; font-size: 1.25rem; line-height: 1.35; }
+      .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+      article { display: flex; flex-direction: column; min-width: 0; background: #f8f6ee; border: 1px solid rgba(9, 72, 69, .2); box-shadow: 8px 10px 0 rgba(7, 61, 59, .1); }
+      .art { height: 295px; display: grid; place-items: center; padding: 24px; overflow: hidden; background: #e1f3e8; border-bottom: 1px solid rgba(9, 72, 69, .16); }
+      .art img { display: block; width: 78%; height: 100%; object-fit: contain; }
+      .content { padding: 22px 25px 26px; flex: 1; display: flex; flex-direction: column; }
+      .number { color: #497873; }
+      h2 { margin: 9px 0 7px; font-size: 2rem; line-height: 1; font-weight: 500; letter-spacing: -.035em; }
+      .idea { margin: 0; min-height: 2.6em; font-size: 1.05rem; line-height: 1.32; }
+      .palette-label { margin: auto 0 10px; padding-top: 23px; }
+      .swatches { display: flex; gap: 7px; margin-bottom: 8px; }
+      .swatch { width: 32px; height: 32px; border: 1px solid rgba(0, 0, 0, .14); background: var(--color); }
+      .codes { margin: 0; font: 11px/1.3 Georgia, serif; letter-spacing: .02em; }
+      footer { margin-top: 31px; max-width: 48rem; font-size: 1.12rem; line-height: 1.4; }
+      @media (max-width: 950px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+      @media (max-width: 600px) { main { width: min(100% - 24px, 460px); padding-top: 36px; } header { grid-template-columns: 1fr; } .grid { grid-template-columns: 1fr; } .art { height: 270px; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header><div><div class="eyebrow">Aetheria / identity study</div><h1>Five directions.</h1></div><p>Each mark explores the same task: make a long study document easier to read while keeping its source close.</p></header>
+      <div class="grid">
+        <article><div class="art"><img src="01-folded-source.png" alt="Two folded pages create an open A shape"></div><div class="content"><span class="number">01 / Folded source</span><h2>Open the document</h2><p class="idea">A document opens into a clearer reading.</p><p class="palette-label">Palette</p><div class="swatches"><span class="swatch" style="--color:#075A57"></span><span class="swatch" style="--color:#CFEFDF"></span><span class="swatch" style="--color:#F7F4EC"></span></div><p class="codes">#075A57 · #CFEFDF · #F7F4EC</p></div></article>
+        <article><div class="art"><img src="02-clear-line.png" alt="Dense lines become one clear line"></div><div class="content"><span class="number">02 / Clear line</span><h2>Find the point</h2><p class="idea">Dense lines resolve into a shorter reading.</p><p class="palette-label">Palette</p><div class="swatches"><span class="swatch" style="--color:#17364A"></span><span class="swatch" style="--color:#62BFB3"></span><span class="swatch" style="--color:#F7F4EC"></span></div><p class="codes">#17364A · #62BFB3 · #F7F4EC</p></div></article>
+        <article><div class="art"><img src="03-paired-reading.png" alt="Original and shorter reading sit on facing panels"></div><div class="content"><span class="number">03 / Paired reading</span><h2>Keep the source</h2><p class="idea">The original and explanation stay side by side.</p><p class="palette-label">Palette</p><div class="swatches"><span class="swatch" style="--color:#4D3B62"></span><span class="swatch" style="--color:#BFD8CC"></span><span class="swatch" style="--color:#F7F1E8"></span></div><p class="codes">#4D3B62 · #BFD8CC · #F7F1E8</p></div></article>
+        <article><div class="art"><img src="04-annotated-excerpt.png" alt="An excerpt is marked within a study document"></div><div class="content"><span class="number">04 / Annotated excerpt</span><h2>Point to the passage</h2><p class="idea">One important passage is marked in context.</p><p class="palette-label">Palette</p><div class="swatches"><span class="swatch" style="--color:#153F3B"></span><span class="swatch" style="--color:#B65E43"></span><span class="swatch" style="--color:#D0F0DC"></span></div><p class="codes">#153F3B · #B65E43 · #D0F0DC</p></div></article>
+        <article><div class="art"><img src="05-a-fold.png" alt="Abstract A formed by two unfolding page shapes"></div><div class="content"><span class="number">05 / A fold</span><h2>Make it Aetheria</h2><p class="idea">Two unfolding pages form an A monogram.</p><p class="palette-label">Palette</p><div class="swatches"><span class="swatch" style="--color:#243F42"></span><span class="swatch" style="--color:#416B98"></span><span class="swatch" style="--color:#CFEFDF"></span></div><p class="codes">#243F42 · #416B98 · #CFEFDF</p></div></article>
+      </div>
+      <footer>These are concept images for choosing a direction. The selected mark needs clean vector geometry and a legibility check at favicon size before it replaces the current site logo.</footer>
+    </main>
+  </body>
+</html>
