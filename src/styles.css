@@ -886,9 +886,9 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   position: absolute;
   inset: 0 auto 0 0;
   width: min(35vw, 33rem);
-  z-index: 0;
+  z-index: 2;
   max-width: none !important;
-  pointer-events: none;
+  pointer-events: auto;
 }
 .folio-background-quote {
   position: absolute;
@@ -896,6 +896,9 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   width: max-content;
   max-width: min(15ch, 72%);
   margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: rgba(13, 91, 88, 0.16);
   font-family: var(--serif);
   font-size: clamp(1.35rem, 2.2vw, 2.5rem);
@@ -903,7 +906,7 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   line-height: 1.02;
   letter-spacing: -0.04em;
   pointer-events: auto;
-  cursor: default;
+  cursor: pointer;
   text-shadow: none;
   transform: rotate(-3deg);
   transform-origin: left center;
@@ -922,6 +925,7 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   text-shadow: 0 8px 18px rgba(7, 61, 59, 0.14);
   transform: translateY(-5px) rotate(0deg) scale(1.12);
 }
+.folio-background-quote:focus-visible { z-index: 2; color: rgba(13, 91, 88, 0.58); outline: 2px solid #0d5b58; outline-offset: 4px; text-shadow: 0 8px 18px rgba(7, 61, 59, 0.14); transform: translateY(-5px) rotate(0deg) scale(1.12); }
 .folio-background-quote:nth-child(n):hover { transform: translateY(-5px) rotate(0deg) scale(1.12); }
 .folio-chapters { display: flex; flex-direction: column; justify-content: center; }
 .folio-chapter-head { margin: 0; gap: 0.35rem; }

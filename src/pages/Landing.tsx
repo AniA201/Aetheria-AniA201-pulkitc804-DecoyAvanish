@@ -21,11 +21,11 @@ const backgroundQuotes = {
 
 function BackgroundQuotes({ quotes }: { quotes: readonly string[] }) {
   return (
-    <div className="folio-background-quotes" aria-hidden="true">
+    <div className="folio-background-quotes" aria-label="Study form prompts">
       {quotes.map((quote) => (
-        <span className="folio-background-quote" key={quote}>
+        <button className="folio-background-quote" key={quote} type="button" aria-label={`Highlight: ${quote}`}>
           “{quote}”
-        </span>
+        </button>
       ))}
     </div>
   );
