@@ -755,7 +755,7 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   min-height: 115vh;
   --folio-hero-width: min(33rem, 47vw);
   width: var(--folio-hero-width);
-  padding: 5vh 0 8vh 7vw;
+  padding: 8vh 0 8vh 7vw;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -777,7 +777,7 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
 .folio-hero h1 {
   width: var(--folio-hero-width);
   max-width: none;
-  font-size: clamp(3.25rem, 4.55vw, 5rem);
+  font-size: clamp(3.5rem, 5vw, 5.45rem);
 }
 .folio-hero h1 span { display: block; white-space: nowrap; }
 .folio-lede {
@@ -794,7 +794,7 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   position: absolute;
   left: 50vw;
   /* Sit directly beneath the actions at the top of the landing view. */
-  top: 71vh;
+  top: 64vh;
   transform: translateX(-50%);
   margin: 0;
   z-index: 0;

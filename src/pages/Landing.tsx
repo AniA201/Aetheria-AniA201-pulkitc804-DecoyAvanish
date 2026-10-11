@@ -84,14 +84,12 @@ export function Landing() {
       }, -1);
       selectedPaperRef.current = next;
       setChapter((current) => (current === next ? current : next));
-      const wordTop = wordRef.current?.getBoundingClientRect().top ?? window.innerHeight;
-      const start = window.innerHeight * 0.76;
-      // Keep each letter on screen long enough for its helix path to read as a
-      // transition, rather than as a brief flash during a fast scroll.
-      const travel = window.innerHeight * 1.35;
-      // The complete word remains still while the landing page opens. Its
-      // flight may only start from a deliberate user scroll.
-      const nextShatter = quiet || window.scrollY < 12 ? 0 : Math.min(1, Math.max(0, (start - wordTop) / travel));
+      // Keep the whole title intact at rest, then begin the shatter from the
+      // first intentional scroll while the word is still in the viewport.
+      const shatterDistance = window.innerHeight * 0.9;
+      const nextShatter = quiet || window.scrollY < 12
+        ? 0
+        : Math.min(1, (window.scrollY - 12) / shatterDistance);
       setShatterTarget((current) => Math.abs(current - nextShatter) < 0.0005 ? current : nextShatter);
       const main = mainRef.current;
       const word = wordRef.current;
