@@ -29,3 +29,13 @@ CREATE TABLE IF NOT EXISTS handoffs (
 );
 
 CREATE INDEX IF NOT EXISTS handoffs_created_idx ON handoffs (created_at);
+
+CREATE TABLE IF NOT EXISTS handoff_messages (
+  id TEXT PRIMARY KEY,
+  handoff_id TEXT NOT NULL REFERENCES handoffs (id),
+  author_id TEXT NOT NULL REFERENCES users (id),
+  message TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS handoff_messages_handoff_idx ON handoff_messages (handoff_id, created_at);

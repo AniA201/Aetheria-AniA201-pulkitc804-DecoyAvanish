@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { AetheriaMark, useTitle } from "../components/Chrome";
 import { consentDoc, facts, sections } from "../data/study";
@@ -19,6 +19,13 @@ const backgroundQuotes = {
   review: ["6 visits / 8 visits", "16 weeks / 24 weeks", "$50 / $80 per visit", "Which count is right?", "Check the original", "Resolve before using"],
 };
 
+const sectionHighlights = {
+  read: ["See the original text.", "Read a short explanation.", "Check the page number."],
+  ask: ["Ask about visits.", "Ask about risks.", "Save the answer."],
+  feedback: ["Explain it in your words.", "Find what needs clarity.", "Ask a person for help."],
+  review: ["Compare key details.", "Spot a mismatch.", "Resolve it before using."],
+};
+
 function BackgroundQuotes({ quotes }: { quotes: readonly string[] }) {
   return (
     <div className="folio-background-quotes" aria-label="Study form prompts">
@@ -28,6 +35,14 @@ function BackgroundQuotes({ quotes }: { quotes: readonly string[] }) {
         </button>
       ))}
     </div>
+  );
+}
+
+function SectionHighlights({ items }: { items: readonly string[] }) {
+  return (
+    <ul aria-label="What you can do">
+      {items.map((item) => <li key={item}>{item}</li>)}
+    </ul>
   );
 }
 
@@ -41,6 +56,7 @@ export function Landing() {
   const [menu, setMenu] = useState(false);
   const [veil, setVeil] = useState(!quiet);
   const [chapter, setChapter] = useState(0);
+  const [heroShattered, setHeroShattered] = useState(false);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -57,6 +73,7 @@ export function Landing() {
       }, -1);
       selectedPaperRef.current = next;
       setChapter((current) => (current === next ? current : next));
+      setHeroShattered(window.scrollY > root.offsetTop + window.innerHeight * 0.46);
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -124,7 +141,7 @@ export function Landing() {
           <AetheriaMark />
           <span>
             <strong>Aetheria</strong>
-            <em>Study documents</em>
+            <em>Clinical study documents</em>
           </span>
         </Link>
         <nav aria-label="Sections">
@@ -177,7 +194,7 @@ export function Landing() {
 
       <main id="content">
         <section className="folio-hero">
-          <p className="folio-word" aria-hidden="true">Aetheria</p>
+          <p className={`folio-word${heroShattered ? " is-shattered" : ""}`} aria-hidden="true">{"Aetheria".split("").map((letter, index) => <span key={`${letter}-${index}`} style={{ "--letter-index": index } as CSSProperties}>{letter}</span>)}</p>
           <p className="folio-kicker">Clinical study documents</p>
           <h1>Long forms. Plain words.</h1>
           <p className="folio-lede">
@@ -215,6 +232,7 @@ export function Landing() {
           <BackgroundQuotes quotes={backgroundQuotes.read} />
           <p className="folio-section-label">01 / Read</p>
           <h2>Read.</h2>
+          <SectionHighlights items={sectionHighlights.read} />
           <p className="sr-only">Read each part of the consent form beside a shorter, plain-language explanation. The original words and page citation stay in view.</p>
         </section>
 
@@ -224,6 +242,7 @@ export function Landing() {
             <p className="folio-section-label">02 / Ask</p>
             <h2>Ask.</h2>
           </div>
+          <SectionHighlights items={sectionHighlights.ask} />
           <p className="sr-only">{sections.map((section) => `${section.ask} ${section.plain} Source: ${section.citation}, ${section.page}.`).join(" ")}</p>
         </section>
 
@@ -231,6 +250,7 @@ export function Landing() {
           <BackgroundQuotes quotes={backgroundQuotes.feedback} />
           <p className="folio-section-label">03 / Feedback</p>
           <h2>Feedback.</h2>
+          <SectionHighlights items={sectionHighlights.feedback} />
           <p className="sr-only">You cannot choose your study group. The sample form says chance assigns Aetherol or placebo. Neither you nor the study doctor knows your group during the study. Source: {sections[0].citation}, {sections[0].page}.</p>
         </section>
 
@@ -238,6 +258,7 @@ export function Landing() {
           <BackgroundQuotes quotes={backgroundQuotes.review} />
           <p className="folio-section-label">04 / Review</p>
           <h2>Review.</h2>
+          <SectionHighlights items={sectionHighlights.review} />
           <p className="sr-only">{facts.filter((fact) => fact.kind === "confirmed-textual-difference").map((fact) => `${fact.label}: consent says ${fact.consentValue}; study plan says ${fact.protocolValue}.`).join(" ")}</p>
         </section>
 
