@@ -3190,21 +3190,9 @@ html:not([data-contrast="high"]) .shell.participant .ask-studio textarea:focus {
 .shell.researcher .page h1 { color: #102b35; }
 .shell.researcher .kicker { color: #0d5b58; }
 .researcher-overview-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(10rem, 23vw, 17rem);
-  gap: clamp(1rem, 4vw, 4rem);
-  align-items: center;
+  max-width: 50rem;
 }
 .researcher-overview-note { margin: 1rem 0 0; color: #47625f; max-width: 30rem; }
-.researcher-orbit-shell {
-  min-height: 11.5rem;
-  overflow: hidden;
-  border: 1px solid rgba(16, 43, 53, .11);
-  border-radius: 1.5rem;
-  background: linear-gradient(145deg, rgba(247, 247, 242, .86), rgba(208, 240, 220, .48));
-  box-shadow: 0 14px 30px rgba(16, 43, 53, .09), inset 0 1px 0 rgba(255, 255, 255, .7);
-}
-.researcher-orbit-shell canvas { width: 100%; height: 100%; min-height: 11.5rem; display: block; cursor: crosshair; }
 .shell.researcher .stat-row { border: 0; gap: .8rem; margin: 1.65rem 0 1.2rem; }
 .shell.researcher .stat-row article {
   padding: 1rem 1.05rem;
@@ -3258,9 +3246,7 @@ html:not([data-contrast="high"]) .shell.participant .ask-studio textarea:focus {
 .shell.researcher .data-table th { background: rgba(208, 240, 220, .52); }
 .shell.researcher .message-status { border-radius: 999px; }
 @media (max-width: 760px) {
-  .researcher-overview-hero { grid-template-columns: 1fr; }
-  .researcher-orbit-shell { max-width: 19rem; min-height: 10rem; }
-  .researcher-orbit-shell canvas { min-height: 10rem; }
+  .researcher-overview-hero { max-width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
   .shell.researcher .rail-link, .shell.researcher .file-card { transition-duration: .01ms; }
