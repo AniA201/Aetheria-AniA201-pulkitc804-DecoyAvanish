@@ -634,52 +634,6 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   align-items: flex-start;
 }
 .folio-hero > :not(.folio-word):not(.folio-word-canvas) { position: relative; z-index: 1; }
-.folio-folder-intro {
-  position: absolute !important;
-  top: 3.1rem;
-  right: clamp(2rem, 10vw, 11rem);
-  z-index: 2 !important;
-  width: clamp(7.5rem, 12vw, 11rem);
-  height: clamp(4.9rem, 7.4vw, 6.8rem);
-  pointer-events: none;
-  transform-origin: 72% 72%;
-  will-change: transform, opacity;
-  transition: opacity 140ms linear;
-}
-.folio-folder-back,
-.folio-folder-front,
-.folio-folder-paper {
-  position: absolute;
-  display: block;
-  border: 1px solid rgba(8, 38, 64, .55);
-}
-.folio-folder-back {
-  inset: .7rem .2rem .12rem 0;
-  border-radius: .7rem .7rem .45rem .45rem;
-  background: linear-gradient(145deg, #173a5c, #0c2946);
-  box-shadow: 0 .9rem 1.5rem rgba(7, 36, 60, .22);
-}
-.folio-folder-paper {
-  width: 65%;
-  height: 82%;
-  bottom: .55rem;
-  border-radius: .18rem;
-  background: var(--powder);
-  box-shadow: 0 .35rem .65rem rgba(7, 36, 60, .16);
-}
-.folio-folder-paper-one { left: 18%; transform: rotate(-7deg) translateY(-.8rem); }
-.folio-folder-paper-two { right: 11%; transform: rotate(6deg) translateY(-.45rem); }
-.folio-folder-front {
-  right: 0;
-  bottom: 0;
-  width: 96%;
-  height: 63%;
-  border-radius: .28rem .72rem .48rem .48rem;
-  background: linear-gradient(152deg, #214b70, #123654);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16);
-  transform: perspective(18rem) rotateX(-14deg);
-  transform-origin: bottom;
-}
 .folio-kicker, .folio-vertical, .folio-index, .folio-chapters li span {
   font-size: 11px;
   letter-spacing: 0.18em;
@@ -764,7 +718,19 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   pointer-events: none;
 }
 .folio-vertical { display: none; }
-.folio-hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem 1.2rem; margin-top: 1.8rem; }
+.folio-hero-actions {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 0;
+  width: fit-content;
+  margin-top: 1.8rem;
+  padding: .45rem;
+  border: 1px solid rgba(8, 63, 62, .24);
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--powder) 90%, transparent);
+  box-shadow: 0 .9rem 1.8rem rgba(8, 63, 62, .11), inset 0 1px 0 rgba(255, 255, 255, .64);
+}
 .folio-preview {
   position: relative;
   z-index: 3;
@@ -777,16 +743,27 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  background: color-mix(in srgb, var(--powder) 92%, transparent);
-  border: 1px solid rgba(8, 63, 62, 0.28);
-  box-shadow: 0 1px 2px rgba(8, 63, 62, 0.08), 0 7px 15px rgba(8, 63, 62, 0.1), 0 20px 34px rgba(8, 63, 62, 0.06);
-  padding: 8px 15px 8px 8px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 8px 14px 8px 8px;
   transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.folio-preview:hover { transform: translateY(-3px); box-shadow: 0 2px 3px rgba(8, 63, 62, 0.09), 0 10px 20px rgba(8, 63, 62, 0.12), 0 25px 40px rgba(8, 63, 62, 0.08); }
+.folio-preview:hover { transform: translateY(-2px); }
 .folio-preview:active { transform: translateY(0); }
 .folio-preview em { display: block; font-style: normal; opacity: 0.65; letter-spacing: 0.08em; }
-.folio-try { position: relative; z-index: 3; color: #083f3e; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; border-bottom: 1px solid currentColor; padding: 0.35rem 0; }
+.folio-try {
+  position: relative;
+  z-index: 3;
+  align-self: center;
+  color: #083f3e;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-left: 1px solid rgba(8, 63, 62, .22);
+  padding: .72rem .9rem;
+}
 .folio-try span { display: inline-block; margin-left: 0.3rem; transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 .folio-try:hover span { transform: translate(2px, -2px); }
 .folio-preview-sheet {
@@ -1446,7 +1423,6 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   .folio-hero, .folio-split, .folio-chapters, .folio-review, .folio-close { padding-left: 22px; padding-right: 22px; }
   .folio-hero { width: auto; min-height: 115svh; padding-right: 22px; }
   .folio-hero h1 { max-width: 56vw; font-size: clamp(2.7rem, 8vw, 4.5rem); }
-  .folio-folder-intro { top: 2.2rem; right: 7vw; }
   .folio-lede { max-width: min(18rem, 38vw); }
   .folio-word { top: 80vh; font-size: 20vw; }
   .folio-hero-actions { max-width: 55vw; }
@@ -1494,7 +1470,6 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
 @media (max-width: 600px) {
   .folio-hero { min-height: 115svh; padding-top: 14vh; }
   .folio-hero h1 { max-width: none; font-size: clamp(2.25rem, 9vw, 3.7rem); }
-  .folio-folder-intro { top: 1.25rem; right: 1.1rem; width: 6.8rem; height: 4.7rem; }
   .folio-lede { max-width: 60vw; font-size: 0.98rem; }
   .folio-hero-actions { max-width: 62vw; }
   .folio-preview-sheet { display: none; }
@@ -3252,6 +3227,31 @@ html:not([data-contrast="high"]) .shell.participant .ask-studio textarea:focus {
   margin-top: .65rem;
   border-radius: 999px;
   background: transparent;
+}
+
+/* Keep the research workspace legible and fully framed on its mint field. */
+.shell.researcher .research-insights #handoffs {
+  padding-top: .65rem;
+  overflow: visible;
+}
+.shell.researcher .research-insights #handoffs .inbox-head { align-items: center; }
+.shell.researcher .research-insights #handoffs .inbox-head h2 {
+  margin: 0;
+  padding-block: .12em;
+  line-height: 1.12;
+}
+.shell.researcher .research-studio .flag {
+  color: #102b35;
+  border-color: #102b35;
+  background: color-mix(in srgb, var(--powder) 78%, transparent);
+  font-weight: 700;
+}
+.shell.researcher .research-studio .notice {
+  border-color: #102b35;
+  background: color-mix(in srgb, #ccefdc 58%, var(--powder));
+  color: #102b35;
+  border-radius: 1rem;
+  box-shadow: 0 .7rem 1.45rem rgba(16, 43, 53, .09);
 }
 
 /* Research carries the same Powder paper, mint field, and soft volcanic contours as the participant experience. */

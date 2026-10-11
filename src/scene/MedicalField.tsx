@@ -100,6 +100,27 @@ export function MedicalField({
 
     const folio = new THREE.Group();
     scene.add(folio);
+
+    // A dark navy folder is part of the document scene, not a separate hero
+    // ornament. The papers sit inside it before fanning out on scroll.
+    const folder = new THREE.Group();
+    const navyBack = track(new THREE.MeshBasicMaterial({ color: "#102b4d", toneMapped: false }));
+    const navyFront = track(new THREE.MeshBasicMaterial({ color: "#173d67", toneMapped: false }));
+    const navyEdge = track(new THREE.MeshBasicMaterial({ color: "#0b233d", toneMapped: false }));
+    const folderBack = new THREE.Mesh(track(new THREE.BoxGeometry(2.04, 2.32, 0.075)), navyBack);
+    folderBack.position.set(0, 0.05, -0.12);
+    const folderTab = new THREE.Mesh(track(new THREE.BoxGeometry(0.78, 0.22, 0.08)), navyBack);
+    folderTab.position.set(-0.48, 1.19, -0.115);
+    const folderFront = new THREE.Mesh(track(new THREE.BoxGeometry(2.14, 0.94, 0.11)), navyFront);
+    folderFront.position.set(0, -0.67, 0.085);
+    folderFront.rotation.x = -0.11;
+    const folderLeft = new THREE.Mesh(track(new THREE.BoxGeometry(0.09, 1.86, 0.13)), navyEdge);
+    folderLeft.position.set(-1.03, -0.15, 0);
+    const folderRight = folderLeft.clone();
+    folderRight.position.x = 1.03;
+    folder.add(folderBack, folderTab, folderFront, folderLeft, folderRight);
+    folio.add(folder);
+
     const pages = folioTextures.pages.map((sheet) => makePage(sheet.texture, 1.56, 2.02));
     folio.add(...pages.map((page) => page.group));
     pages.forEach((page) => {
