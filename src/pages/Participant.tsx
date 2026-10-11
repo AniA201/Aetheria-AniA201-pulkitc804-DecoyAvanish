@@ -95,7 +95,7 @@ export function ParticipantHome() {
   const next = consent.sections.find((section) => !reviewed.includes(section.id)) ?? consent.sections[0];
 
   return (
-    <div className="page participant-form">
+    <div className="page participant-home">
       <p className="kicker">{consent.sample ? t.home.practice : consent.filename}</p>
       <h1>{studyTitle(consent, language)}</h1>
       <p className="lede dark">{t.home.sections(consent.sections.length)}</p>
@@ -126,7 +126,30 @@ export function ParticipantHome() {
           {t.home.another}
         </button>
       </div>
-      <p className="fine">{view(next).title}</p>
+      <section className="start-next" aria-label="Next section">
+        <p className="kicker">Continue with</p>
+        <div>
+          <span>{next.index}</span>
+          <div>
+            <h2>{view(next).title}</h2>
+            <p>{view(next).short}</p>
+          </div>
+          <Link to={`/participant/explore-consent/${next.id}`} aria-label={`Read ${view(next).title}`}>↗</Link>
+        </div>
+      </section>
+      <section className="start-map" aria-label="Study form sections">
+        <div className="start-map-heading">
+          <h2>Your form at a glance</h2>
+          <Link to="/participant/my-study">View all sections</Link>
+        </div>
+        <ol>
+          {consent.sections.map((section) => {
+            const local = view(section);
+            const done = reviewed.includes(section.id);
+            return <li key={section.id}><Link to={`/participant/explore-consent/${section.id}`}><span>{section.index}</span><strong>{local.title}</strong><em>{done ? "Read" : "Open"}</em></Link></li>;
+          })}
+        </ol>
+      </section>
     </div>
   );
 }
