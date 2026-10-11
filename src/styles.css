@@ -4206,7 +4206,7 @@ html:not([data-contrast="high"]) .auth-form-reference input {
 .auth-reference:not(.auth-entry) .auth-login-title h2 { font-size: clamp(3.15rem, 4.8vw, 4.7rem); line-height: .88; }
 .auth-reference:not(.auth-entry) .auth-showcase-minimal .auth-showcase-copy h1 {
   max-width: min(100%, 32rem);
-  font-size: clamp(4.25rem, 6.25vw, 7.1rem);
+  font-size: clamp(3.4rem, 5.2vw, 5.4rem);
   line-height: .86;
   color: rgba(13, 91, 88, .48);
   text-shadow: none;
