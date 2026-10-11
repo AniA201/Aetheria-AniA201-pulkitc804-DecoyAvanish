@@ -99,10 +99,10 @@ export function Login() {
     }
     const x = Math.max(-1, Math.min(1, (event.clientX - (bounds.left + bounds.width / 2)) / (bounds.width * 0.75)));
     const y = Math.max(-1, Math.min(1, (event.clientY - (bounds.top + bounds.height / 2)) / (bounds.height * 0.75)));
-    folio.style.setProperty("--folio-tilt-x", `${(-y * 5).toFixed(2)}deg`);
-    folio.style.setProperty("--folio-tilt-y", `${(x * 7).toFixed(2)}deg`);
-    folio.style.setProperty("--folio-shadow-x", `${(8 - x * 9).toFixed(1)}px`);
-    folio.style.setProperty("--folio-shadow-y", `${(12 - y * 7).toFixed(1)}px`);
+    folio.style.setProperty("--folio-tilt-x", `${(-y * 10).toFixed(2)}deg`);
+    folio.style.setProperty("--folio-tilt-y", `${(x * 14).toFixed(2)}deg`);
+    folio.style.setProperty("--folio-shadow-x", `${(16 - x * 12).toFixed(1)}px`);
+    folio.style.setProperty("--folio-shadow-y", `${(20 - y * 9).toFixed(1)}px`);
   }
 
   function resetFolio() {
@@ -136,8 +136,6 @@ export function Login() {
       <aside className="auth-showcase auth-showcase-minimal" onPointerMove={moveFolio} onPointerLeave={resetFolio}>
         <Link to="/" className="auth-showcase-brand"><AetheriaMark /><strong>Aetheria</strong></Link>
         <div className="auth-folio-art" aria-hidden="true" ref={folioRef}>
-          <div className="auth-folio-back" />
-          <div className="auth-folio-middle" />
           <div className="auth-folio-front">
             <span className="auth-folio-overline">{study.sponsor.toUpperCase()}</span>
             <strong>{study.name}</strong>
@@ -146,7 +144,7 @@ export function Login() {
             <span className="auth-folio-section">03 / {sections[2].title}</span>
             <p>{sections[2].plain.split(". ")[0]}.</p>
             <span className="auth-folio-seal">A</span>
-            <small>{sections[2].citation} · DEMONSTRATION ONLY</small>
+            <small>Consent §6.1 · demonstration only</small>
           </div>
         </div>
         <div className="auth-showcase-copy"><p className="kicker">{copy.eyebrow}</p><h1>{copy.title}</h1><p>{copy.description}</p></div>
