@@ -88,7 +88,7 @@ export function Landing() {
       const start = window.innerHeight * 0.76;
       // Keep each letter on screen long enough for its helix path to read as a
       // transition, rather than as a brief flash during a fast scroll.
-      const travel = window.innerHeight * 2.15;
+      const travel = window.innerHeight * 1.35;
       // The complete word remains still while the landing page opens. Its
       // flight may only start from a deliberate user scroll.
       const nextShatter = quiet || window.scrollY < 12 ? 0 : Math.min(1, Math.max(0, (start - wordTop) / travel));

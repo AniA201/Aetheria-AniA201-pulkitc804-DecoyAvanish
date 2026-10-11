@@ -263,18 +263,18 @@ export function MedicalField({
 
       const spacing = narrow ? 0.12 : 0.47;
       const lanes = [
-        { restX: 0, restZ: 0.1, outX: 0, outY: 0, outZ: 0.1 },
-        { restX: -0.03, restZ: 0.04, outX: spacing, outY: 0.07, outZ: 0.04 },
-        { restX: -0.06, restZ: -0.02, outX: spacing * 2, outY: 0.14, outZ: -0.02 },
-        { restX: -0.09, restZ: -0.08, outX: spacing * 3, outY: 0.21, outZ: -0.08 },
+        { restX: 0, restY: 0, restZ: 0.1, outX: 0, outY: 0, outZ: 0.1 },
+        { restX: -0.09, restY: 0.025, restZ: 0.04, outX: spacing, outY: 0.07, outZ: 0.04 },
+        { restX: -0.18, restY: 0.05, restZ: -0.02, outX: spacing * 2, outY: 0.14, outZ: -0.02 },
+        { restX: -0.27, restY: 0.075, restZ: -0.08, outX: spacing * 3, outY: 0.21, outZ: -0.08 },
       ];
       const visibleIndex = selectedPaperRef.current < 0 ? 0 : selectedPaperRef.current;
       pages.forEach((page, index) => {
         const lane = lanes[index];
-        const t = smoothstep(Math.min(1, Math.max(0, (fan - index * 0.06) / 0.82)));
+        const t = smoothstep(Math.min(1, Math.max(0, (fan - index * 0.1) / (1 - index * 0.1))));
         page.group.position.set(
           lane.restX + (lane.outX - lane.restX) * t,
-          lane.outY * t,
+          lane.restY + (lane.outY - lane.restY) * t,
           lane.restZ + (lane.outZ - lane.restZ) * t,
         );
         page.group.rotation.set(0, 0, [-0.018, 0.016, -0.014, 0.02][index] * fan);
@@ -284,9 +284,9 @@ export function MedicalField({
         const pageReveal = 1;
         (page.face.material as THREE.MeshBasicMaterial).opacity = pageReveal;
         (page.edge.material as THREE.MeshBasicMaterial).opacity = pageReveal;
-        // A single opaque page is readable; stacked transparent documents are
-        // not. Reveal the selected document only.
-        page.group.visible = pageReveal > 0.01 && index === visibleIndex;
+        // Start with a real overlapping stack, then fan the same sheets out
+        // as the reader begins scrolling.
+        page.group.visible = pageReveal > 0.01;
       });
 
       const selectedIndex = visibleIndex;
