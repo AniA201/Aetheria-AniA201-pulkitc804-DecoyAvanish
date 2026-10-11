@@ -101,24 +101,19 @@ export function MedicalField({
     const folio = new THREE.Group();
     scene.add(folio);
 
-    // Start with a closed, navy file folder. It opens vertically, then falls
-    // away from the viewer while the papers become the focus of the scene.
+    // A deliberately simple two-panel navy folder. The front is hinged on
+    // the right so it visibly swings open to the left before fading away.
     const folder = new THREE.Group();
     const navyBack = track(new THREE.MeshBasicMaterial({ color: "#102b4d", toneMapped: false, transparent: true }));
     const navyFront = track(new THREE.MeshBasicMaterial({ color: "#173d67", toneMapped: false, transparent: true }));
-    const navyEdge = track(new THREE.MeshBasicMaterial({ color: "#0b233d", toneMapped: false, transparent: true }));
     const folderBack = new THREE.Mesh(track(new THREE.BoxGeometry(2.04, 2.32, 0.075)), navyBack);
     folderBack.position.set(0, 0.05, -0.12);
-    const folderTab = new THREE.Mesh(track(new THREE.BoxGeometry(0.78, 0.22, 0.08)), navyBack);
-    folderTab.position.set(-0.48, 1.19, -0.115);
-    const folderFront = new THREE.Mesh(track(new THREE.BoxGeometry(2.14, 2.24, 0.11)), navyFront);
-    folderFront.position.set(0, -0.08, 0.085);
-    folderFront.rotation.x = 0;
-    const folderLeft = new THREE.Mesh(track(new THREE.BoxGeometry(0.09, 1.86, 0.13)), navyEdge);
-    folderLeft.position.set(-1.03, -0.15, 0);
-    const folderRight = folderLeft.clone();
-    folderRight.position.x = 1.03;
-    folder.add(folderBack, folderTab, folderFront, folderLeft, folderRight);
+    const folderFrontHinge = new THREE.Group();
+    folderFrontHinge.position.set(1.02, 0.04, 0.08);
+    const folderFront = new THREE.Mesh(track(new THREE.BoxGeometry(2.04, 2.32, 0.075)), navyFront);
+    folderFront.position.x = -1.02;
+    folderFrontHinge.add(folderFront);
+    folder.add(folderBack, folderFrontHinge);
     folio.add(folder);
 
     const pages = folioTextures.pages.map((sheet) => makePage(sheet.texture, 1.56, 2.02));
@@ -142,18 +137,6 @@ export function MedicalField({
       folio.add(mesh);
       return mesh;
     });
-
-    // A soft contact shadow acts as the imaginary table beneath the folder.
-    // It gives the opening and the final spin a physical place to land.
-    const tableShadowMaterial = track(
-      new THREE.MeshBasicMaterial({ color: "#061b21", transparent: true, opacity: 0, depthWrite: false }),
-    );
-    const tableShadow = new THREE.Mesh(track(new THREE.CircleGeometry(1.72, 64)), tableShadowMaterial);
-    tableShadow.rotation.x = -Math.PI / 2;
-    tableShadow.position.set(0.04, -1.16, -0.3);
-    tableShadow.scale.set(1.08, 0.24, 1);
-    tableShadow.renderOrder = -2;
-    folio.add(tableShadow);
 
     document.fonts?.ready.then(folioTextures.redraw).catch(() => undefined);
 
@@ -200,8 +183,8 @@ export function MedicalField({
       const turn = reducedMotion ? 1 : smoothstep(progress / 0.25);
       // Have the full stack in view as the chapter list enters the viewport.
       const fan = reducedMotion ? 1 : smoothstep((progress - 0.1) / 0.25);
-      const folderOpen = reducedMotion ? 1 : smoothstep((progress - 0.05) / 0.31);
-      const folderExit = reducedMotion ? 1 : smoothstep((progress - 0.43) / 0.3);
+      const folderOpen = reducedMotion ? 1 : smoothstep((progress - 0.04) / 0.3);
+      const folderExit = reducedMotion ? 1 : smoothstep((progress - 0.38) / 0.26);
       const yaw = -0.95 + turn * 0.8;
       const heroPosition = 1 - turn;
       const heroRightShift = parent.clientWidth < 600 ? 0.18 : 1.35;
@@ -214,19 +197,16 @@ export function MedicalField({
       folio.scale.setScalar(narrow ? 0.7 : 0.92);
       folio.rotation.set(sway.y * 0.04, yaw + sway.x * 0.06, 0);
 
-      // The closed folder opens down toward its contact shadow, then pitches
-      // back, turns, and disappears behind the revealed documents.
-      folderFront.scale.y = 1 - folderOpen * 0.62;
-      folderFront.position.y = -0.08 - folderOpen * 0.77;
-      folderFront.rotation.x = -folderOpen * 0.78;
-      folder.position.set(folderExit * 0.62, 0.08 - folderExit * 0.46, -folderExit * 1.7);
-      folder.rotation.set(-folderOpen * 0.16 - folderExit * 0.48, folderExit * Math.PI * 1.25, folderExit * 0.2);
-      folder.scale.setScalar(0.74 * (1 - folderExit * 0.28));
-      [navyBack, navyFront, navyEdge].forEach((material) => {
-        material.opacity = Math.max(0, 1 - folderExit * 1.02);
+      // Keep the right edge fixed and swing the front panel to the left,
+      // just like opening a physical folder. Once the pages are visible, the
+      // whole empty folder simply recedes and fades.
+      folderFrontHinge.rotation.y = folderOpen * Math.PI * 0.62;
+      folder.position.set(0, folderExit * 0.08, -folderExit * 0.58);
+      folder.rotation.set(0, 0, 0);
+      folder.scale.setScalar(0.74 * (1 - folderExit * 0.08));
+      [navyBack, navyFront].forEach((material) => {
+        material.opacity = Math.max(0, 1 - folderExit * 1.12);
       });
-      tableShadowMaterial.opacity = 0.08 + folderOpen * 0.22 - folderExit * 0.12;
-      tableShadow.scale.set(1.08 + folderOpen * 0.22 + folderExit * 0.34, 0.24 + folderOpen * 0.06, 1);
 
       const spacing = narrow ? 0.12 : 0.47;
       const lanes = [

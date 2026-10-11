@@ -3968,6 +3968,7 @@ html:not([data-contrast="high"]) .shell.participant .ask-studio textarea:focus {
   z-index: 45;
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
   gap: .16rem;
 }
 .rail-utilities .type-dock {
@@ -4048,6 +4049,7 @@ html:not([data-contrast="high"]) .shell.participant .ask-studio textarea:focus {
   box-sizing: border-box;
   height: 2.75rem;
   min-height: 2.75rem;
+  align-self: center;
   margin: 0;
   padding: .55rem .82rem;
   border-radius: 999px;
@@ -4057,6 +4059,8 @@ html:not([data-contrast="high"]) .shell.participant .ask-studio textarea:focus {
   box-shadow: 0 8px 18px rgba(16, 43, 53, .14);
   white-space: nowrap;
 }
+.rail-utilities > .type-dock,
+.rail-utilities > .guide-launch { flex: 0 0 auto; }
 .rail-utilities .guide-launch:hover { background: rgba(118, 84, 130, .16); color: #102b35; }
 .shell.rail-compact .rail-utilities { left: .9rem; }
 .shell.participant .rail-utilities { left: 1rem; }

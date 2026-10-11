@@ -101,7 +101,7 @@ export function CornerMark() {
 }
 
 function TypeDock() {
-  const { fontScale, setFontScale, contrast, setContrast, narrationRate, lastSpoken, language, setLanguage } = useSession();
+  const { fontScale, setFontScale, narrationRate, lastSpoken, language, setLanguage } = useSession();
   const t = strings[language];
   const [expanded, setExpanded] = useState(false);
   const sizes = [
@@ -138,15 +138,6 @@ function TypeDock() {
           </button>
         ))}
       </div>
-      <button
-        type="button"
-        className="contrast-toggle"
-        aria-pressed={contrast === "high"}
-        aria-label={contrast === "high" ? t.dock.contrastOff : t.dock.contrastOn}
-        onClick={() => setContrast(contrast === "high" ? "paper" : "high")}
-      >
-        <span aria-hidden="true" />
-      </button>
       <div role="radiogroup" aria-label="Language / Idioma / Langue / 语言" className="language-switch">
         {languages.map((code) => (
           <button
