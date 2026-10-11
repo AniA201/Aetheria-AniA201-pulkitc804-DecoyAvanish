@@ -141,7 +141,7 @@ export const uses: BlockUse[] = [
     place: "Consent §7.1 Costs and payments",
     owner: "Consent author (IRB review)",
     side: "consent",
-    template: "You will receive ${pay} for each completed clinic visit, paid after the visit.",
+    template: "Compensation is calculated on a per-visit basis: you will receive ${pay} for each completed clinic visit, paid after the visit.",
     source: consentRef("costs"),
   },
   {
@@ -158,7 +158,7 @@ export const uses: BlockUse[] = [
     owner: "Plain-language writer",
     side: "consent",
     template:
-      "You come to the clinic {visits} times over about {duration} weeks. After each visit you complete, you receive ${pay}. You do not pay for the study drug or those required visits. The payment does not cover your usual migraine care.",
+      "You visit the clinic {visits} times over about {duration} weeks. You get ${pay} after each visit you complete. The study drug and required visits cost you nothing. Your usual migraine care and extra travel are not covered.",
   },
 ];
 

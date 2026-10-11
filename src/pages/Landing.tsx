@@ -319,6 +319,21 @@ export function Landing() {
           ><span className="folio-transfer-glyph"><span className="folio-transfer-lower" style={{ opacity: 1 - capital }}>{spec.lower}</span><span className="folio-transfer-upper" style={{ opacity: capital }}>{spec.upper}</span><span className="folio-transfer-trail" style={{ opacity: motionBlur * .54 }}>{spec.upper}</span><span className="folio-transfer-trail folio-transfer-trail-far" style={{ opacity: motionBlur * .24 }}>{spec.upper}</span></span></span>;
         })}
         <section className="folio-hero">
+          {!quiet && (
+            <div
+              className="folio-folder-intro"
+              aria-hidden="true"
+              style={{
+                opacity: Math.max(0, 1 - shatterProgress * 2.3),
+                transform: `translate3d(${shatterProgress * 17}vw, ${shatterProgress * -5}vh, 0) rotate(${shatterProgress * 8}deg)`,
+              }}
+            >
+              <span className="folio-folder-back" />
+              <span className="folio-folder-paper folio-folder-paper-one" />
+              <span className="folio-folder-paper folio-folder-paper-two" />
+              <span className="folio-folder-front" />
+            </div>
+          )}
           <p ref={wordRef} className="folio-word" aria-hidden="true">{"Aetheria".split("").map((letter, index) => {
             const [dx, dy, spin] = wordFlights[index];
             const flight = Math.max(0, Math.min(1, (shatterProgress - index * 0.025) / (1 - index * 0.025)));
@@ -330,7 +345,7 @@ export function Landing() {
           })}</p>
           {!quiet && <LandingWordShatter progress={shatterProgress} wordRef={wordRef} />}
           <p className="folio-kicker">Clinical study documents</p>
-          <h1>Long forms. Plain words.</h1>
+          <h1><span>Long forms.</span><span>Plain words.</span></h1>
           <p className="folio-lede">
             Long study forms are hard to read. Aetheria puts a shorter explanation beside the original text, with sources you can check. Ask about visits, risks, costs, or privacy before you decide.
           </p>

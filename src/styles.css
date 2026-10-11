@@ -634,6 +634,52 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   align-items: flex-start;
 }
 .folio-hero > :not(.folio-word):not(.folio-word-canvas) { position: relative; z-index: 1; }
+.folio-folder-intro {
+  position: absolute !important;
+  top: 3.1rem;
+  right: clamp(2rem, 10vw, 11rem);
+  z-index: 2 !important;
+  width: clamp(7.5rem, 12vw, 11rem);
+  height: clamp(4.9rem, 7.4vw, 6.8rem);
+  pointer-events: none;
+  transform-origin: 72% 72%;
+  will-change: transform, opacity;
+  transition: opacity 140ms linear;
+}
+.folio-folder-back,
+.folio-folder-front,
+.folio-folder-paper {
+  position: absolute;
+  display: block;
+  border: 1px solid rgba(8, 38, 64, .55);
+}
+.folio-folder-back {
+  inset: .7rem .2rem .12rem 0;
+  border-radius: .7rem .7rem .45rem .45rem;
+  background: linear-gradient(145deg, #173a5c, #0c2946);
+  box-shadow: 0 .9rem 1.5rem rgba(7, 36, 60, .22);
+}
+.folio-folder-paper {
+  width: 65%;
+  height: 82%;
+  bottom: .55rem;
+  border-radius: .18rem;
+  background: var(--powder);
+  box-shadow: 0 .35rem .65rem rgba(7, 36, 60, .16);
+}
+.folio-folder-paper-one { left: 18%; transform: rotate(-7deg) translateY(-.8rem); }
+.folio-folder-paper-two { right: 11%; transform: rotate(6deg) translateY(-.45rem); }
+.folio-folder-front {
+  right: 0;
+  bottom: 0;
+  width: 96%;
+  height: 63%;
+  border-radius: .28rem .72rem .48rem .48rem;
+  background: linear-gradient(152deg, #214b70, #123654);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16);
+  transform: perspective(18rem) rotateX(-14deg);
+  transform-origin: bottom;
+}
 .folio-kicker, .folio-vertical, .folio-index, .folio-chapters li span {
   font-size: 11px;
   letter-spacing: 0.18em;
@@ -647,9 +693,10 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   margin: 0.7rem 0 0;
 }
 .folio-hero h1 {
-  max-width: 9em;
+  max-width: 12em;
   font-size: clamp(3.5rem, 5.2vw, 5.8rem);
 }
+.folio-hero h1 span { display: block; white-space: nowrap; }
 .folio-lede {
   max-width: min(22rem, 32vw);
   margin-top: 1.5rem;
@@ -1399,6 +1446,7 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   .folio-hero, .folio-split, .folio-chapters, .folio-review, .folio-close { padding-left: 22px; padding-right: 22px; }
   .folio-hero { width: auto; min-height: 115svh; padding-right: 22px; }
   .folio-hero h1 { max-width: 56vw; font-size: clamp(2.7rem, 8vw, 4.5rem); }
+  .folio-folder-intro { top: 2.2rem; right: 7vw; }
   .folio-lede { max-width: min(18rem, 38vw); }
   .folio-word { top: 80vh; font-size: 20vw; }
   .folio-hero-actions { max-width: 55vw; }
@@ -1445,7 +1493,8 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
 
 @media (max-width: 600px) {
   .folio-hero { min-height: 115svh; padding-top: 14vh; }
-  .folio-hero h1 { max-width: 60vw; font-size: clamp(2.5rem, 9vw, 3.7rem); }
+  .folio-hero h1 { max-width: none; font-size: clamp(2.25rem, 9vw, 3.7rem); }
+  .folio-folder-intro { top: 1.25rem; right: 1.1rem; width: 6.8rem; height: 4.7rem; }
   .folio-lede { max-width: 60vw; font-size: 0.98rem; }
   .folio-hero-actions { max-width: 62vw; }
   .folio-preview-sheet { display: none; }
@@ -3164,6 +3213,46 @@ html:not([data-contrast="high"]) .shell.participant .ask-studio textarea:focus {
 }
 .shell.participant .ask-form-actions { inset: 0 .05rem auto; }
 .shell.participant .ask-form-actions .btn { box-shadow: 0 8px 17px rgba(8, 63, 62, .22), 0 2px 5px rgba(8, 63, 62, .16); }
+
+/* Conversation cards use the same soft paper contours as the rest of Ask. */
+.shell.participant .ask-studio .thread .bubble {
+  width: fit-content;
+  max-width: min(50rem, 88%);
+  margin: 0;
+  padding: 1.15rem 1.35rem;
+  border: 1px solid rgba(16, 43, 53, .16);
+  border-radius: 1.45rem 1.45rem 1.45rem .52rem;
+  background: var(--powder);
+  color: #162d32;
+  box-shadow: 0 .85rem 1.75rem rgba(16, 43, 53, .12), inset 0 1px 0 rgba(255, 255, 255, .7);
+}
+.shell.participant .ask-studio .thread .bubble.person {
+  justify-self: end;
+  margin-left: auto;
+  border-radius: 1.45rem 1.45rem .52rem 1.45rem;
+  background: color-mix(in srgb, #ccefdc 76%, var(--powder));
+  box-shadow: 0 .7rem 1.45rem rgba(16, 43, 53, .11), inset 0 1px 0 rgba(255, 255, 255, .62);
+  text-align: left;
+}
+.shell.participant .ask-studio .thread .bubble.aetheria { justify-self: start; }
+.shell.participant .ask-studio .thread .bubble p { margin: 0; line-height: 1.52; }
+.shell.participant .ask-studio .thread .bubble small {
+  display: block;
+  margin-top: .7rem;
+  color: rgba(16, 43, 53, .68);
+}
+.shell.participant .ask-studio .thread .bubble .cite-card {
+  margin-top: .9rem;
+  padding: .85rem 1rem;
+  border: 1px solid rgba(16, 43, 53, .16);
+  border-radius: .95rem;
+  background: color-mix(in srgb, #ccefdc 34%, var(--powder));
+}
+.shell.participant .ask-studio .thread .bubble .text-button {
+  margin-top: .65rem;
+  border-radius: 999px;
+  background: transparent;
+}
 
 /* Research carries the same Powder paper, mint field, and soft volcanic contours as the participant experience. */
 .shell.researcher {

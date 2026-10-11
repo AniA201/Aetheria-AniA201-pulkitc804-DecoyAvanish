@@ -188,7 +188,9 @@ export function Shell({ mode }: { mode: Role }) {
     : researcherNav.map((link, index) => ({ ...link, label: r.nav[index] }));
   const translated = language !== "en";
   const roleName = participant ? t.roleName : r.roleName;
-  const blocked = mode === "participant" && consent !== null && versionStanding(consent.version, approvedVersions) === "not-listed";
+  // The built-in sample is a self-contained practice document. A research
+  // version list can still block submitted forms, but never the sample route.
+  const blocked = mode === "participant" && consent !== null && !consent.sample && versionStanding(consent.version, approvedVersions) === "not-listed";
   const [open, setOpen] = useState(false);
   const [railCompact, setRailCompact] = useState(false);
   const location = useLocation();

@@ -200,7 +200,7 @@ export function Explore() {
   const [showOriginal, setShowOriginal] = useState(false);
   const [translating, setTranslating] = useState("");
   if (!consent) return <NeedFile title={t.read.title} />;
-  if (versionStanding(consent.version, approvedVersions) === "not-listed") return <VersionGate version={consent.version} title={t.read.title} language={language} />;
+  if (!consent.sample && versionStanding(consent.version, approvedVersions) === "not-listed") return <VersionGate version={consent.version} title={t.read.title} language={language} />;
   const sections = consent.sections;
   const known = !params.sectionId || sections.some((section) => section.id === params.sectionId);
   const requested = (known ? params.sectionId : undefined) ?? sections[0].id;
@@ -428,7 +428,7 @@ export function Ask() {
   const history = useRef<GeminiContent[]>([]);
   const model = useGeminiModel();
   if (!consent) return <NeedFile title={t.ask.title} />;
-  if (versionStanding(consent.version, approvedVersions) === "not-listed") return <VersionGate version={consent.version} title={t.ask.title} language={language} />;
+  if (!consent.sample && versionStanding(consent.version, approvedVersions) === "not-listed") return <VersionGate version={consent.version} title={t.ask.title} language={language} />;
 
   const ask = async (question: string) => {
     const clean = question.trim();
@@ -585,13 +585,25 @@ export function Ask() {
         }}
       >
         <label className="sr-only" htmlFor="question">Your question</label>
-        <textarea id="question" value={draft} onChange={(event) => setDraft(event.target.value)} rows={1} placeholder="Ask about your study form" />
+        <textarea
+          id="question"
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+              event.preventDefault();
+              ask(draft);
+            }
+          }}
+          rows={1}
+          placeholder="Ask about your study form"
+        />
         <div className="ask-form-actions">
           <button className="btn on-paper ask-dictate" type="button" onClick={dictation.start} aria-label={t.ask.dictate} title={t.ask.dictate}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5a3 3 0 0 0-3 3v5a3 3 0 1 0 6 0v-5a3 3 0 0 0-3-3Zm-5 7.3v.7a5 5 0 0 0 10 0v-.7M12 16.5V21M8.5 21h7" /></svg>
           </button>
           <button className="btn solid dark ask-send" type="submit" aria-label={t.ask.send}>
-            <span aria-hidden="true">↑</span>
+            <span aria-hidden="true">→</span>
           </button>
         </div>
         {dictation.note ? <p className="fine">{dictation.note}</p> : null}
@@ -758,7 +770,7 @@ export function Teach() {
   const [sent, setSent] = useState<{ state: SendState; detail: string } | null>(null);
   const dictation = useDictation(setResponse, t.check.submit);
   if (!consent || prompts.length === 0) return <NeedFile title={t.check.title} />;
-  if (versionStanding(consent.version, approvedVersions) === "not-listed") return <VersionGate version={consent.version} title={t.check.title} language={language} />;
+  if (!consent.sample && versionStanding(consent.version, approvedVersions) === "not-listed") return <VersionGate version={consent.version} title={t.check.title} language={language} />;
   const prompt = prompts.find((item) => item.id === promptId) ?? prompts[0];
   const asked = shownPrompt(prompt, language);
   const speaker: Speaker = caregiver ? "caregiver" : "participant";
