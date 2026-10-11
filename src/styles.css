@@ -794,7 +794,7 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   position: absolute;
   left: 50vw;
   /* Sit directly beneath the actions at the top of the landing view. */
-  top: 64vh;
+  top: 72vh;
   transform: translateX(-50%);
   margin: 0;
   z-index: 0;
