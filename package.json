@@ -6,11 +6,13 @@
   "scripts": {
     "dev": "vite",
     "dev:all": "node scripts/dev.mjs",
-    "api": "cd backend && .venv/bin/python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000",
+    "api": "cd backend && dotenvx run -f ../.env.team -fk ../.env.keys --quiet -- .venv/bin/python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0 --port 4173",
     "test": "vitest run",
     "demo": "vitest run src/lib/demo.test.ts",
+    "secret:set": "dotenvx set -f .env.team",
+    "secret:get": "dotenvx get -f .env.team",
     "fetch-trial": "node scripts/fetch-public-trial.mjs NCT03238781"
   },
   "dependencies": {
@@ -21,6 +23,7 @@
     "three": "^0.177.0"
   },
   "devDependencies": {
+    "@dotenvx/dotenvx": "^2.34.2",
     "@types/node": "^26.6.5",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
