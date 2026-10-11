@@ -4204,6 +4204,11 @@ html:not([data-contrast="high"]) .auth-form-reference input {
   opacity: .94;
 }
 .auth-reference:not(.auth-entry) .auth-login-title h2 { font-size: clamp(3.15rem, 4.8vw, 4.7rem); line-height: .88; }
+.auth-reference:not(.auth-entry) .auth-showcase-minimal .auth-showcase-copy h1 {
+  max-width: min(100%, 32rem);
+  font-size: clamp(4.25rem, 6.25vw, 7.1rem);
+  line-height: .86;
+}
 @media (max-width: 900px) {
   .auth-reference:not(.auth-entry) .registration-orbit-3d { top: 40%; width: min(13rem, 42%); }
 }
