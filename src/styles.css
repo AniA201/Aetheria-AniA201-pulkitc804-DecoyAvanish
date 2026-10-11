@@ -4213,10 +4213,10 @@ html:not([data-contrast="high"]) .auth-form-reference input {
 }
 .auth-reference:not(.auth-entry) .auth-showcase-word {
   color: #083f3e;
-  font-size: clamp(5.5rem, 15cqi, 12.5rem);
-  letter-spacing: -.095em;
+  font-size: clamp(7.5rem, 25cqi, 15rem);
+  letter-spacing: -.035em;
   text-shadow: 2px 5px 10px rgba(13, 91, 88, .14);
-  transform: translateX(-50%) scaleX(.86);
+  transform: translateX(-50%);
 }
 @media (max-width: 900px) {
   .auth-reference:not(.auth-entry) .registration-orbit-3d { top: 40%; width: min(13rem, 42%); }
