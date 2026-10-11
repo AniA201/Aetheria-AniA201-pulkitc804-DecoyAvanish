@@ -3709,3 +3709,163 @@ html:not([data-contrast="high"]) .shell.participant .ask-studio textarea:focus {
   .shell.researcher .rail-toggle span,
   .shell.researcher .type-dock button { transition-duration: .01ms; }
 }
+
+/* Rail utilities stay compact until a person asks for their reading settings.
+   Both roles share the same anchored controls. */
+.rail-utilities {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+}
+.rail-utilities .type-dock {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: none;
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.rail-utilities .type-dock::before { content: none; }
+.type-dock-trigger {
+  display: grid;
+  place-items: center;
+  width: 2.75rem !important;
+  height: 2.75rem !important;
+  padding: 0 !important;
+  border: 1px solid rgba(16, 43, 53, .28) !important;
+  border-radius: 999px !important;
+  background: #102b35 !important;
+  color: var(--powder) !important;
+  box-shadow: 0 8px 18px rgba(16, 43, 53, .22), inset 0 1px 0 rgba(255, 255, 255, .14) !important;
+  font-family: var(--serif) !important;
+  font-size: 1rem !important;
+  line-height: 1;
+}
+.type-dock-trigger:hover { background: #0d5b58 !important; transform: translateY(-.12rem); }
+.type-dock-trigger:focus-visible { outline: 3px solid rgba(118, 84, 130, .66); outline-offset: 3px; }
+.type-dock-options {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + .6rem);
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: .28rem;
+  width: max-content;
+  max-width: min(15.25rem, calc(100vw - 2rem));
+  padding: .45rem;
+  border: 1px solid rgba(16, 43, 53, .16);
+  border-radius: 1.2rem 1.2rem .85rem 1.2rem;
+  background: rgba(247, 247, 242, .96);
+  box-shadow: 0 14px 30px rgba(16, 43, 53, .15), inset 0 1px 0 rgba(255, 255, 255, .8);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(.45rem) scale(.97);
+  transform-origin: bottom left;
+  transition: transform 220ms cubic-bezier(.16, 1, .3, 1), opacity 160ms linear, visibility 0s linear 220ms;
+}
+.type-dock.is-open .type-dock-options {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  transition-delay: 0s;
+}
+.type-dock-options [role="radiogroup"] { display: flex; gap: .16rem; }
+.type-dock-options .language-switch { grid-column: 1 / -1; }
+.type-dock-options button:not(.type-dock-trigger) {
+  width: 2.05rem;
+  height: 2.05rem;
+  border-radius: .7rem;
+}
+.rail-utilities .guide-launch {
+  position: relative !important;
+  inset: auto !important;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: .55rem .82rem;
+  border-radius: 999px;
+  background: var(--powder);
+  color: #102b35;
+  border-color: rgba(16, 43, 53, .36);
+  box-shadow: 0 8px 18px rgba(16, 43, 53, .14);
+  white-space: nowrap;
+}
+.rail-utilities .guide-launch:hover { background: rgba(118, 84, 130, .16); color: #102b35; }
+.shell.rail-compact .rail-utilities { left: .9rem; }
+.shell.participant .rail-utilities { left: 1rem; }
+.shell.participant.rail-compact .rail-utilities { left: .9rem; }
+
+/* The compact researcher rail uses the same real two-way state as participant
+   navigation. Keep the control reachable after the rail has slid away. */
+.shell.researcher.rail-compact { grid-template-columns: 0 minmax(0, 1fr); }
+.shell.researcher.rail-compact .rail {
+  width: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  box-shadow: none;
+}
+.shell.researcher.rail-compact .rail-mark,
+.shell.researcher.rail-compact .rail nav,
+.shell.researcher.rail-compact .mode-switch { display: none; }
+.shell.researcher.rail-compact .rail-toggle {
+  position: fixed !important;
+  left: auto !important;
+  right: 1.25rem !important;
+  top: 5.25rem !important;
+  z-index: 1000;
+}
+
+/* Earlier participant styling hid every direct dock child until hover. The
+   button below is intentionally always available; its own click opens the menu. */
+.shell.participant .rail-utilities .type-dock > * { opacity: 1; pointer-events: auto; }
+.shell.participant .rail-utilities .type-dock:hover,
+.shell.participant .rail-utilities .type-dock:focus-within {
+  width: auto;
+  height: auto;
+  min-height: 0;
+  grid-template-columns: none;
+}
+
+/* A paper state must stay readable against mint; status labels are not decoration. */
+.shell.researcher .research-studio .fold-meta {
+  color: #102b35;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+/* Powder replaces ordinary white paper. True white remains exclusively for high contrast. */
+html:not([data-contrast="high"]) .auth-form-reference .auth-role-switch button.on,
+html:not([data-contrast="high"]) .auth-form-reference input,
+html:not([data-contrast="high"]) .auth-login-card,
+html:not([data-contrast="high"]) .auth-login-shell,
+html:not([data-contrast="high"]) .shell.participant .topic-index a:hover,
+html:not([data-contrast="high"]) .shell.researcher .research-studio textarea:focus {
+  background: var(--powder);
+}
+html:not([data-contrast="high"]) .auth-form-reference input {
+  background: color-mix(in srgb, var(--powder) 88%, transparent);
+}
+@media (max-width: 900px) {
+  .rail-utilities { left: .85rem; bottom: .85rem; }
+  .shell.participant .rail-utilities { left: .85rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .type-dock-options, .type-dock-trigger { transition-duration: .01ms !important; }
+}
