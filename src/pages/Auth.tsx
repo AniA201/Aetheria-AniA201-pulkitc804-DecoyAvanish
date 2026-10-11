@@ -52,7 +52,7 @@ const accountCopy = {
     trust: "For study participants",
     trustDetail: "Reading here does not sign the form.",
     signInNote: "Sign in to read a study form in shorter sections.",
-    registerTitle: <>Make sense of<br />the study form.</>,
+    registerTitle: <>Make sense<br />of the study<br />form.</>,
     registerNote: "Create an account to add a text-based form or try the sample. The original text stays beside each shorter reading.",
   },
   researcher: {

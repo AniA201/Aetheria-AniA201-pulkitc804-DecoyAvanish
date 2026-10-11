@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 64" fill="none">
   <title>Aetheria document comparison mark</title>
-  <path d="M6 10c9 6 16 8 22 8v36c-6 0-13 2-22 8V10Z" fill="#0D5B58"/>
-  <path d="M58 10c-9 6-16 8-22 8v36c6 0 13 2 22 8V10Z" fill="#CFEBDD"/>
-  <path d="M7 10c8.7 5.7 15.5 7.7 21 8v36c-5.5 0-12.3 2.3-21 8" stroke="#083F3E" stroke-width="2" stroke-linejoin="round"/>
-  <path d="M57 10c-8.7 5.7-15.5 7.7-21 8v36c5.5 0 12.3 2.3 21 8" stroke="#083F3E" stroke-width="2" stroke-linejoin="round"/>
-  <path d="M13 23h10M13 29h10M13 35h10M13 41h10" stroke="#CFEBDD" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M41 23h10M41 29h10M41 35h10M41 41h10" stroke="#0D5B58" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="m32 27 2.6 4.4 4.4 2.6-4.4 2.6-2.6 4.4-2.6-4.4-4.4-2.6 4.4-2.6L32 27Z" fill="#CFEBDD" stroke="#083F3E" stroke-width="1.3" stroke-linejoin="round"/>
+  <path d="M8 8h34v48H8z" fill="#0D5B58"/>
+  <path d="M42 8h5v48h-5z" fill="#083F3E"/>
+  <path d="M54 8h34v48H54z" fill="#CFEBDD"/>
+  <path d="M49 8h5v48h-5z" fill="#0D5B58"/>
+  <path d="M18 21h15M18 31h15M18 41h15" stroke="#CFEBDD" stroke-width="3" stroke-linecap="round"/>
+  <path d="M63 21h15M63 31h15M63 41h15" stroke="#0D5B58" stroke-width="3" stroke-linecap="round"/>
+  <path d="M47.5 26.5h6v11h-6z" fill="#F7F7F2"/>
 </svg>
