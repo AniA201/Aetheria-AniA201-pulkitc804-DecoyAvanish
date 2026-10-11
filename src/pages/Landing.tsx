@@ -100,7 +100,9 @@ export function Landing() {
       setChapter((current) => (current === next ? current : next));
       const wordTop = wordRef.current?.getBoundingClientRect().top ?? window.innerHeight;
       const start = window.innerHeight * 0.76;
-      const travel = window.innerHeight * 1.15;
+      // Keep each letter on screen long enough for its helix path to read as a
+      // transition, rather than as a brief flash during a fast scroll.
+      const travel = window.innerHeight * 2.15;
       const nextShatter = quiet ? 0 : Math.min(1, Math.max(0, (start - wordTop) / travel));
       setShatterTarget((current) => Math.abs(current - nextShatter) < 0.0005 ? current : nextShatter);
       const main = mainRef.current;
@@ -151,7 +153,7 @@ export function Landing() {
     let frame = 0;
     const settle = () => {
       const current = shatterProgressRef.current;
-      const next = current + (shatterTarget - current) * 0.105;
+      const next = current + (shatterTarget - current) * 0.065;
       if (Math.abs(shatterTarget - next) < 0.0006) {
         shatterProgressRef.current = shatterTarget;
         setShatterProgress(shatterTarget);
@@ -199,8 +201,7 @@ export function Landing() {
 
   const transfer = shatterProgress * shatterProgress * (3 - 2 * shatterProgress);
   const capital = Math.min(1, Math.max(0, (shatterProgress - 0.3) / 0.42));
-  const readSpace = Math.min(1, Math.max(0, (shatterProgress - 0.55) / 0.4));
-  const settledFade = Math.min(1, Math.max(0, (shatterProgress - 0.67) / 0.23));
+  const settledFade = Math.min(1, Math.max(0, (shatterProgress - 0.93) / 0.07));
   const motionBlur = Math.sin(Math.PI * transfer) * (1 - settledFade);
 
   return (
@@ -293,7 +294,7 @@ export function Landing() {
               top: path.y0 + (path.y1 - path.y0) * transfer - arc,
               fontSize: path.size0 + (path.size1 - path.size0) * transfer,
               lineHeight: 0.76 + transfer * 0.28,
-              opacity: Math.min(1, shatterProgress * 12) * (1 - settledFade),
+              opacity: Math.min(1, shatterProgress * 7) * (1 - settledFade),
               transform: `rotate(${(1 - transfer) * -8 + Math.cos(transfer * Math.PI * 4 + spec.phase) * 18 * (1 - transfer)}deg)`,
             }}
             aria-hidden="true"
@@ -305,7 +306,7 @@ export function Landing() {
             const flight = Math.max(0, Math.min(1, (shatterProgress - index * 0.025) / (1 - index * 0.025)));
             return <span key={`${letter}-${index}`} style={quiet ? undefined : {
               transform: `translate3d(${dx * flight * 100}vw, ${dy * flight * 100}vh, 0) rotate(${spin * flight}rad) scale(${1 - flight * 0.2})`,
-              opacity: index === 5 ? 1 - Math.min(1, flight * 12) : 1 - flight * 0.92,
+              opacity: [0, 4, 5].includes(index) ? 1 - Math.min(1, flight * 1.25) : 1 - flight * 0.74,
               filter: `blur(${flight * 1.6}px)`,
             }}>{letter}</span>;
           })}</p>
@@ -346,7 +347,7 @@ export function Landing() {
         <section className="folio-split" id="read">
           <BackgroundQuotes quotes={backgroundQuotes.read} />
           <p className="folio-section-label">01 / Read</p>
-          {quiet ? <h2>Read.</h2> : <h2 aria-label="Read."><span ref={(node) => { transferTargets.current.read = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: `${readSpace * 0.7}em`, opacity: settledFade }} aria-hidden="true">R</span><span aria-hidden="true">ead.</span></h2>}
+          {quiet ? <h2>Read.</h2> : <h2 aria-label="Read."><span ref={(node) => { transferTargets.current.read = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: "0.7em", opacity: 0.24 + settledFade * 0.76 }} aria-hidden="true">R</span><span aria-hidden="true">ead.</span></h2>}
           <SectionHighlights items={sectionHighlights.read} />
           <p className="sr-only">Read each part of the consent form beside a shorter, plain-language explanation. The original words and page citation stay in view.</p>
         </section>
@@ -355,7 +356,7 @@ export function Landing() {
           <BackgroundQuotes quotes={backgroundQuotes.ask} />
           <div className="folio-chapter-head">
             <p className="folio-section-label">02 / Ask</p>
-            {quiet ? <h2>Ask.</h2> : <h2 aria-label="Ask."><span ref={(node) => { transferTargets.current.ask = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: `${readSpace * 0.7}em`, opacity: settledFade }} aria-hidden="true">A</span><span aria-hidden="true">sk.</span></h2>}
+            {quiet ? <h2>Ask.</h2> : <h2 aria-label="Ask."><span ref={(node) => { transferTargets.current.ask = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: "0.7em", opacity: 0.24 + settledFade * 0.76 }} aria-hidden="true">A</span><span aria-hidden="true">sk.</span></h2>}
           </div>
           <SectionHighlights items={sectionHighlights.ask} />
           <p className="sr-only">{sections.map((section) => `${section.ask} ${section.plain} Source: ${section.citation}, ${section.page}.`).join(" ")}</p>
@@ -364,7 +365,7 @@ export function Landing() {
         <section className="folio-split folio-teach" id="evaluation">
           <BackgroundQuotes quotes={backgroundQuotes.evaluation} />
           <p className="folio-section-label">03 / Evaluation</p>
-          {quiet ? <h2>Evaluation.</h2> : <h2 aria-label="Evaluation."><span ref={(node) => { transferTargets.current.evaluation = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: `${readSpace * 0.7}em`, opacity: settledFade }} aria-hidden="true">E</span><span aria-hidden="true">valuation.</span></h2>}
+          {quiet ? <h2>Evaluation.</h2> : <h2 aria-label="Evaluation."><span ref={(node) => { transferTargets.current.evaluation = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: "0.7em", opacity: 0.24 + settledFade * 0.76 }} aria-hidden="true">E</span><span aria-hidden="true">valuation.</span></h2>}
           <SectionHighlights items={sectionHighlights.evaluation} />
           <p className="sr-only">You cannot choose your study group. The sample form says chance assigns Aetherol or placebo. Neither you nor the study doctor knows your group during the study. Source: {sections[0].citation}, {sections[0].page}.</p>
         </section>
@@ -372,7 +373,7 @@ export function Landing() {
         <section className="folio-review" id="review">
           <BackgroundQuotes quotes={backgroundQuotes.review} />
           <p className="folio-section-label">04 / Review</p>
-          {quiet ? <h2>Review.</h2> : <h2 aria-label="Review."><span ref={(node) => { transferTargets.current.review = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: `${readSpace * 0.7}em`, opacity: settledFade }} aria-hidden="true">R</span><span aria-hidden="true">eview.</span></h2>}
+          {quiet ? <h2>Review.</h2> : <h2 aria-label="Review."><span ref={(node) => { transferTargets.current.review = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: "0.7em", opacity: 0.24 + settledFade * 0.76 }} aria-hidden="true">R</span><span aria-hidden="true">eview.</span></h2>}
           <SectionHighlights items={sectionHighlights.review} />
           <p className="sr-only">{facts.filter((fact) => fact.kind === "confirmed-textual-difference").map((fact) => `${fact.label}: consent says ${fact.consentValue}; study plan says ${fact.protocolValue}.`).join(" ")}</p>
         </section>

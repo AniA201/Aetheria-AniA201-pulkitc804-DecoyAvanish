@@ -702,7 +702,10 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
 .folio-transfer-slot.is-settled { animation: read-letter-hover 3.2s ease-in-out infinite; }
 @keyframes read-letter-hover { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-.07em); } }
 .story.has-motion-reveal #read h2,
-.story.has-motion-reveal #read.is-visible h2 { animation: none; transform: none; opacity: 1; filter: none; }
+.story.has-motion-reveal #read.is-visible h2,
+.story.has-motion-reveal #ask h2,
+.story.has-motion-reveal #evaluation h2,
+.story.has-motion-reveal #review h2 { animation: none; transform: none; opacity: 1; filter: none; }
 .folio-hero > .folio-word-canvas {
   position: absolute;
   top: 0;
