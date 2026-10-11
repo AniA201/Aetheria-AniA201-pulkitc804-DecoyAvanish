@@ -3172,6 +3172,23 @@ html:not([data-contrast="high"]) .shell.participant .ask-studio textarea:focus {
 .auth-reference-layout { position: relative; z-index: 1; }
 .auth-showcase.auth-showcase-minimal { background: transparent; }
 .auth-showcase.auth-showcase-minimal::after { display: none; }
+.auth-reference:not(.auth-entry) .auth-showcase.auth-showcase-minimal::after {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 24%;
+  right: 11%;
+  width: min(23rem, 52%);
+  aspect-ratio: 1;
+  border: 0;
+  background: url("/aetheria-mark.svg") center / contain no-repeat;
+  box-shadow: none;
+  filter: blur(7px);
+  opacity: .27;
+  transform: rotate(-7deg);
+  pointer-events: none;
+  z-index: 1;
+}
 .auth-showcase-word { left: clamp(.75rem, 3vw, 2.75rem); color: rgba(13, 91, 88, .42); text-shadow: 2px 5px 10px rgba(13, 91, 88, .14); }
 .registration-orbit-3d { position: absolute; z-index: 2; top: 17%; right: 8%; width: min(30vw, 19rem); aspect-ratio: 1; pointer-events: none; filter: drop-shadow(0 14px 18px rgba(60, 63, 68, .2)); }
 .auth-login-shell::before { display: none; }
