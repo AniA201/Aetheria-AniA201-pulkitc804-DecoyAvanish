@@ -82,6 +82,7 @@ export function Landing() {
   const [shatterProgress, setShatterProgress] = useState(0);
   const [shatterTarget, setShatterTarget] = useState(0);
   const [letterPaths, setLetterPaths] = useState<Partial<Record<TransferKey, LetterPath>>>({});
+  const [letterProgress, setLetterProgress] = useState<Partial<Record<TransferKey, number>>>({});
 
   useEffect(() => {
     const root = rootRef.current;
@@ -112,6 +113,8 @@ export function Landing() {
         const mainBounds = main.getBoundingClientRect();
         const spans = word.querySelectorAll("span");
         const nextPaths: Partial<Record<TransferKey, LetterPath>> = {};
+        const nextProgress: Partial<Record<TransferKey, number>> = {};
+        const flightStart = word.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.76;
         letterTransfers.forEach((spec) => {
           const source = spans[spec.sourceIndex];
           const target = transferTargets.current[spec.key];
@@ -126,12 +129,18 @@ export function Landing() {
             size0: Number.parseFloat(wordStyle.fontSize),
             size1: Number.parseFloat(getComputedStyle(target).fontSize),
           };
+          // Each glyph has its own finish line: it arrives just as its heading
+          // reaches the reading area, rather than all four settling together.
+          const settleAt = end.top + window.scrollY - window.innerHeight * 0.62;
+          const duration = Math.max(window.innerHeight * 0.35, settleAt - flightStart);
+          nextProgress[spec.key] = quiet ? 0 : Math.min(1, Math.max(0, (window.scrollY - flightStart) / duration));
         });
         setLetterPaths((current) => letterTransfers.every(({ key }) => {
           const previous = current[key];
           const next = nextPaths[key];
           return previous && next && Object.keys(next).every((field) => Math.abs(previous[field as keyof LetterPath] - next[field as keyof LetterPath]) < 0.75);
         }) ? current : nextPaths);
+        setLetterProgress((current) => letterTransfers.every(({ key }) => Math.abs((current[key] ?? 0) - (nextProgress[key] ?? 0)) < 0.002) ? current : nextProgress);
       }
     };
     onScroll();
@@ -199,13 +208,11 @@ export function Landing() {
     return () => window.removeEventListener("keydown", onKey);
   }, [menu]);
 
-  const transfer = shatterProgress * shatterProgress * (3 - 2 * shatterProgress);
-  const capital = Math.min(1, Math.max(0, (shatterProgress - 0.3) / 0.42));
-  const settledFade = Math.min(1, Math.max(0, (shatterProgress - 0.93) / 0.07));
-  const motionBlur = Math.sin(Math.PI * transfer) * (1 - settledFade);
   const titleInitialOpacity = (key: TransferKey) => {
     const sectionIndex = letterTransfers.find((transfer) => transfer.key === key)?.sectionIndex ?? Number.MAX_SAFE_INTEGER;
-    return Math.max(0.24 + settledFade * 0.76, chapter >= sectionIndex ? 1 : 0);
+    const progress = letterProgress[key] ?? 0;
+    const fill = Math.min(1, Math.max(0, (progress - 0.78) / 0.18));
+    return Math.max(0.24, fill, chapter >= sectionIndex ? 1 : 0);
   };
 
   return (
@@ -288,11 +295,16 @@ export function Landing() {
         {!quiet && letterTransfers.map((spec) => {
           const path = letterPaths[spec.key];
           if (!path) return null;
+          const progress = letterProgress[spec.key] ?? 0;
+          const transfer = progress * progress * (3 - 2 * progress);
+          const capital = Math.min(1, Math.max(0, (progress - 0.3) / 0.42));
+          const settledFade = Math.min(1, Math.max(0, (progress - 0.93) / 0.07));
+          const motionBlur = Math.sin(Math.PI * transfer) * (1 - settledFade);
           const arc = Math.sin(Math.PI * transfer) * Math.min(110, Math.abs(path.y1 - path.y0) * 0.22);
           const spiral = Math.sin(transfer * Math.PI * 4 + spec.phase) * Math.min(34, Math.abs(path.y1 - path.y0) * 0.035) * Math.sin(Math.PI * transfer);
           return <span
             key={spec.key}
-            className={`folio-transfer-letter folio-transfer-${spec.key}${shatterProgress > 0.975 ? " is-settled" : ""}`}
+            className={`folio-transfer-letter folio-transfer-${spec.key}${progress > 0.975 ? " is-settled" : ""}`}
             style={{
               left: path.x0 + (path.x1 - path.x0) * transfer + spiral,
               top: path.y0 + (path.y1 - path.y0) * transfer - arc,
@@ -300,7 +312,7 @@ export function Landing() {
               lineHeight: 0.76 + transfer * 0.28,
               // The moving glyph remains fully inked through its whole flight.
               // Only its blur trails dissipate at the title, avoiding a pale letter.
-              opacity: Math.min(1, shatterProgress * 7),
+              opacity: Math.min(1, progress * 7),
               transform: `rotate(${(1 - transfer) * -8 + Math.cos(transfer * Math.PI * 4 + spec.phase) * 18 * (1 - transfer)}deg)`,
             }}
             aria-hidden="true"
