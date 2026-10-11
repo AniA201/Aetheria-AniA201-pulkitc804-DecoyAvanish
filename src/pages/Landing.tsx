@@ -12,6 +12,25 @@ const index = [
   { id: "review", number: "04", label: "Review" },
 ];
 
+const backgroundQuotes = {
+  read: ["Original words stay visible", "6 clinic visits", "About 16 weeks", "Two hours each", "What does this mean?", "Check the page"],
+  ask: ["Can I leave later?", "Who pays for travel?", "Who sees my records?", "What about side effects?", "Is any benefit promised?", "Where does it say that?"],
+  feedback: ["Assigned by chance", "Aetherol or placebo?", "No promised benefit", "Say it your way", "What is still unclear?", "Ask the study team"],
+  review: ["6 visits / 8 visits", "16 weeks / 24 weeks", "$50 / $80 per visit", "Which count is right?", "Check the original", "Resolve before using"],
+};
+
+function BackgroundQuotes({ quotes }: { quotes: readonly string[] }) {
+  return (
+    <div className="folio-background-quotes" aria-hidden="true">
+      {quotes.map((quote) => (
+        <span className="folio-background-quote" key={quote}>
+          “{quote}”
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function Landing() {
   useTitle("Aetheria");
   const { reducedMotion, textOnly } = useSession();
@@ -30,8 +49,7 @@ export function Landing() {
       const distance = Math.max(root.offsetHeight - window.innerHeight, 1);
       const progress = Math.min(1, Math.max(0, (window.scrollY - root.offsetTop) / distance));
       progressRef.current = progress;
-      const fade = Math.min(1, Math.max(0, (progress - 0.12) / 0.26));
-      root.style.setProperty("--stage-opacity", String(1 - 0.04 * fade * fade * (3 - 2 * fade)));
+      root.style.setProperty("--stage-opacity", "1");
       const position = window.scrollY + window.innerHeight * 0.42;
       const next = index.reduce((active, item, itemIndex) => {
         const section = document.getElementById(item.id);
@@ -90,7 +108,7 @@ export function Landing() {
       {veil && (
         <div className="veil" aria-hidden="true">
           <AetheriaMark />
-          <p>Informed consent</p>
+          <p>Study documents</p>
           <div className="veil-rule">
             <span />
           </div>
@@ -106,7 +124,7 @@ export function Landing() {
           <AetheriaMark />
           <span>
             <strong>Aetheria</strong>
-            <em>Informed consent</em>
+            <em>Study documents</em>
           </span>
         </Link>
         <nav aria-label="Sections">
@@ -139,13 +157,13 @@ export function Landing() {
               </a>
             ))}
             <Link to="/login?as=participant" onClick={() => setMenu(false)}>
-              Start reading
+              Sign in to read
             </Link>
             <Link to="/login?as=researcher" onClick={() => setMenu(false)}>
               Researcher login
             </Link>
             <Link to="/register" onClick={() => setMenu(false)}>
-              Get started
+              Create account
             </Link>
           </nav>
         </div>
@@ -160,28 +178,28 @@ export function Landing() {
       <main id="content">
         <section className="folio-hero">
           <p className="folio-word" aria-hidden="true">Aetheria</p>
-          <p className="folio-kicker">Know what you are agreeing to</p>
-          <h1>Know before you sign.</h1>
+          <p className="folio-kicker">Clinical study documents</p>
+          <h1>Long forms. Plain words.</h1>
           <p className="folio-lede">
-            Upload a consent form to read its original wording beside clear explanations. Ask about anything uncertain.
+            Long study forms are hard to read. Aetheria puts a shorter explanation beside the original text, with sources you can check. Ask about visits, risks, costs, or privacy before you decide.
           </p>
           <p className="folio-vertical">ICF-AETHER-01</p>
           <div className="folio-hero-actions">
             <Link className="folio-preview" to="/login?as=participant">
               <span className="folio-preview-sheet" aria-hidden="true">
-                <span className="folio-preview-eyebrow">AETHER-01 / CONSENT</span>
-                <strong>Informed consent</strong>
+                <span className="folio-preview-eyebrow">AETHER-01 / STUDY FORM</span>
+                <strong>Study form</strong>
                 <i />
                 <i />
                 <i />
                 <span className="folio-preview-signature">Your copy · 05 sections</span>
               </span>
               <span>
-                Submit a form
-                <em>Start reading →</em>
+                Your study form
+                <em>Sign in to upload →</em>
               </span>
             </Link>
-            <a className="folio-try" href="#read">Explore the sample <span aria-hidden="true">↗</span></a>
+            <a className="folio-try" href="#read">See the sample <span aria-hidden="true">↗</span></a>
           </div>
           <nav className="folio-index" aria-label="Explore Aetheria">
             {index.map((item, itemIndex) => (
@@ -194,42 +212,41 @@ export function Landing() {
         </section>
 
         <section className="folio-split" id="read">
+          <BackgroundQuotes quotes={backgroundQuotes.read} />
           <p className="folio-section-label">01 / Read</p>
           <h2>Read.</h2>
-          <p className="folio-motto">“Keep the original close.”</p>
-          <p className="sr-only">The sample consent form says six clinic visits. The study plan says eight. Compare the original wording before relying on either number.</p>
+          <p className="sr-only">Read each part of the consent form beside a shorter, plain-language explanation. The original words and page citation stay in view.</p>
         </section>
 
         <section className="folio-chapters" id="ask">
+          <BackgroundQuotes quotes={backgroundQuotes.ask} />
           <div className="folio-chapter-head">
             <p className="folio-section-label">02 / Ask</p>
             <h2>Ask.</h2>
           </div>
-          <p className="folio-motto">“Ask before you sign.”</p>
           <p className="sr-only">{sections.map((section) => `${section.ask} ${section.plain} Source: ${section.citation}, ${section.page}.`).join(" ")}</p>
         </section>
 
         <section className="folio-split folio-teach" id="teach">
+          <BackgroundQuotes quotes={backgroundQuotes.feedback} />
           <p className="folio-section-label">03 / Feedback</p>
           <h2>Feedback.</h2>
-          <p className="folio-motto">“Say it in your words.”</p>
           <p className="sr-only">You cannot choose your study group. The sample form says chance assigns Aetherol or placebo. Neither you nor the study doctor knows your group during the study. Source: {sections[0].citation}, {sections[0].page}.</p>
         </section>
 
         <section className="folio-review" id="review">
+          <BackgroundQuotes quotes={backgroundQuotes.review} />
           <p className="folio-section-label">04 / Review</p>
           <h2>Review.</h2>
-          <p className="folio-motto">“Check the differences.”</p>
           <p className="sr-only">{facts.filter((fact) => fact.kind === "confirmed-textual-difference").map((fact) => `${fact.label}: consent says ${fact.consentValue}; study plan says ${fact.protocolValue}.`).join(" ")}</p>
         </section>
 
         <section className="folio-close">
           <Link className="folio-pill" to="/login?as=participant">
-            Begin the reading
+            Sign in to read
           </Link>
           <p>
-            The included sample uses fictional names. This is not medical advice, and it is not a signed
-            consent.
+            The sample is fictional. Aetheria does not collect a signature or make a medical decision.
           </p>
         </section>
       </main>

@@ -43,7 +43,7 @@ export function ConsentFile() {
       return;
     }
     if (ext !== "txt" && ext !== "md" && ext !== "text") {
-      setNote("Use a .txt or .md consent form.");
+      setNote("Use a .txt or .md study form.");
       return;
     }
     const result = readConsentText(chosen.name, await chosen.text());

@@ -150,7 +150,7 @@ export function Integrity() {
         tabs={[
           {
             id: "preflight",
-            label: "Protocol Pre-Flight",
+            label: "Protocol checks",
             lang: "en",
             body: (
               <div className="sheet-work">
@@ -163,7 +163,7 @@ export function Integrity() {
           },
           {
             id: "writeonce",
-            label: "Write Once",
+            label: "Shared figures",
             lang: "en",
             body: (
               <div className="sheet-work">

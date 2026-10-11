@@ -1,6 +1,6 @@
 # Aetheria
 
-Aetheria is a synthetic demo that helps a participant read a clinical-trial consent form and helps a research team compare that form with a matching protocol. It explains, answers, checks understanding, and flags document disagreements. It does not give medical advice, record a signature, decide that someone consented, or approve a protocol.
+Aetheria helps people make sense of long clinical research documents, starting with consent forms. A participant can read shorter, plain-language explanations beside the original text, ask questions with source citations, and check their understanding before speaking with a study team. Researchers can review that wording and compare the consent form with a matching protocol. This is a synthetic demo. It does not give medical advice, record a signature, decide that someone consented, or approve a protocol.
 
 The study AETHER-01, the product Aetherol, and Northwind Clinical Research are fictional. Visit count, study length, and payment were planted so the document check has a known mismatch. Approval status stays unverified because this preview has no authorized approval list.
 

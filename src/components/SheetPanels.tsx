@@ -113,12 +113,12 @@ export function StarterSheets() {
   const real = useTrialSummary();
   const cards = [
     {
-      name: "Teach It Back",
+      name: "Check what participants understood",
       lines: [t.tbQuestions(teachPrompts.length), t.tbPersonas(personas, personaFixtures.length)],
       links: [{ to: "/researcher/insights#handoffs", label: t.handoffs }],
     },
     {
-      name: "Say It Plainly",
+      name: "Rewrite the consent text",
       lines: [
         real ? t.spLay(real.facts, layAudiences.length) : t.loading,
         real ? `${t.real}${t.plantedShort(real.lay.caught, real.lay.planted, real.lay.falseAlarms)}` : t.loading,
@@ -127,7 +127,7 @@ export function StarterSheets() {
       links: [{ to: "/researcher/plain-language#lay", label: t.laySummaries }],
     },
     {
-      name: "Write Once",
+      name: "Compare shared figures",
       lines: [
         real ? t.woFacts(real.rows, real.differs) : t.loading,
         real ? `${t.real}${t.plantedShort(real.writePlants.caught, real.writePlants.planted, real.writePlants.falseAlarms)}` : t.loading,
@@ -136,7 +136,7 @@ export function StarterSheets() {
       links: [{ to: "/researcher/document-integrity#writeonce", label: t.woReal }],
     },
     {
-      name: "Protocol Pre-Flight",
+      name: "Check the protocol",
       lines: [
         real ? t.pfScore(real.pages, real.score.value, real.score.total) : t.loading,
         real ? `${t.real}${t.plantedShort(real.plants.caught, real.plants.planted, real.plants.falseAlarms)}` : t.loading,

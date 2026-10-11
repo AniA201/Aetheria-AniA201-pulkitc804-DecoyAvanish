@@ -6,7 +6,7 @@ const HEIGHT = 1320;
 const SCALE = 2;
 const paper = "#f8f6ee";
 const ink = "#1c2927";
-const plum = "#70518c";
+const teal = "#0d5b58";
 
 type PageDrawing = (context: CanvasRenderingContext2D) => void;
 
@@ -69,13 +69,13 @@ function footer(context: CanvasRenderingContext2D, label: string) {
   context.font = "500 22px Newsreader, Georgia, serif";
   context.fillStyle = ink;
   context.fillText(label, 72, HEIGHT - 104);
-  context.fillStyle = plum;
+  context.fillStyle = teal;
   context.fillText("SYNTHETIC SAMPLE", WIDTH - 414, HEIGHT - 104);
 }
 
 function sectionPage(context: CanvasRenderingContext2D, index: number) {
   const names = ["Read", "Ask", "Feedback", "Review"];
-  const accent = plum;
+  const accent = teal;
   pageFrame(context, "Aetheria / sample study", names[index], accent, "#fffdf8");
   context.fillStyle = accent;
   context.font = "500 98px Newsreader, Georgia, serif";
@@ -100,7 +100,7 @@ function sectionPage(context: CanvasRenderingContext2D, index: number) {
   let blockNumber = 0;
   const block = (heading: string, body: string, source?: string) => {
     blockNumber += 1;
-    context.fillStyle = "#efe9f4";
+    context.fillStyle = "#e3eee9";
     context.fillRect(72, y - 28, 38, 38);
     context.fillStyle = accent;
     context.font = "600 19px Newsreader, Georgia, serif";
@@ -117,7 +117,7 @@ function sectionPage(context: CanvasRenderingContext2D, index: number) {
       context.fillText(source, 72, y + 4, WIDTH - 260);
       y += 35;
     }
-    context.strokeStyle = "#d8cddd";
+    context.strokeStyle = "#c6dad3";
     context.lineWidth = 1.5;
     context.beginPath();
     context.moveTo(72, y + 15);
@@ -127,22 +127,22 @@ function sectionPage(context: CanvasRenderingContext2D, index: number) {
   };
 
   if (index === 0) {
-    block("Start with the source", "Read the consent form alongside the study plan. Keep the original words in view while you check the plain reading.");
-    block("A difference to notice", "The consent form says 6 clinic visits. The study plan says 8. Ask the study team which number is right.", facts[0].consentSource);
+    block("Original wording", "You will come to the study clinic 6 times over about 16 weeks. Each visit lasts about 2 hours.", sections[0].citation + " · " + sections[0].page);
+    block("In plain words", "The form asks you to make 6 clinic trips in about 16 weeks. Plan on roughly 2 hours for each visit.");
   } else if (index === 1) {
-    block("How many visits?", "The consent form says 6 visits over about 16 weeks, around 2 hours each. The study plan says 8 visits.", sections[0].citation + " · " + sections[0].page);
-    block("Can I leave?", "Yes. You can leave later without losing regular care from your own doctor.", sections[2].citation + " · " + sections[2].page);
-    block("What will I pay?", "The study drug and required visits cost you nothing. The form says $50 after each completed visit.", sections[3].citation + " · " + sections[3].page);
+    block("How many visits?", "The consent says 6; the plan says 8. Ask the study team which count applies.", sections[0].citation + " · " + sections[0].page);
+    block("Can I leave?", "Yes. The form says leaving will not change care from your own doctor.", sections[2].citation + " · " + sections[2].page);
+    block("What will I pay?", "Study visits and study drug cost nothing. The form says $50 after each completed visit.", sections[3].citation + " · " + sections[3].page);
   } else if (index === 2) {
-    block("Check what you understood", "Can you choose whether you get Aetherol or placebo?");
-    block("No. Chance decides.", "Neither you nor the study doctor knows your group while the study is going on. If that surprises you, ask before you decide.", sections[0].citation + " · " + sections[0].page);
+    block("Can you choose your group?", "No. Chance assigns Aetherol or placebo. Neither you nor the study doctor knows which you receive during the study.", sections[0].citation + " · " + sections[0].page);
+    block("Ask if this is unclear", "The study team should explain how assignment works before you decide.");
   } else {
     for (const fact of facts.filter((item) => item.kind === "confirmed-textual-difference")) {
       block(fact.label, `Consent: ${fact.consentValue}. Study plan: ${fact.protocolValue}.`);
     }
-    block("Before relying on either", "The study team needs to resolve these differences.");
+    block("What needs checking", "Ask the study team to resolve these three numbers before relying on this form.");
   }
-  footer(context, "AETHER-01 · demonstration only");
+  footer(context, "AETHER-01 · fictional sample");
 }
 
 function createTexture(draw: PageDrawing, anisotropy: number) {

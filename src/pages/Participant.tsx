@@ -53,7 +53,7 @@ function shownPrompt(prompt: TeachPrompt, language: Language): TeachPrompt {
 function NeedFile({ title }: { title: string }) {
   const t = useT();
   return (
-    <div className="page">
+    <div className="page participant-home">
       <h1>{title}</h1>
       <p className="lede dark">{t.needFile}</p>
       <Link className="btn solid dark" to="/participant/home">
@@ -94,7 +94,7 @@ export function ParticipantHome() {
   const next = consent.sections.find((section) => !reviewed.includes(section.id)) ?? consent.sections[0];
 
   return (
-    <div className="page">
+    <div className="page participant-form">
       <p className="kicker">{consent.sample ? t.home.practice : consent.filename}</p>
       <h1>{studyTitle(consent, language)}</h1>
       <p className="lede dark">{t.home.sections(consent.sections.length)}</p>
@@ -197,7 +197,7 @@ export function Explore() {
   };
 
   return (
-    <div className={`reader ${textOnly || !consent.sample ? "text-only" : ""}`}>
+    <div className={`reader participant-reader ${textOnly || !consent.sample ? "text-only" : ""}`}>
       <aside className="chapter-nav" aria-label={t.nav.read}>
         {sections.map((item) => (
           <Link
@@ -451,24 +451,28 @@ export function Ask() {
   };
 
   return (
-    <div className="page ask-page">
+    <div className="page ask-page ask-studio">
       <header className="panel-head">
-        <p className="kicker">{t.ask.title}</p>
-        <h1>{t.ask.heading}</h1>
-        <p className="lede dark">{t.ask.lede}</p>
-        <div className="suggestions">
-          {consent.sections.slice(0, 4).map((item) => {
-            const local = view(item);
-            return (
-              <button key={item.id} type="button" className="chip" onClick={() => ask(local.ask)}>
-                {local.title}
-              </button>
-            );
-          })}
+        <div className="ask-greeting" aria-hidden="true">
+          <strong>Ask Aetheria</strong>
         </div>
       </header>
       <div className="thread" aria-live="polite">
-        {messages.length === 0 && <p className="empty">{t.ask.empty}</p>}
+        {messages.length === 0 && (
+          <div className="ask-empty-state">
+            <p>What would you like to understand?</p>
+            <div className="suggestions">
+              {consent.sections.slice(0, 4).map((item) => {
+                const local = view(item);
+                return (
+                  <button key={item.id} type="button" className="chip" onClick={() => ask(local.ask)}>
+                    {local.title}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
         {messages.map((message) => (
           <article key={message.id} className={`bubble ${message.role}`}>
             {!message.english && message.steps && message.steps.length > 0 ? <small>{message.steps.join(" · ")}</small> : null}
@@ -532,14 +536,16 @@ export function Ask() {
           ask(draft);
         }}
       >
-        <label htmlFor="question">{t.ask.label}</label>
-        <textarea id="question" value={draft} onChange={(event) => setDraft(event.target.value)} rows={3} placeholder={t.ask.placeholder} />
-        <button className="btn solid dark" type="submit">
-          {t.ask.send}
-        </button>
-        <button className="btn on-paper" type="button" onClick={dictation.start}>
-          {t.ask.dictate}
-        </button>
+        <label className="sr-only" htmlFor="question">Your question</label>
+        <textarea id="question" value={draft} onChange={(event) => setDraft(event.target.value)} rows={1} placeholder="Ask about your study form" />
+        <div className="ask-form-actions">
+          <button className="btn solid dark" type="submit">
+            {t.ask.send}
+          </button>
+          <button className="btn on-paper" type="button" onClick={dictation.start}>
+            {t.ask.dictate}
+          </button>
+        </div>
         {dictation.note ? <p className="fine">{dictation.note}</p> : null}
       </form>
     </div>
@@ -761,7 +767,7 @@ export function Teach() {
   const shownMissing = result ? (result.shownMissing ?? result.missing) : [];
 
   return (
-    <div className="page check-page">
+    <div className="page check-page check-studio">
       <header className="panel-head">
         <p className="kicker">{t.check.title}</p>
         <h1>{t.check.heading}</h1>
