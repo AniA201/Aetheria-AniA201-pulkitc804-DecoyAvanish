@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   consentDoc,
   factFlagged,
@@ -21,21 +20,21 @@ import { useR } from "../lib/researchI18n";
 import { assessTeachback } from "../lib/teachback";
 import {
   ApprovedList,
-  CompareWorkbook,
   ConsentElements,
   DesignBrief,
   PersonaResults,
   PlainWorkbook,
+  PracticeWriteOnce,
   PreFlight,
-  RealTrialWork,
   RegistryCard,
   StarterSheets,
   StoredHandoffs,
   VersionStanding,
 } from "../components/SheetPanels";
+import { Fold, Tabs } from "../components/Disclosure";
 import { useSession, type ReviewState } from "../state/Session";
 import { useTitle } from "../components/Chrome";
-import { TrialLaySummary } from "../components/TrialPanels";
+import { TrialLaySummary, TrialPreFlight, TrialWriteOnce } from "../components/TrialPanels";
 import { TrialLookup } from "../components/TrialLookup";
 
 const wordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
@@ -70,101 +69,123 @@ export function Overview() {
           <span>{r.overview.draft}</span>
         </article>
       </div>
-      <div className="action-row">
-        <Link className="btn solid dark" to="/researcher/document-integrity">
-          {r.overview.compare}
-        </Link>
-        <Link className="btn on-paper" to="/researcher/plain-language">
-          {r.overview.plain}
-        </Link>
-      </div>
       <StarterSheets />
     </div>
+  );
+}
+
+/** The practice protocol beside the submitted consent, one fact at a time, with a review decision for each difference. */
+function PracticeFacts() {
+  const r = useR();
+  const { reviews, setReview, reviewNotes, setReviewNote } = useSession();
+  return (
+    <>
+      {facts.map((fact) => {
+        const flagged = factFlagged(fact);
+        const state: ReviewState = reviews[fact.id] ?? "open";
+        return (
+          <Fold
+            key={fact.id}
+            title={<span lang="en">{fact.label}</span>}
+            meta={flagged ? r.integrity.difference(r.review[state]) : r.integrity.consistent}
+            open={flagged && isOpenReview(state)}
+          >
+            <div className="split" lang="en">
+              <div>
+                <h3>
+                  {r.integrity.protocol} · {fact.protocolValue}
+                </h3>
+                <blockquote>{fact.protocolQuote}</blockquote>
+                <small>{fact.protocolSource}</small>
+              </div>
+              <div>
+                <h3>
+                  {r.integrity.consent} · {fact.consentValue}
+                </h3>
+                <blockquote>{fact.consentQuote}</blockquote>
+                <small>{fact.consentSource}</small>
+              </div>
+            </div>
+            {flagged && (
+              <>
+                <label htmlFor={`note-${fact.id}`}>{r.integrity.note}</label>
+                <textarea id={`note-${fact.id}`} rows={2} value={reviewNotes[fact.id] ?? ""} onChange={(event) => setReviewNote(fact.id, event.target.value)} />
+                <div className="action-row">
+                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "under-review")}>
+                    {r.integrity.markUnder}
+                  </button>
+                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "resolved")}>
+                    {r.integrity.markReviewed}
+                  </button>
+                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "dismissed")}>
+                    {r.integrity.dismiss}
+                  </button>
+                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "open")}>
+                    {r.integrity.reopen}
+                  </button>
+                </div>
+              </>
+            )}
+          </Fold>
+        );
+      })}
+    </>
   );
 }
 
 export function Integrity() {
   const r = useR();
   useTitle(r.nav[1]);
-  const { reviews, setReview, reviewNotes, setReviewNote, consent } = useSession();
-  if (!consent || !consent.hasProtocol) {
-    return (
-      <div className="page">
-        <p className="kicker">{r.integrity.kicker}</p>
-        <h1>{r.integrity.title}</h1>
-        <p className="lede dark">{consent ? r.integrity.noProtocol : r.integrity.noConsent}</p>
-        <TrialLookup />
-        <RealTrialWork />
-        <div className="sheet-work">
-          <PreFlight />
-          <DesignBrief />
-        </div>
-      </div>
-    );
-  }
+  const { consent } = useSession();
 
   return (
     <div className="page">
       <p className="kicker">{r.integrity.kicker}</p>
       <h1>{r.integrity.title}</h1>
       <TrialLookup />
-      <div className="fact-list">
-        {facts.map((fact) => {
-          const flagged = factFlagged(fact);
-          const state: ReviewState = reviews[fact.id] ?? "open";
-          return (
-            <article key={fact.id} className={flagged ? "fact flagged" : "fact"}>
-              <header>
-                <h2 lang="en">{fact.label}</h2>
-                <p className="flag">{flagged ? r.integrity.difference(r.review[state]) : r.integrity.consistent}</p>
-              </header>
-              <div className="split" lang="en">
-                <div>
-                  <h3>
-                    {r.integrity.protocol} · {fact.protocolValue}
-                  </h3>
-                  <blockquote>{fact.protocolQuote}</blockquote>
-                  <small>{fact.protocolSource}</small>
-                </div>
-                <div>
-                  <h3>
-                    {r.integrity.consent} · {fact.consentValue}
-                  </h3>
-                  <blockquote>{fact.consentQuote}</blockquote>
-                  <small>{fact.consentSource}</small>
-                </div>
+      <Tabs
+        label={r.nav[1]}
+        tabs={[
+          {
+            id: "preflight",
+            label: "Protocol Pre-Flight",
+            lang: "en",
+            body: (
+              <div className="sheet-work">
+                <TrialPreFlight />
+                <Fold title={r.ui.otherProtocol}>
+                  <PreFlight />
+                </Fold>
               </div>
-              <p lang="en">{fact.why}</p>
-              {flagged && (
-                <>
-                  <label htmlFor={`note-${fact.id}`}>{r.integrity.note}</label>
-                  <textarea
-                    id={`note-${fact.id}`}
-                    rows={2}
-                    value={reviewNotes[fact.id] ?? ""}
-                    onChange={(event) => setReviewNote(fact.id, event.target.value)}
-                  />
-                  <div className="action-row">
-                    <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "under-review")}>
-                      {r.integrity.markUnder}
-                    </button>
-                    <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "resolved")}>
-                      {r.integrity.markReviewed}
-                    </button>
-                    <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "dismissed")}>
-                      {r.integrity.dismiss}
-                    </button>
-                    <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "open")}>
-                      {r.integrity.reopen}
-                    </button>
-                  </div>
-                </>
-              )}
-            </article>
-          );
-        })}
-      </div>
-      <CompareWorkbook />
+            ),
+          },
+          {
+            id: "writeonce",
+            label: "Write Once",
+            lang: "en",
+            body: (
+              <div className="sheet-work">
+                <TrialWriteOnce />
+                {consent?.hasProtocol ? (
+                  <Fold title={r.ui.practice}>
+                    <PracticeFacts />
+                    <PracticeWriteOnce />
+                  </Fold>
+                ) : null}
+              </div>
+            ),
+          },
+          {
+            id: "brief",
+            label: r.sheets.pfBrief,
+            body: (
+              <div className="sheet-work">
+                <DesignBrief />
+              </div>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }
@@ -173,79 +194,55 @@ export function Insights() {
   const r = useR();
   useTitle(r.nav[2]);
   const { saved } = useSession();
-  const fixtureResults = teachFixtures.map((fixture) => ({
+  const examples = teachFixtures.map((fixture) => ({
     ...fixture,
     result: assessTeachback(fixture.promptId, fixture.response),
     topic: teachPrompts.find((prompt) => prompt.id === fixture.promptId)?.topic ?? fixture.promptId,
   }));
-  const counts = fixtureResults.reduce<Record<string, number>>((map, item) => {
-    map[item.result.label] = (map[item.result.label] ?? 0) + 1;
-    return map;
-  }, {});
 
   return (
     <div className="page">
       <p className="kicker">{r.insights.kicker}</p>
-      <h1>{r.insights.title}</h1>
-      <p className="fine">{r.insights.note}</p>
-      <div className="stat-row">
-        {Object.entries(counts).map(([label, count]) => (
-          <article key={label}>
-            <strong>{count}</strong>
-            <span>{r.understanding[label] ?? label}</span>
-          </article>
-        ))}
-      </div>
-      <ul className="stack">
-        {fixtureResults.map((item, index) => (
-          <li key={`${item.promptId}-${index}`}>
-            <strong>
-              <span lang="en">{item.topic}</span> · {r.understanding[item.result.label] ?? item.result.label}
-            </strong>
-            <p lang="en">“{item.response}”</p>
-          </li>
-        ))}
-      </ul>
+      <h1>{r.nav[2]}.</h1>
       <div className="sheet-work">
         <StoredHandoffs />
-        <PersonaResults />
+        <div>
+          <PersonaResults />
+          <Fold title={r.ui.examples} meta={examples.length}>
+            <p className="fine">{r.insights.note}</p>
+            <ul className="stack">
+              {examples.map((item, index) => (
+                <li key={`${item.promptId}-${index}`}>
+                  <strong>
+                    <span lang="en">{item.topic}</span> · {r.understanding[item.result.label] ?? item.result.label}
+                  </strong>
+                  <p lang="en">“{item.response}”</p>
+                </li>
+              ))}
+            </ul>
+          </Fold>
+          <Fold title={r.insights.savedTitle} meta={saved.length}>
+            {saved.length === 0 ? <p className="empty">{r.insights.savedNone}</p> : null}
+            <ul className="stack">
+              {saved.map((item) => (
+                <li key={item.id}>
+                  <strong>{item.question}</strong>
+                  <p>{item.answer}</p>
+                </li>
+              ))}
+            </ul>
+          </Fold>
+        </div>
       </div>
-      <h2>{r.insights.savedTitle}</h2>
-      <p className="fine">{saved.length === 0 ? r.insights.savedNone : r.insights.savedCount(saved.length)}</p>
-      {saved.length > 0 && (
-        <details className="stack">
-          <summary>{r.insights.showSaved}</summary>
-          <ul className="stack">
-            {saved.map((item) => (
-              <li key={item.id}>
-                <strong>{item.question}</strong>
-                <p>{item.answer}</p>
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
     </div>
   );
 }
 
-export function Studio() {
+/** The practice consent's costs section: original clause beside an editable plain reading. */
+function SectionRewrite() {
   const r = useR();
-  useTitle(r.nav[3]);
   const { draft, setDraft, draftText, setDraftText, consent } = useSession();
-  if (!consent) {
-    return (
-      <div className="page">
-        <p className="kicker">{r.studio.kicker}</p>
-        <h1>{r.studio.title}</h1>
-        <p className="lede dark">{r.studio.noConsent}</p>
-        <div className="sheet-work">
-          <TrialLaySummary />
-        </div>
-      </div>
-    );
-  }
-  const uploaded = consent.source === "upload" ? consent.sections[0] : null;
+  const uploaded = consent?.source === "upload" ? consent.sections[0] : null;
   const original = uploaded?.original ?? plainDraft.original;
   const seeded = uploaded?.plain ?? plainDraft.draft;
   const title = uploaded?.title ?? plainDraft.title;
@@ -254,13 +251,11 @@ export function Studio() {
   const costs = uploaded ? uploaded.terms : sectionById("costs").terms;
 
   return (
-    <div className="page">
-      <p className="kicker">{r.studio.kicker}</p>
-      <h1 lang="en">{title}</h1>
+    <Fold title={<span lang="en">{title}</span>} meta={r.states[draft]}>
       <p className="fine">{r.studio.words(wordCount(original), wordCount(reading), longSentenceCount(original), longSentenceCount(reading))}</p>
       <div className="split studio">
         <article>
-          <h2>{r.studio.original}</h2>
+          <h3>{r.studio.original}</h3>
           <p lang="en">{original}</p>
           <dl className="terms" lang="en">
             {costs.map((term) => (
@@ -272,14 +267,8 @@ export function Studio() {
           </dl>
         </article>
         <article>
-          <h2>{r.studio.proposed(r.states[draft])}</h2>
           <label htmlFor="plain-draft">{r.studio.edit}</label>
-          <textarea
-            id="plain-draft"
-            rows={6}
-            value={reading}
-            onChange={(event) => setDraftText(event.target.value)}
-          />
+          <textarea id="plain-draft" rows={6} value={reading} onChange={(event) => setDraftText(event.target.value)} />
         </article>
       </div>
       <ul className="plain-list">
@@ -301,7 +290,40 @@ export function Studio() {
           {r.studio.back}
         </button>
       </div>
-      <PlainWorkbook />
+    </Fold>
+  );
+}
+
+export function Studio() {
+  const r = useR();
+  useTitle(r.nav[3]);
+  const { consent } = useSession();
+
+  return (
+    <div className="page">
+      <p className="kicker">{r.studio.kicker}</p>
+      <h1>{r.studio.title}</h1>
+      {consent ? (
+        <Tabs
+          label={r.nav[3]}
+          tabs={[
+            { id: "lay", label: r.sheets.laySummaries, body: <div className="sheet-work"><TrialLaySummary /></div> },
+            {
+              id: "readings",
+              label: r.sheets.readings,
+              body: (
+                <PlainWorkbook>
+                  <SectionRewrite />
+                </PlainWorkbook>
+              ),
+            },
+          ]}
+        />
+      ) : (
+        <div className="sheet-work">
+          <TrialLaySummary />
+        </div>
+      )}
     </div>
   );
 }
@@ -379,13 +401,13 @@ export function Documents() {
     <div className="page">
       <p className="kicker">{r.files.kicker}</p>
       <h1>{r.files.title}</h1>
-      <p className="fine">{consent ? r.files.using(`${consent.documentId} ${consent.version}`, consent.sample) : r.files.none}</p>
-      <section className="file-card-grid" aria-label="Document library">
+      <VersionStanding version={consent?.version ?? consentDoc.version} language={language} />
+      <section className="file-card-grid" aria-label={r.files.title}>
         {consent && (
           <article className="file-card active">
-            <p className="kicker">Current form</p>
+            <p className="kicker">{r.files.submitted}</p>
             <strong>
-              {r.files.submitted} · {consent.documentId} {consent.version}
+              {consent.documentId} {consent.version}
             </strong>
             <p>
               {consent.filename} · {consent.status}
@@ -395,22 +417,22 @@ export function Documents() {
         )}
         {(!consent || consent.hasProtocol) &&
           versions.map((item) => (
-            <article key={`${item.id}-${item.version}`} className="file-card" lang="en">
-              <p className="kicker">Reference</p>
-              <strong>
+            <article key={`${item.id}-${item.version}`} className="file-card">
+              <p className="kicker">{r.ui.reference}</p>
+              <strong lang="en">
                 {item.kind} · {item.id} {item.version}
               </strong>
-              <p>
+              <p lang="en">
                 {item.date} · {item.status}
               </p>
-              <small>{item.note}</small>
+              <small lang="en">{item.note}</small>
             </article>
           ))}
         {imports.map((item) => (
           <article key={item.id} className="file-card">
-            <p className="kicker">Imported</p>
+            <p className="kicker">{r.files.imported}</p>
             <strong>
-              {r.files.imported} · {item.documentId} {item.version}
+              {item.documentId} {item.version}
             </strong>
             <p>
               {item.filename} · {item.usable ? r.files.stored : r.files.notUsed}
@@ -430,21 +452,25 @@ export function Documents() {
         }}
       />
       {note ? <p className="fine">{note}</p> : null}
-      <h2>{r.files.facts}</h2>
-      <ul className="stack">
-        {facts.map((fact) => (
-          <li key={fact.id}>
-            <strong lang="en">{fact.label}</strong>
-            <p>{r.files.factLine(fact.protocolValue, fact.consentValue)}</p>
-            <small>
-              {fact.protocolSource} · {fact.consentSource}
-            </small>
-          </li>
-        ))}
-      </ul>
-      <VersionStanding version={consent?.version ?? consentDoc.version} language={language} />
-      <ConsentElements />
-      <RegistryCard />
+      <div className="sheet-work">
+        <div>
+          <ConsentElements />
+          <Fold title={r.files.facts} meta={facts.length}>
+            <ul className="stack">
+              {facts.map((fact) => (
+                <li key={fact.id}>
+                  <strong lang="en">{fact.label}</strong>
+                  <p>{r.files.factLine(fact.protocolValue, fact.consentValue)}</p>
+                  <small lang="en">
+                    {fact.protocolSource} · {fact.consentSource}
+                  </small>
+                </li>
+              ))}
+            </ul>
+          </Fold>
+          <RegistryCard />
+        </div>
+      </div>
     </div>
   );
 }
@@ -471,12 +497,8 @@ export function Settings() {
   }, []);
 
   const rows: [string, string][] = [
-    [r.settings.answers, r.settings.answersText],
-    [r.settings.voice, r.settings.voiceText],
     [r.settings.model, ollama?.detail ?? r.settings.checkingOllama],
     [r.settings.guide, gemini === null ? r.settings.checkingGemini : gemini.configured ? r.settings.geminiOn(gemini.model ?? "") : r.settings.geminiOff],
-    [r.settings.storage, r.settings.storageText],
-    [r.settings.roles, r.settings.rolesText],
   ];
 
   return (
@@ -492,31 +514,33 @@ export function Settings() {
         ))}
       </ul>
       <ApprovedList />
-      <h2>{r.settings.actions}</h2>
-      {audit.length === 0 ? (
-        <p className="empty">{r.settings.noActions}</p>
-      ) : (
-        <ul className="stack">
-          {audit.map((event) => (
-            <li key={event.id} lang="en">
-              <strong>
-                {event.action} · {event.at}
-              </strong>
-              <p>{event.detail}</p>
-            </li>
-          ))}
-        </ul>
-      )}
-      <button
-        type="button"
-        className="btn on-paper"
-        onClick={() => {
-          reset();
-          setCleared(true);
-        }}
-      >
-        {r.settings.reset}
-      </button>
+      <div className="sheet-work">
+        <Fold title={r.settings.actions} meta={audit.length}>
+          {audit.length === 0 ? <p className="empty">{r.settings.noActions}</p> : null}
+          <ul className="stack">
+            {audit.map((event) => (
+              <li key={event.id} lang="en">
+                <strong>
+                  {event.action} · {event.at}
+                </strong>
+                <p>{event.detail}</p>
+              </li>
+            ))}
+          </ul>
+        </Fold>
+      </div>
+      <div className="action-row">
+        <button
+          type="button"
+          className="btn on-paper"
+          onClick={() => {
+            reset();
+            setCleared(true);
+          }}
+        >
+          {r.settings.reset}
+        </button>
+      </div>
       {cleared && <p className="fine">{r.settings.resetDone}</p>}
     </div>
   );

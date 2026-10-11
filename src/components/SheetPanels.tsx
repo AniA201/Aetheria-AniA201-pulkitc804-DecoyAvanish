@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { Fold } from "./Disclosure";
 import { parseDocument } from "../data/documents";
 import { personaFixtures, teachPrompts } from "../data/study";
 import { blocks, blocksIn, extractValues, proposeChange, registryFields, render, sourceText, uses, type BlockId } from "../lib/blocks";
 import { draftFromBrief, usdmShape, type Brief } from "../lib/brief";
 import { consentElements } from "../lib/elements";
 import { loadHandoffs, sendHandoffMessage, type StoredHandoff } from "../lib/handoff";
-import { type Language } from "../lib/languages";
+import { isLanguage, type Language } from "../lib/languages";
 import { layAudiences } from "../lib/laySummary";
 import { extractPdfText } from "../lib/pdf";
 import { checkDraft, readability, runPlantedDrafts, traceFigures } from "../lib/plainLab";
@@ -28,7 +29,7 @@ import {
 import { useR, type ResearchStrings } from "../lib/researchI18n";
 import { assessTeachback } from "../lib/teachback";
 import { readingSource, versionNote } from "../lib/workbook";
-import { TrialLaySummary, TrialPreFlight, TrialPrecedent, TrialWriteOnce, useTrialSummary } from "./TrialPanels";
+import { FillBrief, TrialPrecedent, useTrialSummary } from "./TrialPanels";
 import { useSession, type CommentTarget, type ReviewerComment } from "../state/Session";
 
 export function download(name: string, text: string, type = "text/plain") {
@@ -113,11 +114,8 @@ export function StarterSheets() {
   const cards = [
     {
       name: "Teach It Back",
-      lines: [t.tbQuestions(teachPrompts.length), t.tbPersonas(personas, personaFixtures.length), t.tbVoice, t.tbNoConsent],
-      links: [
-        { to: "/researcher/insights#handoffs", label: t.handoffs },
-        { to: "/researcher/insights#personas", label: t.personas },
-      ],
+      lines: [t.tbQuestions(teachPrompts.length), t.tbPersonas(personas, personaFixtures.length)],
+      links: [{ to: "/researcher/insights#handoffs", label: t.handoffs }],
     },
     {
       name: "Say It Plainly",
@@ -125,37 +123,28 @@ export function StarterSheets() {
         real ? t.spLay(real.facts, layAudiences.length) : t.loading,
         real ? `${t.real}${t.plantedShort(real.lay.caught, real.lay.planted, real.lay.falseAlarms)}` : t.loading,
         `${t.practice}${t.plantedShort(lab.caught, lab.planted, lab.falseAlarms)}`,
-        t.spReview,
       ],
-      links: [
-        { to: "/researcher/plain-language#lay-summary", label: t.laySummaries },
-        { to: "/researcher/plain-language#say-it-plainly", label: t.readings },
-      ],
+      links: [{ to: "/researcher/plain-language#lay", label: t.laySummaries }],
     },
     {
       name: "Write Once",
       lines: [
         real ? t.woFacts(real.rows, real.differs) : t.loading,
         real ? `${t.real}${t.plantedShort(real.writePlants.caught, real.writePlants.planted, real.writePlants.falseAlarms)}` : t.loading,
-        t.woChange,
         t.woPractice(blocks.length, matching, bound.length),
       ],
-      links: [
-        { to: "/researcher/document-integrity#nct-write-once", label: t.woReal },
-        { to: "/researcher/document-integrity#write-once", label: t.woBlocks },
-      ],
+      links: [{ to: "/researcher/document-integrity#writeonce", label: t.woReal }],
     },
     {
       name: "Protocol Pre-Flight",
       lines: [
         real ? t.pfScore(real.pages, real.score.value, real.score.total) : t.loading,
         real ? `${t.real}${t.plantedShort(real.plants.caught, real.plants.planted, real.plants.falseAlarms)}` : t.loading,
-        real ? t.pfHistory(real.amendments.length, real.peers) : t.loading,
         t.pfPractice(score.value, planted.caught, planted.planted),
       ],
       links: [
-        { to: "/researcher/document-integrity#nct-pre-flight", label: t.pfReal },
-        { to: "/researcher/document-integrity#design-brief", label: t.pfBrief },
+        { to: "/researcher/document-integrity#preflight", label: t.pfReal },
+        { to: "/researcher/document-integrity#brief", label: t.pfBrief },
       ],
     },
   ];
@@ -163,7 +152,6 @@ export function StarterSheets() {
   return (
     <section className="sheet-cards" aria-label={t.title}>
       <h2>{t.title}</h2>
-      <p className="fine">{t.note}</p>
       <div className="sheet-card-grid">
         {cards.map((card) => (
           <article key={card.name} className="fact">
@@ -195,19 +183,12 @@ function BlockLibrary() {
   const values = extractValues();
   return (
     <section id="write-once">
-      <h2>{w.blocks}</h2>
+      <h3>{w.blocks}</h3>
       {blocks.map((block) => {
         const value = values[block.id];
         const agrees = value.protocol === value.consent;
         return (
-          <article key={block.id} className={agrees ? "fact" : "fact flagged"}>
-            <header>
-              <h3 lang="en">{block.label}</h3>
-              <p className="flag">
-                {block.owner} · {agrees ? w.same : w.differ}
-              </p>
-            </header>
-            <p>{w.values(value.protocol, value.consent, block.unit)}</p>
+          <Fold key={block.id} title={<span lang="en">{block.label}</span>} meta={`${w.values(value.protocol, value.consent, block.unit)} · ${agrees ? w.same : w.differ}`}>
             <ul className="stack">
               {uses
                 .filter((use) => blocksIn(use.template).includes(block.id))
@@ -223,7 +204,7 @@ function BlockLibrary() {
                   );
                 })}
             </ul>
-          </article>
+          </Fold>
         );
       })}
     </section>
@@ -244,8 +225,7 @@ function ProposeChange() {
 
   return (
     <section>
-      <h2>{w.propose}</h2>
-      <p className="fine">{w.proposeNote}</p>
+      <h3>{w.propose}</h3>
       <div className="sheet-form">
         <label htmlFor="block-pick">{w.block}</label>
         <select id="block-pick" value={blockId} onChange={(event) => setBlockId(event.target.value as BlockId)}>
@@ -268,7 +248,7 @@ function ProposeChange() {
         {problem ? <p className="fine">{problem}</p> : null}
       </div>
 
-      <h3>{w.history}</h3>
+      <h4>{w.history}</h4>
       <ol className="stack">
         {proposals.map((proposal) => {
           const label = blocks.find((item) => item.id === proposal.blockId)?.label ?? proposal.blockId;
@@ -341,8 +321,7 @@ export function RegistryCard() {
   const r = useR();
   const fields = registryFields(extractValues());
   return (
-    <section id="registry">
-      <h2>{r.files.registry}</h2>
+    <Fold id="registry" title={r.files.registry} meta={`${fields.filter((field) => field.agrees).length}/${fields.length} · ${r.files.same}`}>
       <ul className="stack">
         {fields.map((field) => (
           <li key={field.id}>
@@ -352,7 +331,7 @@ export function RegistryCard() {
           </li>
         ))}
       </ul>
-    </section>
+    </Fold>
   );
 }
 
@@ -417,8 +396,7 @@ export function ChecklistTable({ rows }: { rows: ChecklistResult[] }) {
         const part = rows.filter((row) => row.list === list);
         const count = (mark: ChecklistResult["mark"]) => part.filter((row) => row.mark === mark).length;
         return (
-          <details key={list}>
-            <summary>{r.preflight.summary(list, part.length, count("present"), count("thin"), count("missing"))}</summary>
+          <Fold key={list} title={r.preflight.summary(list, part.length, count("present"), count("thin"), count("missing"))}>
             <ul className="stack">
               {part.map((row) => (
                 <li key={row.id} className={row.mark === "missing" ? "fail" : row.mark === "present" ? "pass" : ""}>
@@ -436,10 +414,22 @@ export function ChecklistTable({ rows }: { rows: ChecklistResult[] }) {
                 </li>
               ))}
             </ul>
-          </details>
+          </Fold>
         );
       })}
     </>
+  );
+}
+
+export function Score({ score }: { score: ReturnType<typeof coverageScore> }) {
+  const r = useR();
+  return (
+    <p className="score-line">
+      <strong>{r.preflight.coverage(score.value)}</strong>
+      <small>
+        {r.preflight.formula(score.present, score.thin, score.total, score.value)}. {r.preflight.notApproval}
+      </small>
+    </p>
   );
 }
 
@@ -473,7 +463,6 @@ export function PreFlight() {
 
   return (
     <section id="pre-flight">
-      <h2>{p.title}</h2>
       <p className="fine">{p.checking(source.name, source.sections.length)}</p>
       <label htmlFor="protocol-file">{p.file}</label>
       <input
@@ -508,23 +497,17 @@ export function PreFlight() {
       ) : null}
       {note ? <p className="fine">{note}</p> : null}
 
-      <article className="fact">
-        <h3>{p.coverage(score.value)}</h3>
-        <p>{p.formula(score.present, score.thin, score.total, score.value)}</p>
-        <p className="fine">{p.notApproval}</p>
-      </article>
+      <Score score={score} />
       <ChecklistTable rows={rows} />
-
-      <h3>{p.inside}</h3>
-      <FindingList findings={internal} />
+      <Fold title={p.inside} meta={r.ui.flagged(internal.filter((finding) => finding.status === "flag").length)}>
+        <FindingList findings={internal} />
+      </Fold>
       {source.practice ? (
-        <>
-          <h3>{p.againstConsent}</h3>
+        <Fold title={p.againstConsent} meta={r.ui.flagged(cross.filter((finding) => finding.status === "flag").length)}>
           <FindingList findings={cross} />
-        </>
+        </Fold>
       ) : null}
-
-      <h3>{p.risks}</h3>
+      <Fold title={p.risks} meta={spots.length}>
       <ul className="stack">
         {spots.length === 0 ? <li>{p.noRisks}</li> : null}
         {spots.map((spot) => (
@@ -537,16 +520,14 @@ export function PreFlight() {
           </li>
         ))}
       </ul>
-
-      <h3>{r.plantedTitle}</h3>
-      <p>{r.planted(planted.caught, planted.planted, planted.falseAlarms)}</p>
-      <PlantedCases cases={planted.cases} />
-
+      </Fold>
+      <Fold title={r.plantedTitle} meta={r.planted(planted.caught, planted.planted, planted.falseAlarms)}>
+        <PlantedCases cases={planted.cases} />
+      </Fold>
       {source.practice && hours.protocol !== null && hours.consent !== null ? (
-        <>
-          <h3>{p.time}</h3>
+        <Fold title={p.time} meta={r.ui.hours(hours.protocol)}>
           <p>{p.hours(hours.protocol, hours.consent)}</p>
-        </>
+        </Fold>
       ) : null}
     </section>
   );
@@ -566,7 +547,7 @@ export function DesignBrief() {
   return (
     <section id="design-brief">
       <h2>{b.title}</h2>
-      <p className="fine">{b.note}</p>
+      <FillBrief />
       <div className="brief-grid">
         {briefKeys.map((key) => (
           <label key={key}>
@@ -575,6 +556,7 @@ export function DesignBrief() {
           </label>
         ))}
       </div>
+      <Fold title={r.ui.m11} meta={r.ui.drafts(accepted.size, sections.length)}>
       {sections.map((section) => (
         <article key={section.id} className={section.missing ? "fact flagged" : "fact"}>
           <h3 lang="en">
@@ -594,41 +576,28 @@ export function DesignBrief() {
           ) : null}
         </article>
       ))}
-      <button
-        type="button"
-        className="btn on-paper"
-        onClick={() => download("design-brief-usdm-shaped.json", JSON.stringify(usdmShape(brief, accepted), null, 2), "application/json")}
-      >
-        {b.usdm}
-      </button>
-      <p className="fine">{b.usdmNote}</p>
+      </Fold>
       <TrialPrecedent />
+      <div className="action-row">
+        <button
+          type="button"
+          className="btn on-paper"
+          onClick={() => download("design-brief-usdm-shaped.json", JSON.stringify(usdmShape(brief, accepted), null, 2), "application/json")}
+        >
+          {b.usdm}
+        </button>
+      </div>
+      <p className="fine">{b.usdmNote}</p>
     </section>
   );
 }
 
-/** Pre-Flight and Write Once on the real public trial, then the same tools on the practice pair. */
-export function RealTrialWork() {
-  const r = useR();
-  return (
-    <div className="sheet-work">
-      <p className="pack-line">{r.brief.realLine}</p>
-      <TrialPreFlight />
-      <TrialWriteOnce />
-    </div>
-  );
-}
-
-export function CompareWorkbook() {
+/** Write Once on the practice protocol and consent: the shared blocks and change proposals. */
+export function PracticeWriteOnce() {
   return (
     <>
-      <RealTrialWork />
-      <div className="sheet-work">
-        <BlockLibrary />
-        <ProposeChange />
-        <PreFlight />
-        <DesignBrief />
-      </div>
+      <BlockLibrary />
+      <ProposeChange />
     </>
   );
 }
@@ -647,8 +616,7 @@ export function Comments({ audience }: { audience: CommentTarget }) {
   const mine = comments.filter((comment) => comment.audience === audience);
 
   return (
-    <div>
-      <h4>{c.title}</h4>
+    <Fold title={c.title} meta={mine.length}>
       <ul className="stack">
         {mine.length === 0 ? <li>{c.none}</li> : null}
         {mine.map((comment) => (
@@ -688,13 +656,13 @@ export function Comments({ audience }: { audience: CommentTarget }) {
           {c.add}
         </button>
       </div>
-    </div>
+    </Fold>
   );
 }
 
 const handoffChoices = ["Spanish", "French", "Mandarin Chinese", "Vietnamese", "Arabic", "Haitian Creole"];
 
-export function PlainWorkbook() {
+export function PlainWorkbook({ children }: { children?: ReactNode }) {
   const r = useR();
   const p = r.plain;
   const {
@@ -720,11 +688,14 @@ export function PlainWorkbook() {
     <div className="sheet-work">
       <section id="say-it-plainly">
         <h2>{p.title}</h2>
-        <p className="fine">{p.source(source.title, source.mustKeep.join(", ") || "—", source.mustNotAdd.join(", "))}</p>
-        <p className="fine">{p.flesch(sourceEase.readingEase, sourceEase.grade)}</p>
-        <button type="button" className="btn on-paper" onClick={() => regenerateReadings("Regenerated by a person from the current source")}>
-          {p.regenerate}
-        </button>
+        <p className="fine">
+          {p.source(source.title, source.mustKeep.join(", ") || "—", source.mustNotAdd.join(", "))} {p.flesch(sourceEase.readingEase, sourceEase.grade)}
+        </p>
+        <div className="action-row">
+          <button type="button" className="btn on-paper" onClick={() => regenerateReadings("Regenerated by a person from the current source")}>
+            {p.regenerate}
+          </button>
+        </div>
         {(["adult", "caregiver"] as const).map((audience) => {
           const text = audienceText[audience];
           const ease = readability(text);
@@ -741,25 +712,28 @@ export function PlainWorkbook() {
               </header>
               <textarea rows={4} aria-label={name} lang="en" value={text} onChange={(event) => setAudienceText(audience, event.target.value)} />
               <p className="fine">{p.ease(ease.readingEase, ease.grade, ease.words, ease.sentences)}</p>
-              <ul className="plain-list">
-                {checks.map((check) => (
-                  <li key={check.id}>
-                    <span lang="en">
-                      {check.label}: {check.note}
-                    </span>
-                    <span>{check.passed ? r.holds : r.check}</span>
-                  </li>
-                ))}
-              </ul>
-              <h4>{p.figures}</h4>
-              <ul className="stack">
-                {trace.map((item) => (
-                  <li key={item.figure}>
-                    <strong>{item.figure}</strong>
-                    <p>{item.citation ? <span lang="en">{`${item.citation}: “${item.quote}”`}</span> : p.notFound}</p>
-                  </li>
-                ))}
-              </ul>
+              <Fold title={r.nav[4]} meta={r.ui.holdAll(checks.filter((check) => check.passed).length, checks.length)} open={!holds}>
+                <ul className="plain-list">
+                  {checks.map((check) => (
+                    <li key={check.id}>
+                      <span lang="en">
+                        {check.label}: {check.note}
+                      </span>
+                      <span>{check.passed ? r.holds : r.check}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Fold>
+              <Fold title={p.figures} meta={trace.length} open={trace.some((item) => !item.citation)}>
+                <ul className="stack">
+                  {trace.map((item) => (
+                    <li key={item.figure}>
+                      <strong>{item.figure}</strong>
+                      <p>{item.citation ? <span lang="en">{`${item.citation}: “${item.quote}”`}</span> : p.notFound}</p>
+                    </li>
+                  ))}
+                </ul>
+              </Fold>
               <Comments audience={audience} />
               {blocker ? <p className="notice">{blocker}</p> : null}
               <div className="action-row">
@@ -776,8 +750,7 @@ export function PlainWorkbook() {
             </article>
           );
         })}
-        <details>
-          <summary>{r.history(audienceHistory.length)}</summary>
+        <Fold title={r.history(audienceHistory.length)}>
           <ul className="stack">
             {audienceHistory.length === 0 ? <li>{r.noHistory}</li> : null}
             {audienceHistory.map((item) => (
@@ -790,12 +763,11 @@ export function PlainWorkbook() {
               </li>
             ))}
           </ul>
-        </details>
+        </Fold>
       </section>
 
-      <section>
-        <h2>{r.plantedTitle}</h2>
-        <p>{r.planted(lab.caught, lab.planted, lab.falseAlarms)}</p>
+      <div>
+      <Fold title={r.plantedTitle} meta={r.planted(lab.caught, lab.planted, lab.falseAlarms)}>
         <ul className="stack">
           {lab.results.map((item) => (
             <li key={item.id} className={item.caught ? "pass" : "fail"}>
@@ -808,11 +780,9 @@ export function PlainWorkbook() {
             </li>
           ))}
         </ul>
-      </section>
+      </Fold>
 
-      <section>
-        <h2>{p.translation}</h2>
-        <p className="fine">{p.translationNote}</p>
+      <Fold title={p.translation} meta={translationHandoff ? r.states["in-review"] : ""}>
         {translationHandoff ? (
           <>
             <p>
@@ -842,9 +812,9 @@ export function PlainWorkbook() {
             </button>
           </div>
         )}
-      </section>
-
-      <TrialLaySummary />
+      </Fold>
+      {children}
+      </div>
     </div>
   );
 }
@@ -857,8 +827,7 @@ export function ConsentElements() {
   if (!consent) return null;
   const rows = consentElements(consent.passages);
   return (
-    <section id="elements">
-      <h2>{r.files.elements}</h2>
+    <Fold id="elements" title={r.files.elements} meta={`${rows.filter((row) => row.mark === "present").length}/${rows.length} ${r.marks.present}`}>
       <p className="fine">{r.files.elementsNote(`${consent.documentId} ${consent.version}`)}</p>
       <ul className="stack">
         {rows.map((row) => (
@@ -873,7 +842,7 @@ export function ConsentElements() {
           </li>
         ))}
       </ul>
-    </section>
+    </Fold>
   );
 }
 
@@ -917,9 +886,7 @@ export function PersonaResults() {
   const matched = results.filter((item) => item.result.label === item.expect).length;
   const label = (value: string) => r.understanding[value] ?? value;
   return (
-    <section id="personas">
-      <h2>{r.personas.title}</h2>
-      <p className="fine">{r.personas.note(matched, results.length)}</p>
+    <Fold id="personas" title={r.personas.title} meta={`${matched}/${results.length}`}>
       <ul className="stack">
         {results.map((item) => (
           <li key={item.id} className={item.result.label === item.expect ? "pass" : "fail"}>
@@ -936,13 +903,14 @@ export function PersonaResults() {
           </li>
         ))}
       </ul>
-    </section>
+    </Fold>
   );
 }
 
 export function StoredHandoffs() {
   const r = useR();
   const h = r.handoffs;
+  const u = r.ui.inbox;
   const [state, setState] = useState<"loading" | "ok" | "signed-out" | "forbidden" | "offline">("loading");
   const [items, setItems] = useState<StoredHandoff[]>([]);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -962,12 +930,10 @@ export function StoredHandoffs() {
   return (
     <section id="handoffs">
       <div className="inbox-head">
-        <div>
-          <p className="kicker">Participant inbox</p>
-          <h2>{h.title}</h2>
-          <p className="fine">Reply in one place. Messages refresh automatically.</p>
-        </div>
-        <button type="button" className="btn on-paper" onClick={() => void refresh()}>Refresh</button>
+        <h2>{h.title}</h2>
+        <button type="button" className="btn on-paper" onClick={() => void refresh()}>
+          {u.refresh}
+        </button>
       </div>
       {state === "loading" ? <p className="fine">{h.loading}</p> : null}
       {state === "signed-out" ? <p className="fine">{h.signedOut}</p> : null}
@@ -982,28 +948,34 @@ export function StoredHandoffs() {
               <header>
                 <div>
                   <strong>{item.participant}</strong>
-                  <p>{item.topic}</p>
+                  <p lang="en">{item.topic}</p>
                 </div>
                 <span className={item.label === "Understands the key concept" ? "message-status clear" : "message-status"}>{r.understanding[item.label] ?? item.label}</span>
               </header>
               <p className="message-response">“{item.response}”</p>
               {item.misconception ? <p className="notice">{h.misunderstanding(item.misconception)}</p> : null}
-              <small>{item.document_id} {item.version} · {new Date(`${item.created_at}Z`).toLocaleString(r.locale)}</small>
+              <small>
+                {item.document_id} {item.version} · {new Date(`${item.created_at}Z`).toLocaleString(r.locale)}
+                {item.speaker === "caregiver" ? ` · ${h.caregiver}` : ""}
+                {item.language !== "en" && isLanguage(item.language) ? ` · ${h.interpreter(r.languageName[item.language])}` : ""}
+              </small>
               {item.messages.length > 0 ? (
                 <div className="message-thread">
                   {item.messages.map((message) => (
                     <p key={message.id} className={message.author_role === "researcher" ? "from-researcher" : "from-participant"}>
-                      <strong>{message.author_role === "researcher" ? "You" : item.participant}</strong> {message.message}
+                      <strong>{message.author_role === "researcher" ? u.you : item.participant}</strong> {message.message}
                     </p>
                   ))}
                 </div>
               ) : null}
               <div className="reply-row">
-                <label className="sr-only" htmlFor={`reply-${item.id}`}>Reply to {item.participant}</label>
+                <label className="sr-only" htmlFor={`reply-${item.id}`}>
+                  {u.replyTo(item.participant)}
+                </label>
                 <input
                   id={`reply-${item.id}`}
                   value={drafts[item.id] ?? ""}
-                  placeholder="Write a short reply"
+                  placeholder={u.placeholder}
                   onChange={(event) => setDrafts((current) => ({ ...current, [item.id]: event.target.value }))}
                 />
                 <button
@@ -1013,7 +985,7 @@ export function StoredHandoffs() {
                   onClick={async () => {
                     setSending(item.id);
                     const result = await sendHandoffMessage(item.id, drafts[item.id].trim());
-                    setNote(result.detail);
+                    setNote(result.ok ? u.sent : result.detail);
                     if (result.ok) {
                       setDrafts((current) => ({ ...current, [item.id]: "" }));
                       await refresh();
@@ -1021,7 +993,7 @@ export function StoredHandoffs() {
                     setSending("");
                   }}
                 >
-                  {sending === item.id ? "Sending…" : "Reply"}
+                  {sending === item.id ? u.sending : u.reply}
                 </button>
               </div>
             </article>

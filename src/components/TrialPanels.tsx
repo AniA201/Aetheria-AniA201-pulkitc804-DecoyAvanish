@@ -45,7 +45,8 @@ import {
 } from "../lib/publicTrial";
 import { useR } from "../lib/researchI18n";
 import { useSession } from "../state/Session";
-import { blockerFor, ChecklistTable, Comments, download, FindingList, PlantedCases } from "./SheetPanels";
+import { Fold } from "./Disclosure";
+import { blockerFor, ChecklistTable, Comments, download, FindingList, PlantedCases, Score } from "./SheetPanels";
 
 type TrialState = { trial: TrialData | null; error: string };
 
@@ -118,25 +119,17 @@ export function TrialPreFlight() {
         <Loading state={state} />
       ) : (
         <>
-          <p lang="en">{trial.study.protocolSection.identificationModule.officialTitle}</p>
           <p className="fine">{t.dated(computed.meta.documentId ?? "", computed.meta.version ?? "", computed.meta.date ?? "")}</p>
           <Provenance trial={trial} />
-
-          <article className="fact">
-            <h3>{r.preflight.coverage(computed.score.value)}</h3>
-            <p>{r.preflight.formula(computed.score.present, computed.score.thin, computed.score.total, computed.score.value)}</p>
-            <p className="fine">{r.preflight.notApproval}</p>
-          </article>
+          <Score score={computed.score} />
           <ChecklistTable rows={computed.rows} />
-
-          <h3>{t.against}</h3>
-          <FindingList findings={computed.findings} />
-
-          <h3>{r.plantedTitle}</h3>
-          <p>{r.planted(computed.plants.caught, computed.plants.planted, computed.plants.falseAlarms)}</p>
-          <PlantedCases cases={computed.plants.cases} withExpected />
-
-          <h3>{t.amended}</h3>
+          <Fold title={t.against} meta={r.ui.flagged(computed.findings.filter((finding) => finding.status === "flag").length)}>
+            <FindingList findings={computed.findings} />
+          </Fold>
+          <Fold title={r.plantedTitle} meta={r.planted(computed.plants.caught, computed.plants.planted, computed.plants.falseAlarms)}>
+            <PlantedCases cases={computed.plants.cases} withExpected />
+          </Fold>
+          <Fold title={t.amended} meta={computed.amendments.length}>
           {computed.amendments.map((amendment) => {
             const counts = amendment.changes.reduce<Record<string, number>>((map, change) => ({ ...map, [change.category]: (map[change.category] ?? 0) + 1 }), {});
             return (
@@ -172,8 +165,8 @@ export function TrialPreFlight() {
               </details>
             );
           })}
-
-          <h3>{t.peers(computed.peers.count)}</h3>
+          </Fold>
+          <Fold title={t.peers(computed.peers.count)} meta={r.ui.flagged(computed.peers.rows.filter((row) => row.flag).length)}>
           <table className="data-table">
             <thead>
               <tr>
@@ -197,8 +190,8 @@ export function TrialPreFlight() {
               ))}
             </tbody>
           </table>
-
-          <h3>{t.burden}</h3>
+          </Fold>
+          <Fold title={t.burden} meta={r.ui.hours(computed.burden.visitHours)}>
           <p>
             {t.burdenLine(
               computed.burden.visits.length,
@@ -215,8 +208,8 @@ export function TrialPreFlight() {
               <li key={item.id}>{t.assumption(item.label, item.minutes)}</li>
             ))}
           </ul>
-
-          <h3>{r.preflight.risks}</h3>
+          </Fold>
+          <Fold title={r.preflight.risks} meta={computed.spots.length}>
           <ul className="stack">
             {computed.spots.map((spot) => (
               <li key={spot.id}>
@@ -228,6 +221,7 @@ export function TrialPreFlight() {
               </li>
             ))}
           </ul>
+          </Fold>
         </>
       )}
     </section>
@@ -297,8 +291,7 @@ export function TrialWriteOnce() {
               ))}
             </tbody>
           </table>
-          <details>
-            <summary>{t.quotes}</summary>
+          <Fold title={t.quotes}>
             <ul className="stack" lang="en">
               {computed.rows.flatMap((row) =>
                 row.values
@@ -313,15 +306,12 @@ export function TrialWriteOnce() {
                   )),
               )}
             </ul>
-          </details>
-
-          <h3>{r.plantedTitle}</h3>
-          <p>
-            {r.planted(computed.plants.caught, computed.plants.planted, computed.plants.falseAlarms)} {t.qm}
-          </p>
-          <PlantedCases cases={computed.plants.cases} withExpected />
-
-          <h3>{t.library}</h3>
+          </Fold>
+          <Fold title={r.plantedTitle} meta={r.planted(computed.plants.caught, computed.plants.planted, computed.plants.falseAlarms)}>
+            <p className="fine">{t.qm}</p>
+            <PlantedCases cases={computed.plants.cases} withExpected />
+          </Fold>
+          <Fold title={t.library} meta={computed.blocks.length}>
           <table className="data-table">
             <thead>
               <tr>
@@ -348,8 +338,8 @@ export function TrialWriteOnce() {
               ))}
             </tbody>
           </table>
-
-          <h3>{t.assembled}</h3>
+          </Fold>
+          <Fold title={t.assembled} meta={computed.assembled.length}>
           <ul className="stack">
             {computed.assembled.map((item) => {
               const matches = item.compareTo ? item.compareTo.text.replace(/\s+/g, " ").includes(item.text.replace(/\s+/g, " ")) : null;
@@ -371,9 +361,9 @@ export function TrialWriteOnce() {
               );
             })}
           </ul>
+          </Fold>
 
           <h3>{t.change}</h3>
-          <p className="fine">{t.changeNote}</p>
           <div className="action-row">
             {trialChanges.map((change) => (
               <button
@@ -411,7 +401,6 @@ export function TrialWriteOnce() {
               {t.proposeThis}
             </button>
           </div>
-          {trialProposals.length === 0 ? <p className="empty">{t.none}</p> : null}
           {trialProposals.map((proposal, index) => {
             const lines = changeImpact(trial, changeFor(trial, proposal.block, proposal.to));
             const decided = lines.filter((line) => proposal.decisions[line.id]).length;
@@ -472,17 +461,10 @@ export function TrialPrecedent() {
   const t = r.trial;
   const state = useTrial();
   const trial = state.trial;
-  const { setBrief } = useSession();
   const rows = useMemo(() => (trial ? precedent(trial) : []), [trial]);
   if (!trial) return <Loading state={state} />;
   return (
-    <div id="nct-precedent">
-      <h3>{t.precedent}</h3>
-      <Provenance trial={trial} />
-      <button type="button" className="btn on-paper" onClick={() => setBrief(briefFromRegistry(trial))}>
-        {t.fill}
-      </button>
-      <h4>{t.similarTrials}</h4>
+    <Fold id="nct-precedent" title={t.similarTrials} meta={rows.length}>
       <ul className="stack">
         {rows.map((row) => (
           <li key={row.nctId}>
@@ -497,7 +479,18 @@ export function TrialPrecedent() {
           </li>
         ))}
       </ul>
-    </div>
+    </Fold>
+  );
+}
+
+export function FillBrief() {
+  const r = useR();
+  const { trial } = useTrial();
+  const { setBrief } = useSession();
+  return (
+    <button type="button" className="btn solid dark" disabled={!trial} onClick={() => trial && setBrief(briefFromRegistry(trial))}>
+      {r.trial.fill}
+    </button>
   );
 }
 
@@ -515,8 +508,7 @@ function FactTrace({ text, facts }: { text: string; facts: LayFact[] }) {
   const r = useR();
   const trace = traceNumbers(text, facts);
   return (
-    <details>
-      <summary>{r.lay.trace(trace.length)}</summary>
+    <Fold title={r.lay.trace(trace.length)} open={trace.some((item) => item.facts.length === 0)}>
       <ul className="stack">
         {trace.map((item) => (
           <li key={item.value} className={item.facts.length ? "" : "fail"}>
@@ -529,7 +521,7 @@ function FactTrace({ text, facts }: { text: string; facts: LayFact[] }) {
           </li>
         ))}
       </ul>
-    </details>
+    </Fold>
   );
 }
 
@@ -541,6 +533,7 @@ export function TrialLaySummary() {
   const { layEdits, layState, layHistory, layCorrection, layHandoff, comments, setLayEdit, setLayState, setLayCorrection, setLayHandoff } = useSession();
   const [handoffNote, setHandoffNote] = useState("");
   const [handoffDraft, setHandoffDraft] = useState<Exclude<Language, "en">>("es");
+  const [pick, setPick] = useState<LayAudience>("lay-adult");
   const facts = useMemo(() => (trial ? layFacts(trial.study, trial.retrieved, layCorrection) : []), [trial, layCorrection]);
   const generated = useMemo(
     () => Object.fromEntries(layAudiences.map((audience) => [audience.id, laySummary(facts, audience.id)])) as Record<LayAudience, ReturnType<typeof laySummary>>,
@@ -572,7 +565,6 @@ export function TrialLaySummary() {
     <section id="lay-summary">
       <h2>{l.title}</h2>
       <Provenance trial={trial} />
-      <p className="fine">{l.note(facts.length)}</p>
       <ol className="glsp-steps" aria-label="Good Lay Summary Practice">
         {l.steps.map((step, index) => (
           <li key={step} className={stepDone[index] ? "done" : ""}>
@@ -624,8 +616,18 @@ export function TrialLaySummary() {
       </div>
       {layCorrection ? <p className="notice">{l.correction(layCorrection.label, layCorrection.from, layCorrection.to)}</p> : null}
 
-      <div className="lay-grid">
-        {results.map(({ audience, text, checks, holds, ease }) => {
+      <div className="tab-row" role="group" aria-label={r.ui.readers}>
+        {results.map(({ audience, holds }) => (
+          <button key={audience.id} type="button" className="btn on-paper" aria-pressed={audience.id === pick} onClick={() => setPick(audience.id)}>
+            {l.audiences[audience.id]}
+            <small>
+              {r.states[layState[audience.id] ?? "draft"]} · {holds ? r.holds : r.check}
+            </small>
+          </button>
+        ))}
+      </div>
+      <div>
+        {results.filter((item) => item.audience.id === pick).map(({ audience, text, checks, holds, ease }) => {
           const blocker = blockerFor(r, comments.filter((comment) => comment.audience === audience.id), holds);
           const status = layState[audience.id] ?? "draft";
           const language = audience.language;
@@ -652,8 +654,7 @@ export function TrialLaySummary() {
                   ))}
                 </div>
               ) : null}
-              <details lang={r.locale}>
-                <summary>{layEdits[audience.id] === undefined ? l.edit : l.edited}</summary>
+              <Fold title={<span lang={r.locale}>{layEdits[audience.id] === undefined ? l.edit : l.edited}</span>}>
                 <textarea
                   rows={10}
                   aria-label={l.audiences[audience.id]}
@@ -666,18 +667,20 @@ export function TrialLaySummary() {
                     {l.discard}
                   </button>
                 ) : null}
-              </details>
-              <ul className="plain-list" lang={r.locale}>
-                {checks.map((check) => (
-                  <li key={check.id}>
-                    <span lang="en">
-                      {check.label}: {check.note}
-                    </span>
-                    <span>{check.passed ? r.holds : r.check}</span>
-                  </li>
-                ))}
-              </ul>
+              </Fold>
               <div lang={r.locale}>
+                <Fold title={r.nav[4]} meta={r.ui.holdAll(checks.filter((check) => check.passed).length, checks.length)} open={!holds}>
+                  <ul className="plain-list">
+                    {checks.map((check) => (
+                      <li key={check.id}>
+                        <span lang="en">
+                          {check.label}: {check.note}
+                        </span>
+                        <span>{check.passed ? r.holds : r.check}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </Fold>
                 <FactTrace text={text} facts={facts} />
                 <Comments audience={audience.id} />
                 {blocker ? <p className="notice">{blocker}</p> : null}
@@ -698,8 +701,7 @@ export function TrialLaySummary() {
         })}
       </div>
 
-      <details>
-        <summary>{r.history(layHistory.length)}</summary>
+      <Fold title={r.history(layHistory.length)}>
         <ul className="stack">
           {layHistory.length === 0 ? <li>{r.noHistory}</li> : null}
           {layHistory.map((item) => (
@@ -715,9 +717,9 @@ export function TrialLaySummary() {
             </li>
           ))}
         </ul>
-      </details>
+      </Fold>
 
-      <h3>{l.handoff}</h3>
+      <Fold title={l.handoff} meta={layHandoff ? r.states["in-review"] : ""}>
       {layHandoff ? (
         <>
           <p>
@@ -747,11 +749,10 @@ export function TrialLaySummary() {
           </button>
         </div>
       )}
+      </Fold>
 
-      <h3>{r.plantedTitle}</h3>
-      <p>
-        {r.planted(lab.caught, lab.planted, lab.falseAlarms)} {l.plantedNote}
-      </p>
+      <Fold title={r.plantedTitle} meta={r.planted(lab.caught, lab.planted, lab.falseAlarms)}>
+      <p className="fine">{l.plantedNote}</p>
       <ul className="stack">
         {lab.results.map((item) => (
           <li key={item.id} className={item.caught ? "pass" : "fail"}>
@@ -763,6 +764,7 @@ export function TrialLaySummary() {
           </li>
         ))}
       </ul>
+      </Fold>
     </section>
   );
 }

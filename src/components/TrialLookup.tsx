@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useR } from "../lib/researchI18n";
 import { useSession } from "../state/Session";
 
 type RegistryStudy = {
@@ -18,6 +19,8 @@ type LookupState =
   | { kind: "ready"; study: RegistryStudy };
 
 export function TrialLookup() {
+  const r = useR();
+  const l = r.ui.lookup;
   const { publicStudyId, setPublicStudyId } = useSession();
   const [value, setValue] = useState(publicStudyId || "NCT03238781");
   const [state, setState] = useState<LookupState>({ kind: "idle" });
@@ -25,14 +28,14 @@ export function TrialLookup() {
   const findTrial = async () => {
     const nctId = value.trim().toUpperCase();
     if (!/^NCT\d{8}$/.test(nctId)) {
-      setState({ kind: "error", message: "Use NCT followed by eight digits, for example NCT03238781." });
+      setState({ kind: "error", message: l.invalid });
       return;
     }
     setState({ kind: "loading" });
     try {
       const response = await fetch(`https://clinicaltrials.gov/api/v2/studies/${nctId}`);
       if (response.status === 404) {
-        setState({ kind: "error", message: "No public study was found for that NCT ID." });
+        setState({ kind: "error", message: l.notFound });
         return;
       }
       if (!response.ok) throw new Error("The public registry is unavailable.");
@@ -41,20 +44,15 @@ export function TrialLookup() {
       setValue(nctId);
       setState({ kind: "ready", study });
     } catch {
-      setState({ kind: "error", message: "We could not reach ClinicalTrials.gov. Please try again shortly." });
+      setState({ kind: "error", message: l.offline });
     }
   };
 
   const details = state.kind === "ready" ? state.study.protocolSection : undefined;
   return (
-    <section className="trial-lookup" aria-labelledby="trial-lookup-title">
-      <div>
-        <p className="kicker">Choose a study</p>
-        <h2 id="trial-lookup-title">Start with an NCT ID.</h2>
-        <p className="fine">Search any public ClinicalTrials.gov record. The detailed pre-flight demo below still uses the included public study files.</p>
-      </div>
+    <section className="trial-lookup" aria-label={l.label}>
       <div className="trial-lookup-form">
-        <label htmlFor="nct-id">NCT ID</label>
+        <label htmlFor="nct-id">{l.label}</label>
         <input
           id="nct-id"
           value={value}
@@ -67,25 +65,37 @@ export function TrialLookup() {
           }}
         />
         <button type="button" className="btn solid dark" onClick={() => void findTrial()} disabled={state.kind === "loading"}>
-          {state.kind === "loading" ? "Finding study…" : "Find study"}
+          {state.kind === "loading" ? l.finding : l.find}
         </button>
       </div>
       {state.kind === "error" ? <p className="notice">{state.message}</p> : null}
       {details ? (
         <article className="trial-card">
-          <div>
+          <div lang="en">
             <p className="kicker">{details.identificationModule?.nctId}</p>
-            <h3>{details.identificationModule?.briefTitle ?? "Public clinical study"}</h3>
-            <p>{details.sponsorCollaboratorsModule?.leadSponsor?.name ?? "Sponsor not listed"} · {details.statusModule?.overallStatus ?? "Status not listed"}</p>
+            <h3>{details.identificationModule?.briefTitle ?? details.identificationModule?.nctId}</h3>
+            <p>
+              {details.sponsorCollaboratorsModule?.leadSponsor?.name ?? l.notListed} · {details.statusModule?.overallStatus ?? l.notListed}
+            </p>
           </div>
           <dl>
-            <div><dt>Condition</dt><dd>{details.conditionsModule?.conditions?.join(", ") || "Not listed"}</dd></div>
-            <div><dt>Phase</dt><dd>{details.designModule?.phases?.join(", ") || "Not listed"}</dd></div>
-            <div><dt>Enrollment</dt><dd>{details.designModule?.enrollmentInfo?.count ?? "Not listed"}</dd></div>
+            <div>
+              <dt>{l.condition}</dt>
+              <dd lang="en">{details.conditionsModule?.conditions?.join(", ") || l.notListed}</dd>
+            </div>
+            <div>
+              <dt>{l.phase}</dt>
+              <dd lang="en">{details.designModule?.phases?.join(", ") || l.notListed}</dd>
+            </div>
+            <div>
+              <dt>{l.enrollment}</dt>
+              <dd>{details.designModule?.enrollmentInfo?.count ?? l.notListed}</dd>
+            </div>
           </dl>
           <a href={`https://clinicaltrials.gov/study/${details.identificationModule?.nctId}`} target="_blank" rel="noreferrer">
-            Open public record
+            {l.open}
           </a>
+          {details.identificationModule?.nctId !== "NCT03238781" ? <p className="fine">{l.stored}</p> : null}
         </article>
       ) : null}
     </section>
