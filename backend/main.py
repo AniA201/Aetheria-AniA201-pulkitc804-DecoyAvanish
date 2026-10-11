@@ -21,17 +21,39 @@ configured_database_url = os.environ.get("DATABASE_URL", f"sqlite:///{base_dir /
 # from whichever shell happened to launch the FastAPI process.
 if configured_database_url.startswith("sqlite:///./"):
     DATABASE_URL = f"sqlite:///{base_dir / configured_database_url.removeprefix('sqlite:///./')}"
+elif configured_database_url.startswith(("postgres://", "postgresql://")):
+    # Hosted Postgres (for example Neon on Vercel) hands out postgres:// URLs; use the psycopg 3 driver.
+    DATABASE_URL = "postgresql+psycopg://" + configured_database_url.split("://", 1)[1]
 else:
     DATABASE_URL = configured_database_url
-JWT_SECRET = os.environ.get("JWT_SECRET", "change-this-local-secret")
+APP_ENV = os.environ.get("APP_ENV", "development").lower()
+JWT_SECRET = os.environ.get("JWT_SECRET")
+placeholder_secrets = {
+    "change-this-local-secret",
+    "replace-this-with-a-long-random-secret-before-production",
+}
+if not JWT_SECRET or JWT_SECRET in placeholder_secrets:
+    if APP_ENV in {"production", "prod"}:
+        raise RuntimeError("JWT_SECRET must be set when APP_ENV is production.")
+    # A fresh development-only secret avoids accepting tokens across restarts.
+    JWT_SECRET = secrets.token_urlsafe(48)
 RESEARCHER_REGISTRATION_KEY = os.environ.get("RESEARCHER_REGISTRATION_KEY")
+
+local_origins = [
+    "http://localhost:5173", "http://127.0.0.1:5173",
+    "http://localhost:5174", "http://127.0.0.1:5174",
+    "http://localhost:5176", "http://127.0.0.1:5176",
+    "http://localhost:5177", "http://127.0.0.1:5177",
+]
+configured_origins = [origin.strip() for origin in os.environ.get("CORS_ORIGINS", "").split(",") if origin.strip()]
+CORS_ORIGINS = configured_origins or ([] if APP_ENV in {"production", "prod"} else local_origins)
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {})
 
 app = FastAPI(title="Aetheria API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174"],
+    allow_origins=CORS_ORIGINS,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
     allow_credentials=True,
@@ -115,9 +137,26 @@ def initialise_database():
         connection.execute(text("CREATE INDEX IF NOT EXISTS handoff_messages_handoff_idx ON handoff_messages (handoff_id, created_at)"))
 
 
+_database_ready = False
+
+
+def ensure_database():
+    # Serverless hosts may not run startup events, so tables are also created on first use.
+    global _database_ready
+    if not _database_ready:
+        initialise_database()
+        _database_ready = True
+
+
 @app.on_event("startup")
 def startup():
-    initialise_database()
+    ensure_database()
+
+
+@app.middleware("http")
+async def database_ready(request, call_next):
+    ensure_database()
+    return await call_next(request)
 
 
 @app.get("/api/health")

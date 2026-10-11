@@ -301,6 +301,9 @@ function load(): SessionData {
     return {
       ...empty,
       ...parsed,
+      // The application now has one deliberately light visual mode. Older
+      // browser sessions may have saved high contrast, so normalize them.
+      contrast: "paper",
       consent: parsed.consent ?? null,
       reviewNotes: parsed.reviewNotes ?? {},
       imports: parsed.imports ?? [],
@@ -372,7 +375,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         })),
       setNarrationRate: (narrationRate) => setData((current) => ({ ...current, narrationRate })),
       setFontScale: (fontScale) => setData((current) => ({ ...current, fontScale })),
-      setContrast: (contrast) => setData((current) => ({ ...current, contrast })),
+      setContrast: () => setData((current) => ({ ...current, contrast: "paper" })),
       setReducedMotion: (reducedMotion) => setData((current) => ({ ...current, reducedMotion })),
       setTextOnly: (textOnly) => setData((current) => ({ ...current, textOnly })),
       markReviewed: (id) =>

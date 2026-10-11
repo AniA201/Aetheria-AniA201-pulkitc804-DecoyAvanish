@@ -107,7 +107,7 @@ export const sections: Section[] = [
     short: "6 visits, about 16 weeks, group chosen by chance",
     original: consentPassage("procedures").text,
     plain:
-      "The clinic asks you to come in 6 times across about 16 weeks. A visit takes about 2 hours. Some visits include a small blood draw of about 2 teaspoons. A chance process assigns you to Aetherol or placebo. You and the study doctor are not told which one you receive while the study is going on.",
+      "You visit the clinic 6 times over about 16 weeks. Each visit takes about 2 hours. Some include a blood draw of about 2 teaspoons. Chance decides whether you get Aetherol or placebo. You and the study doctor will not know which.",
     citation: consentPassage("procedures").citation,
     page: consentPassage("procedures").page,
     terms: [
@@ -130,7 +130,7 @@ export const sections: Section[] = [
     short: "Nausea, dizziness, bruising; no promised benefit",
     original: consentPassage("risks").text,
     plain:
-      "Aetherol can cause nausea, dizziness, or tiredness. This form says about 1 in 10 people in earlier studies felt nausea. Allergic reactions are described as rare. Blood draws can bruise. The form does not promise that the study will help your migraines.",
+      "Aetherol may cause nausea, dizziness, or tiredness. About 1 in 10 people in earlier studies had nausea. Rare allergic reactions and bruising from blood draws are possible. The study may not help your migraines.",
     citation: consentPassage("risks").citation,
     page: consentPassage("risks").page,
     terms: [
@@ -152,7 +152,7 @@ export const sections: Section[] = [
     short: "You can leave without losing regular care",
     original: consentPassage("rights").text,
     plain:
-      "You can say no, and you can leave later. Leaving does not take away regular care from your own doctor. The team may keep safety information already collected. They must tell you about new information that could change your decision to stay.",
+      "Joining is your choice. You can leave at any time without losing your regular care. The team may keep safety information already collected. They will tell you about new information that could change your choice.",
     citation: consentPassage("rights").citation,
     page: consentPassage("rights").page,
     terms: [
@@ -170,7 +170,7 @@ export const sections: Section[] = [
     short: "No charge for study visits; $50 per completed visit",
     original: consentPassage("costs").text,
     plain:
-      "You do not pay for the study drug or the required study visits. You receive $50 after each clinic visit you complete. That payment does not cover your usual migraine care or extra travel costs.",
+      "The study drug and required visits cost you nothing. You get $50 after each visit you complete. The study does not pay for your usual migraine care or extra travel.",
     citation: consentPassage("costs").citation,
     page: consentPassage("costs").page,
     terms: [
@@ -188,7 +188,7 @@ export const sections: Section[] = [
     short: "Coded records may be kept for 15 years",
     original: consentPassage("privacy").text,
     plain:
-      "Your name is replaced with a code in study records. The sponsor and monitors can see coded records to check that the study was done as written. Records may be kept for 15 years. Published results and the public listing do not include your name.",
+      "Study records use a code instead of your name. The sponsor, study doctor, and monitors may review them. Records may be kept for 15 years. Your name will not appear in published results or the public listing.",
     citation: consentPassage("privacy").citation,
     page: consentPassage("privacy").page,
     terms: [
@@ -277,7 +277,7 @@ export const plainDraft = {
   title: "Costs and compensation",
   original: sections.find((section) => section.id === "costs")!.original,
   draft:
-    "You come to the clinic 6 times over about 16 weeks. After each visit you complete, you receive $50. You do not pay for the study drug or those required visits. The payment does not cover your usual migraine care.",
+    "You visit the clinic 6 times over about 16 weeks. You get $50 after each visit you complete. The study drug and required visits cost you nothing. Your usual migraine care and extra travel are not covered.",
   mustKeep: ["6 times", "16 weeks", "$50"],
   mustNotAdd: ["8 visits", "24 weeks", "$80", "promise"],
   reason:

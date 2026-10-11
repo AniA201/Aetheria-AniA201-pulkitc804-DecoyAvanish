@@ -4,10 +4,27 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/gemini.ts": { "includeFiles": ".env.team", "maxDuration": 60 }
+    "api/gemini.ts": {
+      "includeFiles": ".env.team",
+      "maxDuration": 60
+    },
+    "api/backend.py": {
+      "includeFiles": "backend/**",
+      "maxDuration": 30
+    }
   },
   "rewrites": [
-    { "source": "/gemini/:path*", "destination": "/api/gemini" },
-    { "source": "/((?!api/|assets/).*)", "destination": "/index.html" }
+    {
+      "source": "/gemini/:path*",
+      "destination": "/api/gemini"
+    },
+    {
+      "source": "/api/(auth|handoffs|messages|health)(.*)",
+      "destination": "/api/backend"
+    },
+    {
+      "source": "/((?!api/|assets/).*)",
+      "destination": "/index.html"
+    }
   ]
 }

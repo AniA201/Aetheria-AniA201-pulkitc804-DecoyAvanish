@@ -1,4 +1,4 @@
--- SQLite schema. The API creates this automatically on startup.
+-- Schema for SQLite (local) and Postgres (deployed). The API creates it automatically.
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   email TEXT NOT NULL UNIQUE,

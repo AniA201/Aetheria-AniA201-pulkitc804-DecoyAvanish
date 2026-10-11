@@ -12,7 +12,7 @@ heading: Study procedures and time commitment
 page: p. 4
 citation: Consent §4.1 Procedures
 
-You will come to the study clinic 6 times over about 16 weeks. Each visit lasts about 2 hours. Visits include a headache diary review and vital signs. A blood sample of about 2 teaspoons is taken at visits 1, 3, and 6. You will be assigned by chance to Aetherol or placebo. Neither you nor the study doctor will know which one you receive during the study.
+You will come to the study clinic 6 times over about 16 weeks. Each visit lasts about 2 hours. The protocol-specified assessment schedule includes review of your headache diary and measurement of vital signs at clinic visits. A blood sample of about 2 teaspoons is taken at visits 1, 3, and 6. Treatment allocation will be determined by a chance-based assignment procedure under which you will receive either investigational Aetherol or placebo. This is a masked comparison: neither you nor the study doctor will know which one you receive during the study. The allocation procedure is used to compare the groups; it is not a choice made by you or the study doctor.
 
 ---
 section: risks
@@ -20,7 +20,7 @@ heading: Risks and possible benefits
 page: p. 6
 citation: Consent §5.2 Risks and benefits
 
-Aetherol may cause nausea, dizziness, or fatigue. In earlier studies described in this form, about 1 in 10 people reported nausea. Rare allergic reactions are possible. Placebo has no active drug, but blood draws can cause bruising. This study may not help your migraines. There is no promise of benefit.
+Aetherol may cause nausea, dizziness, or fatigue. In earlier studies described in this form, about 1 in 10 people reported nausea. The listed adverse reactions include the possibility of rare allergic reactions; the frequency information in this form comes from earlier observations and does not predict what will happen to any individual participant. Placebo contains no active study drug. Procedures performed for study assessments, including collection of blood samples, can nevertheless cause bruising at the collection site. Participation involves uncertain outcomes: this study may not help your migraines, and there is no promise of benefit from receiving either assigned product or completing the study procedures.
 
 ---
 section: rights
@@ -28,7 +28,7 @@ heading: Participant rights and withdrawal
 page: p. 7
 citation: Consent §6.1 Voluntary participation
 
-Taking part is voluntary. You may leave the study at any time. Leaving will not change the medical care you otherwise receive from your own doctor. If you leave, the study team may ask to keep safety information already recorded. You will be told about new information that could affect your choice to stay.
+Taking part is voluntary. You may decline participation or leave the study at any time. The decision to withdraw does not change the medical care you otherwise receive from your own doctor. If you leave, the study team may ask to retain safety information already recorded so that previously observed events can still be understood. Information that becomes available during the study and could materially affect your willingness to continue will be communicated to you. You may then consider that information when deciding whether to remain in the study; continued participation is still your choice.
 
 ---
 section: costs
@@ -36,7 +36,7 @@ heading: Costs and compensation
 page: p. 8
 citation: Consent §7.1 Costs and payments
 
-The study drug, placebo, and study-required visits are provided at no cost to you. You will receive $50 for each completed clinic visit, paid after the visit. The study does not pay for your usual migraine care or for travel beyond that visit payment.
+The study drug, placebo, and study-required visits are provided at no cost to you. Compensation is calculated on a per-visit basis: you will receive $50 for each completed clinic visit, paid after the visit. A scheduled visit that is not completed does not generate this visit payment. The no-cost provision applies to the investigational product, comparator, and visits required by this study; it does not extend to your usual migraine care. The study also does not separately reimburse travel expenses beyond the stated visit payment, so any additional travel cost remains outside the study payment arrangement.
 
 ---
 section: privacy
@@ -44,4 +44,4 @@ heading: Privacy and use of data
 page: p. 9
 citation: Consent §8.3 Confidentiality
 
-Study records use a code instead of your name. The sponsor, the study doctor, and monitors may review coded records to check the study. Records may be kept for 15 years. Results may be shared in journals without your name. Your name is not placed in the public study listing.
+Study records use a code instead of your name. The sponsor, the study doctor, and monitors may review coded records for the purpose of checking how the study was carried out and whether the recorded information is consistent with the study plan. The code is used on study records in place of direct name identification. Records may be kept for 15 years. Study findings may be reported in journals, but those reports do not include your name. Likewise, your name is not placed in the public study listing. These publication and listing statements concern the public presentation of results; authorized study reviewers may still inspect the coded records described above.
