@@ -15,7 +15,7 @@ const wordFlights = [
 const index = [
   { id: "read", number: "01", label: "Read" },
   { id: "ask", number: "02", label: "Ask" },
-  { id: "evaluation", number: "03", label: "Evaluation" },
+  { id: "evaluation", number: "03", label: "Evaluate" },
   { id: "review", number: "04", label: "Review" },
 ];
 
@@ -382,8 +382,8 @@ export function Landing() {
 
         <section className="folio-split folio-teach" id="evaluation">
           <BackgroundQuotes quotes={backgroundQuotes.evaluation} />
-          <p className="folio-section-label">03 / Evaluation</p>
-          {quiet ? <h2>Evaluation.</h2> : <h2 aria-label="Evaluation."><span ref={(node) => { transferTargets.current.evaluation = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: "0.7em", opacity: titleInitialOpacity("evaluation") }} aria-hidden="true">E</span><span aria-hidden="true">valuation.</span></h2>}
+          <p className="folio-section-label">03 / Evaluate</p>
+          {quiet ? <h2>Evaluate.</h2> : <h2 aria-label="Evaluate."><span ref={(node) => { transferTargets.current.evaluation = node ?? undefined; }} className={`folio-transfer-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: "0.7em", opacity: titleInitialOpacity("evaluation") }} aria-hidden="true">E</span><span aria-hidden="true">valuate.</span></h2>}
           <SectionHighlights items={sectionHighlights.evaluation} />
           <p className="sr-only">You cannot choose your study group. The sample form says chance assigns Aetherol or placebo. Neither you nor the study doctor knows your group during the study. Source: {sections[0].citation}, {sections[0].page}.</p>
         </section>

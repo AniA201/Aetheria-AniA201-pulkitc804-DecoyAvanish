@@ -75,7 +75,7 @@ function footer(context: CanvasRenderingContext2D, label: string) {
 }
 
 function sectionPage(context: CanvasRenderingContext2D, index: number) {
-  const names = ["Read", "Ask", "Evaluation", "Review"];
+  const names = ["Read", "Ask", "Evaluate", "Review"];
   const accent = teal;
   pageFrame(context, "Aetheria / sample study", names[index], accent, paper);
   context.fillStyle = accent;
