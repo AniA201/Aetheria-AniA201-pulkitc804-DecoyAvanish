@@ -1,6 +1,6 @@
 # Aetheria request checklist and handoff
 
-Current review: [PR #6](https://github.com/AniA201/Aetheria/pull/6), branch `codex/final-polish`. The preview runs at `http://127.0.0.1:5176/` with the backend proxied through `/api`. Use parallel agents for independent frontend, backend, and visual checks when the account allows them; agents share this checkout, so assign disjoint files.
+Current review: [PR #8](https://github.com/AniA201/Aetheria/pull/8), branch `codex/researcher-experience`. The preview runs at `http://127.0.0.1:5176/` with the backend proxied through `/api`. Use parallel agents for independent frontend, backend, and visual checks when the account allows them; agents share this checkout, so assign disjoint files.
 
 ## Requested work
 
@@ -23,6 +23,13 @@ Current review: [PR #6](https://github.com/AniA201/Aetheria/pull/6), branch `cod
 - [x] Move the floating guide launch button to the lower-left corner of the participant content area and label it Ask Aetheria (with localized equivalents).
 - [x] Restore this checkout's existing ignored Gemini credentials from the older local Aetheria checkout. `/gemini/status` now reports configured and a real generation request succeeded. Add startup diagnostics and a short client retry interval so a key added after startup does not leave Gemini disabled for the whole browser session.
 - [x] Keep the local preview open and push completed work to PR #6.
+- [x] Start the dedicated researcher visual pass in PR #8. The workspace now shares the participant palette: Powder paper surfaces, mint field, volcanic-teal actions, a subtle purple interaction tint, soft dark contour shadows, and rounded geometry that varies by hierarchy rather than using square panels. Its overview has an interactive Three.js document orbit that tilts with the cursor and honors reduced motion.
+
+## Researcher continuation
+
+- [ ] Review each researcher route at desktop and mobile widths for remaining square edges, warm/legacy colors, and uneven vertical rhythm. The first PR applies the shared styling to the rail, overview, metrics, research cards, lookups, messages, forms, folds, tabs, and data tables; expand only where a route still visually escapes it.
+- [ ] Add a contained interactive motion treatment to the researcher document reader only if it supports review comprehension. Keep actions functional and never let canvas motion obscure document text or controls.
+- [ ] Keep all new researcher controls keyboard reachable, retain the purple hover/focus cue, and verify high-contrast and reduced-motion modes after any visual extension.
 
 ## Verification
 
