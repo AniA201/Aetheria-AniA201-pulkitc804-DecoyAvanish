@@ -47,9 +47,10 @@ function makeTexture(side: "original" | "plain", anisotropy: number) {
   context.fillText("02 / RISKS AND POSSIBLE BENEFITS", 67, 399);
   context.fillStyle = "#243b37";
   context.font = "400 47px Newsreader, Georgia, serif";
+  // The back must demonstrate a genuine reduction, not merely restate the source.
   const words = side === "original"
     ? sample.original.split(". ").slice(0, 2).join(". ") + "."
-    : sample.plain.split(". ").slice(0, 2).join(". ") + ".";
+    : "The medicine may make you nauseous, dizzy, or tired. It may not help your migraines.";
   wrap(context, words, 67, 476, 660, 62);
   context.strokeStyle = "#a8bdb4";
   context.beginPath();

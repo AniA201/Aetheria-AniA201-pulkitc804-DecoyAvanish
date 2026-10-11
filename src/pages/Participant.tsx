@@ -53,7 +53,7 @@ function shownPrompt(prompt: TeachPrompt, language: Language): TeachPrompt {
 function NeedFile({ title }: { title: string }) {
   const t = useT();
   return (
-    <div className="page">
+    <div className="page participant-home">
       <h1>{title}</h1>
       <p className="lede dark">{t.needFile}</p>
       <Link className="btn solid dark" to="/participant/home">
@@ -94,7 +94,7 @@ export function ParticipantHome() {
   const next = consent.sections.find((section) => !reviewed.includes(section.id)) ?? consent.sections[0];
 
   return (
-    <div className="page">
+    <div className="page participant-form">
       <p className="kicker">{consent.sample ? t.home.practice : consent.filename}</p>
       <h1>{studyTitle(consent, language)}</h1>
       <p className="lede dark">{t.home.sections(consent.sections.length)}</p>
@@ -197,7 +197,7 @@ export function Explore() {
   };
 
   return (
-    <div className={`reader ${textOnly || !consent.sample ? "text-only" : ""}`}>
+    <div className={`reader participant-reader ${textOnly || !consent.sample ? "text-only" : ""}`}>
       <aside className="chapter-nav" aria-label={t.nav.read}>
         {sections.map((item) => (
           <Link
@@ -451,11 +451,15 @@ export function Ask() {
   };
 
   return (
-    <div className="page ask-page">
+    <div className="page ask-page ask-studio">
       <header className="panel-head">
+        <div className="ask-greeting" aria-hidden="true">
+          <span>Ask</span>
+          <strong>Aetheria</strong>
+        </div>
         <p className="kicker">{t.ask.title}</p>
         <h1>{t.ask.heading}</h1>
-        <p className="lede dark">{t.ask.lede}</p>
+        <p className="lede dark">Ask about a sentence, visit, side effect, payment, or anything else in your study form.</p>
         <div className="suggestions">
           {consent.sections.slice(0, 4).map((item) => {
             const local = view(item);
@@ -532,14 +536,19 @@ export function Ask() {
           ask(draft);
         }}
       >
-        <label htmlFor="question">{t.ask.label}</label>
-        <textarea id="question" value={draft} onChange={(event) => setDraft(event.target.value)} rows={3} placeholder={t.ask.placeholder} />
-        <button className="btn solid dark" type="submit">
-          {t.ask.send}
-        </button>
-        <button className="btn on-paper" type="button" onClick={dictation.start}>
-          {t.ask.dictate}
-        </button>
+        <div className="ask-form-heading">
+          <label htmlFor="question">Your question</label>
+          <span>Answers point back to the form</span>
+        </div>
+        <textarea id="question" value={draft} onChange={(event) => setDraft(event.target.value)} rows={6} placeholder="For example: What happens if I stop taking part?" />
+        <div className="ask-form-actions">
+          <button className="btn solid dark" type="submit">
+            {t.ask.send}
+          </button>
+          <button className="btn on-paper" type="button" onClick={dictation.start}>
+            {t.ask.dictate}
+          </button>
+        </div>
         {dictation.note ? <p className="fine">{dictation.note}</p> : null}
       </form>
     </div>
