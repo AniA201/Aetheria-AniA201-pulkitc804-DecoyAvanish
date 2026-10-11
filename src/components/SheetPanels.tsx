@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { parseDocument } from "../data/documents";
 import { personaFixtures, teachPrompts } from "../data/study";
 import { blocks, blocksIn, extractValues, proposeChange, registryFields, render, sourceText, uses, type BlockId } from "../lib/blocks";
@@ -53,12 +54,100 @@ export function VersionGate({ version, title }: { version: string; title: string
   );
 }
 
+/* ---------- Overview ---------- */
+
+export function StarterSheets() {
+  const values = extractValues();
+  const bound = uses.filter((use) => sourceText(use) !== null);
+  const matching = bound.filter((use) => sourceText(use)!.includes(render(use.template, use.side, values))).length;
+  const { sections, meta } = practiceProtocol();
+  const score = coverageScore(runChecklist(sections, meta));
+  const planted = runPlantedCases();
+  const lab = runPlantedDrafts();
+  const personas = personaFixtures.filter(
+    (fixture) => assessTeachback(fixture.promptId, fixture.response, teachPrompts, fixture.speaker).label === fixture.expect,
+  ).length;
+  const cards = [
+    {
+      name: "Teach It Back",
+      lines: [
+        `${teachPrompts.length} check questions, one per sample section`,
+        `${personas} of ${personaFixtures.length} starter-sheet personas get the expected result`,
+        "Misunderstandings, caregiver answers, and Spanish replies are flagged for a person",
+      ],
+      links: [
+        { to: "/researcher/insights#handoffs", label: "Handoffs from participants" },
+        { to: "/researcher/insights#personas", label: "Persona results" },
+      ],
+    },
+    {
+      name: "Say It Plainly",
+      lines: [
+        "Adult and caregiver readings with Flesch scores and figure tracing",
+        `Planted-error test: ${lab.caught} of ${lab.planted} caught, ${lab.falseAlarms} false alarms`,
+        "Reviewer comments; a disagreement blocks Accept",
+      ],
+      links: [{ to: "/researcher/plain-language#say-it-plainly", label: "Open the two readings" }],
+    },
+    {
+      name: "Write Once",
+      lines: [
+        `${blocks.length} shared blocks read from the files`,
+        `${matching} of ${bound.length} source sentences rebuilt exactly from their templates`,
+        "Propose any value; every affected sentence is listed with its owner",
+      ],
+      links: [
+        { to: "/researcher/document-integrity#write-once", label: "Blocks and proposals" },
+        { to: "/researcher/documents#registry", label: "Registry card" },
+      ],
+    },
+    {
+      name: "Protocol Pre-Flight",
+      lines: [
+        `Checklist count on the practice protocol: ${score.value} of 100 (M11 + SPIRIT 2025, ${score.total} items)`,
+        `Planted-error test: ${planted.caught} of ${planted.planted} caught, ${planted.falseAlarms} false alarms`,
+        "Upload any protocol; design brief drafts M11 sections",
+      ],
+      links: [
+        { to: "/researcher/document-integrity#pre-flight", label: "Pre-flight check" },
+        { to: "/researcher/document-integrity#design-brief", label: "Design brief" },
+      ],
+    },
+  ];
+
+  return (
+    <section className="sheet-cards" aria-label="Starter sheets">
+      <h2>Starter sheets</h2>
+      <p className="fine">Computed now from the stored files. These are checks on synthetic documents, not study results or approvals.</p>
+      <div className="sheet-card-grid">
+        {cards.map((card) => (
+          <article key={card.name} className="fact">
+            <h3>{card.name}</h3>
+            <ul>
+              {card.lines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+            <div className="action-row">
+              {card.links.map((link) => (
+                <Link key={link.to} className="btn on-paper" to={link.to}>
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /* ---------- Write Once ---------- */
 
 function BlockLibrary() {
   const values = extractValues();
   return (
-    <section>
+    <section id="write-once">
       <h2>Shared blocks</h2>
       <p className="fine">
         Each value is read from the stored files, not typed in. Every sentence below is rebuilt from its template and compared with the stored sentence, so a mismatch shows up here.
@@ -219,7 +308,7 @@ function ProposeChange() {
 export function RegistryCard() {
   const fields = registryFields(extractValues());
   return (
-    <section>
+    <section id="registry">
       <h2>Registry card</h2>
       <p className="fine">Built from the same blocks as the protocol and the consent. Where the files disagree, both values are shown.</p>
       <ul className="stack">
@@ -333,7 +422,7 @@ export function PreFlight() {
   const hours = burden();
 
   return (
-    <section>
+    <section id="pre-flight">
       <h2>Pre-flight protocol check</h2>
       <p className="fine">
         Checking {source.name}: {source.sections.length} sections. Headings come from ICH M11 (FDA copy, adopted 19 Nov 2025) and SPIRIT 2025 Table 1. Every mark is computed from the text on screen.
@@ -456,7 +545,7 @@ export function DesignBrief() {
   const accepted = new Set(Object.entries(briefDecisions).filter(([, value]) => value === "accepted").map(([key]) => key));
 
   return (
-    <section>
+    <section id="design-brief">
       <h2>Design brief to draft</h2>
       <p className="fine">
         Type a short brief. Each M11 section is drafted only from what the brief says; anything missing is left for the author. Accepting a section records a decision. It does not approve a protocol.
@@ -594,7 +683,7 @@ export function PlainWorkbook() {
 
   return (
     <div className="sheet-work">
-      <section>
+      <section id="say-it-plainly">
         <h2>Two readers, one source</h2>
         <p className="fine">
           Source: {source.title}. Both readings must keep {source.mustKeep.join(", ") || "the source figures"}
@@ -762,7 +851,7 @@ export function ConsentElements() {
   if (!consent) return null;
   const rows = consentElements(consent.passages);
   return (
-    <section>
+    <section id="elements">
       <h2>Required consent elements</h2>
       <p className="fine">
         21 CFR 50.25(a)(1)–(8) and (c), checked against {consent.documentId} {consent.version}. Found by key phrases in the text; a person still reads the form. This is not a regulatory review.
@@ -820,7 +909,7 @@ export function PersonaResults() {
   }));
   const matched = results.filter((item) => item.result.label === item.expect).length;
   return (
-    <section>
+    <section id="personas">
       <h2>Starter-sheet personas</h2>
       <p className="fine">
         Five practice replies, one per persona the starter sheet names, run through the same check participants use. {matched} of {results.length} get the expected result.
@@ -860,7 +949,7 @@ export function StoredHandoffs() {
   }, []);
 
   return (
-    <section>
+    <section id="handoffs">
       <h2>Teach-back handoffs from participants</h2>
       {state === "loading" ? <p className="fine">Loading from the research-team service…</p> : null}
       {state === "signed-out" ? <p className="fine">Sign in with a research-team account to read handoffs.</p> : null}

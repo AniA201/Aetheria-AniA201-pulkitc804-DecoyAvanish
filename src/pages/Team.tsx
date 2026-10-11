@@ -27,6 +27,7 @@ import {
   PlainWorkbook,
   PreFlight,
   RegistryCard,
+  StarterSheets,
   StoredHandoffs,
   VersionStanding,
 } from "../components/SheetPanels";
@@ -78,6 +79,7 @@ export function Overview() {
           Plain language
         </Link>
       </div>
+      <StarterSheets />
     </div>
   );
 }

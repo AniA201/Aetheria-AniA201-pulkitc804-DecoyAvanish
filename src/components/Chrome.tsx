@@ -195,6 +195,22 @@ export function Shell({ mode }: { mode: Role }) {
     setOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    const id = location.hash.slice(1);
+    if (!id) return;
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      const target = document.getElementById(id);
+      tries += 1;
+      if (target || tries > 20) {
+        window.clearInterval(timer);
+        target?.scrollIntoView({ block: "start" });
+        if (target) window.setTimeout(() => target.scrollIntoView({ block: "start" }), 400);
+      }
+    }, 50);
+    return () => window.clearInterval(timer);
+  }, [location.pathname, location.hash]);
+
   const signOut = async () => {
     sessionStorage.removeItem("aetheria_token");
     setRole(null);

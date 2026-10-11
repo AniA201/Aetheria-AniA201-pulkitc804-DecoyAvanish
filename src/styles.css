@@ -485,6 +485,11 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
 .brief-grid label { display: grid; gap: 0.25rem; font-size: 0.9rem; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .check-row { display: flex; gap: 0.5rem; align-items: center; margin: 0.6rem 0; }
+.sheet-cards { margin-top: 2rem; }
+.sheet-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1rem; }
+.sheet-card-grid ul { margin: 0.4rem 0 0.8rem; padding-left: 1.1rem; display: grid; gap: 0.3rem; }
+.sheet-work section[id],
+.sheet-cards { scroll-margin-top: 1.5rem; }
 .type-dock button:disabled { opacity: 0.45; cursor: not-allowed; }
 .type-dock [role="radiogroup"] { display: flex; gap: 2px; }
 .type-dock button {

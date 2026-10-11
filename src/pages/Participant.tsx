@@ -7,7 +7,7 @@ import { assessTeachbackWithGemini, localBriefing, writeBriefingWithGemini, type
 import type { SubmittedConsent } from "../lib/consent";
 import { cachedGeminiStatus, type GeminiContent } from "../lib/gemini";
 import { sendHandoff, type SendState } from "../lib/handoff";
-import { type TeachResult } from "../lib/teachback";
+import { assessTeachback, type TeachResult } from "../lib/teachback";
 import { versionStanding } from "../lib/workbook";
 import { useSession } from "../state/Session";
 import { ListenButton, useTitle } from "../components/Chrome";
@@ -474,7 +474,12 @@ export function Teach() {
     setChecking(true);
     setSent(null);
     const speaker = caregiver ? "caregiver" : "participant";
-    const next = { ...(await assessTeachbackWithGemini(prompt, response, consent, speaker)), response };
+    const local = assessTeachback(prompt.id, response, prompts, speaker);
+    const judged: TeachResult =
+      local.misconception || local.language === "es"
+        ? { ...local, documentId: consent.documentId, version: consent.version, engine: "local" }
+        : { ...(await assessTeachbackWithGemini(prompt, response, consent)), speaker };
+    const next: TeachResult = { ...judged, response };
     setChecking(false);
     setResult(next);
     recordTeach(next);
