@@ -4202,4 +4202,68 @@ html:not([data-contrast="high"]) .auth-form-reference input {
   html:not([data-contrast="high"]) .story .folio-nav :is(.folio-brand, .folio-brand strong, nav a, .folio-menu) {
     color: #63b2a7;
   }
+
+  /* The account journey has an independent composition, so give it the same
+     contrast contract as the participant and researcher workspaces. */
+  html:not([data-contrast="high"]) .auth-gate,
+  html:not([data-contrast="high"]) .auth-reference,
+  html:not([data-contrast="high"]) .auth-login-shell {
+    background: #091c1e !important;
+    color: #edf7f1;
+  }
+  html:not([data-contrast="high"]) .auth-showcase.auth-showcase-minimal {
+    background: linear-gradient(145deg, #0a3434, #0e2428 62%, #0b2022) !important;
+    border-color: #456a65;
+    color: #edf7f1;
+  }
+  html:not([data-contrast="high"]) .auth-showcase.auth-showcase-minimal::before {
+    color: #76c9bd;
+  }
+  html:not([data-contrast="high"]) .auth-showcase.auth-showcase-minimal::after {
+    border-color: #477a72;
+    background: linear-gradient(90deg, transparent 0 83%, #145f5a 83% 100%), linear-gradient(180deg, #173237, #10262a);
+    box-shadow: 15px 18px 0 rgba(0, 0, 0, .24), 0 24px 46px rgba(0, 0, 0, .36);
+  }
+  html:not([data-contrast="high"]) .auth-login-card,
+  html:not([data-contrast="high"]) .auth-form-reference .auth-role-switch {
+    background: #122b2e !important;
+    border-color: #426861;
+  }
+  html:not([data-contrast="high"]) .auth-gate :is(h1, h2, h3, p, label, small, strong, span, a, button) {
+    color: #edf7f1 !important;
+  }
+  html:not([data-contrast="high"]) .auth-gate .auth-showcase-word {
+    color: rgba(112, 202, 188, .22) !important;
+    text-shadow: 0 .6rem 1.25rem rgba(0, 0, 0, .38);
+  }
+  html:not([data-contrast="high"]) .auth-gate :is(input, textarea, select) {
+    background: #0c2225 !important;
+    color: #f7fff9 !important;
+    border-color: #5c877f !important;
+  }
+  html:not([data-contrast="high"]) .auth-gate :is(input, textarea)::placeholder { color: #aec8c0 !important; }
+  html:not([data-contrast="high"]) .auth-gate .auth-role-switch button.on {
+    background: #1a3b3d !important;
+    border-color: #78cabc !important;
+  }
+  html:not([data-contrast="high"]) .auth-gate .auth-submit {
+    background: #14645e !important;
+    border-color: #77c9bb !important;
+    color: #f7fff9 !important;
+  }
+  html:not([data-contrast="high"]) .auth-gate :is(.auth-error, .auth-error *) { color: #ffb9bd !important; }
+  html:not([data-contrast="high"]) .auth-gate :is(.auth-notice, .auth-notice *) { color: #9ae3d5 !important; }
+
+  /* Catch remaining component-level ink declarations in every protected page. */
+  html:not([data-contrast="high"]) .shell :is(.page, .reader, .gate, .missing) :is(h1, h2, h3, h4, p, li, label, legend, small, dt, dd, th, td, summary, strong, em, a, button, span) {
+    color: #edf7f1 !important;
+  }
+  html:not([data-contrast="high"]) .shell :is(.page, .reader, .gate, .missing) :is(.notice, .fine, .empty, .lede, .kicker) {
+    color: #c7dbd3 !important;
+  }
+  html:not([data-contrast="high"]) .shell :is(.page, .reader, .gate, .missing) :is(.passage, .citation, .split > div, .split > article, .fact, .file-card, .message-card, .trial-lookup, .data-table, .fold, .sheet-work > section, .sheet-work > article) {
+    background-color: #142c2f;
+    border-color: #40655f;
+    box-shadow: 0 .8rem 1.6rem rgba(0, 0, 0, .26);
+  }
 }
