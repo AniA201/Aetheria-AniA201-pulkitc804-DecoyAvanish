@@ -4279,3 +4279,13 @@ html:not([data-contrast="high"]) .auth-form-reference input {
   .shell.participant .rail nav .rail-link,
   .shell.researcher .rail nav .rail-link { min-height: 2.4rem; padding-top: .35rem; padding-bottom: .35rem; }
 }
+
+/* Ask Aetheria sits in the bottom-right corner, apart from the Aa dock on the left. */
+.shell .rail-utilities .guide-launch {
+  position: fixed !important;
+  inset: auto 1.25rem 1.25rem auto !important;
+  z-index: 45;
+}
+@media (max-width: 900px) {
+  .shell .rail-utilities .guide-launch { inset: auto 1rem 1rem auto !important; }
+}
