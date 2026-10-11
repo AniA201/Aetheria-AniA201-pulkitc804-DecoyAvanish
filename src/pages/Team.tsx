@@ -204,7 +204,7 @@ export function Insights() {
   }));
 
   return (
-    <div className="page">
+    <div className="page research-insights">
       <p className="kicker">{r.insights.kicker}</p>
       <h1>{r.nav[2]}.</h1>
       <div className="sheet-work">
@@ -303,7 +303,7 @@ export function Studio() {
   const { consent } = useSession();
 
   return (
-    <div className="page">
+    <div className="page research-studio">
       <p className="kicker">{r.studio.kicker}</p>
       <h1>{r.studio.title}</h1>
       {consent ? (
@@ -338,7 +338,7 @@ export function Lab() {
   const passed = results?.filter((item) => item.passed).length ?? 0;
 
   return (
-    <div className="page">
+    <div className="page researcher-lab">
       <p className="kicker">{r.lab.kicker}</p>
       <h1>{r.lab.title}</h1>
       <button type="button" className="btn solid dark" onClick={() => setResults(runChecks())}>
@@ -401,7 +401,7 @@ export function Documents() {
   };
 
   return (
-    <div className="page">
+    <div className="page researcher-documents">
       <p className="kicker">{r.files.kicker}</p>
       <h1>{r.files.title}</h1>
       <VersionStanding version={consent?.version ?? consentDoc.version} language={language} />
@@ -505,7 +505,7 @@ export function Settings() {
   ];
 
   return (
-    <div className="page">
+    <div className="page researcher-settings">
       <p className="kicker">{r.settings.kicker}</p>
       <h1>{r.settings.title}</h1>
       <ul className="stack">
