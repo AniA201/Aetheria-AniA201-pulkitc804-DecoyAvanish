@@ -759,17 +759,21 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
 /* The four section headings are signposts; the fanned papers carry their details. */
 .folio-split, .folio-chapters, .folio-review {
   background: linear-gradient(90deg, #d0f0dc 0%, #d0f0dc 23%, rgba(208, 240, 220, 0.26) 32%, rgba(208, 240, 220, 0) 40%);
+  overflow: visible;
 }
 .folio-chapters { display: flex; flex-direction: column; justify-content: center; }
 .folio-chapter-head { margin: 0; gap: 0.35rem; }
 .folio-split h2, .folio-chapters h2, .folio-review h2 {
+  display: inline-block;
   max-width: none;
-  margin: 0.2rem 0 0;
+  margin: 0.05em -0.12em 0;
+  padding: 0.1em 0.12em 0.18em;
   color: #70518c;
   font-size: clamp(5.5rem, 13vw, 12rem);
-  line-height: 0.84;
+  line-height: 1.04;
   letter-spacing: -0.085em;
   text-shadow: 2px 6px 4px rgba(73, 43, 100, 0.3), 9px 17px 19px rgba(55, 27, 85, 0.2);
+  overflow: visible;
 }
 #teach h2 { font-size: clamp(4.6rem, 7.2vw, 7.5rem); }
 #review h2 { font-size: clamp(5rem, 9vw, 8.5rem); }
@@ -836,15 +840,15 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
 .story.has-motion-reveal .folio-chapters > :nth-child(2) { transition-delay: 70ms; }
 
 @keyframes folio-title-unfold {
-  0% { opacity: 0; transform: perspective(900px) rotateY(-48deg) translateX(-26px); clip-path: inset(0 74% 0 0); }
-  64% { opacity: 1; clip-path: inset(0 0 0 0); }
-  100% { opacity: 1; transform: perspective(900px) rotateY(0) translateX(0); clip-path: inset(0 0 0 0); }
+  0% { opacity: 0; transform: perspective(900px) rotateY(-28deg) translateX(-18px) scaleX(0.92); }
+  100% { opacity: 1; transform: perspective(900px) rotateY(0) translateX(0) scaleX(1); }
 }
 .story.has-motion-reveal .folio-split h2,
 .story.has-motion-reveal .folio-chapters h2,
 .story.has-motion-reveal .folio-review h2 {
   transform-origin: left center;
   backface-visibility: hidden;
+  clip-path: none;
   transition: none;
 }
 .story.has-motion-reveal .folio-split.is-visible h2,
@@ -1155,6 +1159,11 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
     background: transparent;
   }
   .folio-split > *, .folio-chapter-head, .folio-questions, .folio-review > * { max-width: 46vw; }
+  .folio-split > h2, .folio-chapters h2, .folio-review > h2, .folio-chapter-head {
+    width: max-content;
+    max-width: none;
+    overflow: visible;
+  }
   .folio-section-intro { max-width: 46vw !important; }
   .folio-review > p { max-width: 46vw; }
   .folio-split h2, .folio-chapters h2, .folio-review h2 { font-size: clamp(4.2rem, 11vw, 7rem); }
@@ -1178,6 +1187,11 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   .folio-index { width: min(19rem, 78vw); }
   .folio-split, .folio-chapters, .folio-review { display: flex; flex-direction: column; justify-content: flex-start; padding-top: 11vh; padding-bottom: 14vh; background: transparent; }
   .folio-split > *, .folio-chapter-head, .folio-questions, .folio-review > * { max-width: min(27rem, 85vw); }
+  .folio-split > h2, .folio-chapters h2, .folio-review > h2, .folio-chapter-head {
+    width: max-content;
+    max-width: none;
+    overflow: visible;
+  }
   .folio-section-intro { max-width: min(27rem, 85vw) !important; }
   .folio-review > p { max-width: min(27rem, 85vw); }
   .folio-split h2, .folio-chapters h2, .folio-review h2 { font-size: clamp(3.8rem, 14vw, 5rem); }
@@ -1189,6 +1203,7 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .folio-preview, .folio-paper-picker button, .folio-try span, .story.has-motion-reveal .folio-split > *, .story.has-motion-reveal .folio-chapters > *, .story.has-motion-reveal .folio-review > * { transition: none !important; }
+  .story.has-motion-reveal .folio-split h2, .story.has-motion-reveal .folio-chapters h2, .story.has-motion-reveal .folio-review h2 { animation: none !important; }
 }
 html[data-motion="reduce"] { scroll-behavior: auto; }
 html[data-motion="reduce"] .folio-preview,
