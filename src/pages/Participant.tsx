@@ -953,7 +953,7 @@ export function Summary() {
         <p className="notice">{t.summary.notSignature}</p>
       </header>
       <div className="summary-grid">
-        <section>
+        <section className="summary-briefing">
           <h2>{t.summary.coordinator}</h2>
           {briefing ? (
             <>
@@ -992,7 +992,7 @@ export function Summary() {
             {writing ? t.summary.writing : briefing ? t.summary.again : t.summary.write}
           </button>
         </section>
-        <section>
+        <section className="summary-reading-status">
           <h2>{t.summary.readHeading}</h2>
           <ul className="plain-list">
             {consent.sections.map((section) => (
@@ -1003,7 +1003,7 @@ export function Summary() {
             ))}
           </ul>
         </section>
-        <section>
+        <section className="summary-saved">
           <h2>{t.summary.savedHeading}</h2>
           {saved.length === 0 ? (
             <p className="empty">{t.summary.noSaved}</p>
@@ -1023,7 +1023,7 @@ export function Summary() {
             </ul>
           )}
         </section>
-        <section>
+        <section className="summary-handoff">
           <h2>{t.summary.handoff}</h2>
           {openTopics.length === 0 ? (
             <p className="empty">{t.summary.noChecks}</p>
