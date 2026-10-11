@@ -101,8 +101,8 @@ export function MedicalField({
     const folio = new THREE.Group();
     scene.add(folio);
 
-    // A deliberately simple two-panel navy folder. The front is hinged on
-    // the right so it visibly swings open to the left before fading away.
+    // One flat cover sheet: it matches the document dimensions, slides aside,
+    // and fades as the pages take over. There is no folding or hinge motion.
     const folder = new THREE.Group();
     const makeFolderPanel = (color: string, marked = false) => {
       const canvas = document.createElement("canvas");
@@ -160,16 +160,10 @@ export function MedicalField({
       panel.scale.set(2.12, 2.74, 1);
       return { panel, material };
     };
-    // One physical cover is enough for this short reveal. A second panel was
-    // reading as a loose vertical bar once perspective and motion blur were
-    // applied, so the cover itself supplies the entire opening gesture.
-    const folderFrontHinge = new THREE.Group();
-    folderFrontHinge.position.set(1.02, 0.04, 0.08);
     const { panel: folderFront, material: navyFront } = makeFolderPanel("#063f4a");
-    folderFront.position.x = -1.02;
+    folderFront.position.set(0, 0, 0.08);
     folderFront.renderOrder = 1;
-    folderFrontHinge.add(folderFront);
-    folder.add(folderFrontHinge);
+    folder.add(folderFront);
     folio.add(folder);
 
     const pages = folioTextures.pages.map((sheet) => makePage(sheet.texture, 1.56, 2.02));
@@ -239,8 +233,7 @@ export function MedicalField({
       const turn = reducedMotion ? 1 : smoothstep(progress / 0.25);
       // Have the full stack in view as the chapter list enters the viewport.
       const fan = reducedMotion ? 1 : smoothstep((progress - 0.1) / 0.25);
-      const folderOpen = reducedMotion ? 1 : smoothstep((progress - 0.04) / 0.3);
-      const folderExit = reducedMotion ? 1 : smoothstep((progress - 0.2) / 0.2);
+      const folderExit = reducedMotion ? 1 : smoothstep((progress - 0.12) / 0.28);
       const yaw = -0.95 + turn * 0.8;
       const heroPosition = 1 - turn;
       const heroRightShift = parent.clientWidth < 600 ? 0.18 : 1.35;
@@ -253,16 +246,14 @@ export function MedicalField({
       folio.scale.setScalar(narrow ? 0.7 : 0.92);
       folio.rotation.set(sway.y * 0.04, yaw + sway.x * 0.06, 0);
 
-      // Slide the closed cover out to the left as the papers fan into view.
-      // It stays in its own lane throughout the reveal, never through a page.
-      folderFrontHinge.position.x = 0.88 - folderOpen * 2.8;
-      folderFrontHinge.rotation.set(0, 0, -folderOpen * 0.08);
-      folder.position.set(0, folderExit * 0.08, -folderExit * 0.58);
+      // Keep the sheet flat, then move it clear of the document stack.
+      folderFront.position.set(-folderExit * 1.45, folderExit * 0.03, 0.08 - folderExit * 0.28);
+      folder.position.set(0, 0, 0);
       // The folio itself is angled for the paper depth. Counter that angle for
       // the folder so its closed front remains a clear, square navy panel.
       folder.rotation.set(0, -yaw - sway.x * 0.06, 0);
-      folder.scale.setScalar(0.68 * (1 - folderExit * 0.08));
-      navyFront.opacity = Math.max(0, 1 - folderExit * 1.12);
+      folder.scale.setScalar(0.68);
+      navyFront.opacity = Math.max(0, 1 - folderExit * 1.04);
 
       const spacing = narrow ? 0.12 : 0.47;
       const lanes = [
@@ -281,9 +272,12 @@ export function MedicalField({
         );
         page.group.rotation.set(0, 0, [-0.018, 0.016, -0.014, 0.02][index] * fan);
         page.group.scale.setScalar(1);
-        const pageReveal = reducedMotion ? 1 : smoothstep((folderOpen - 0.08) / 0.42);
+        const pageReveal = reducedMotion ? 1 : smoothstep((progress - 0.04) / 0.42);
         (page.face.material as THREE.MeshBasicMaterial).opacity = pageReveal;
         (page.edge.material as THREE.MeshBasicMaterial).opacity = pageReveal;
+        // Avoid showing a lone document edge before the document itself has
+        // entered the scene.
+        page.group.visible = pageReveal > 0.01;
       });
 
       const selectedIndex = selectedPaperRef.current;

@@ -77,6 +77,7 @@ export function Landing() {
       const progress = Math.min(1, Math.max(0, (window.scrollY - root.offsetTop) / distance));
       progressRef.current = progress;
       root.style.setProperty("--stage-opacity", "1");
+      root.style.setProperty("--landing-progress", progress.toString());
       const position = window.scrollY + window.innerHeight * 0.42;
       const next = index.reduce((active, item, itemIndex) => {
         const section = document.getElementById(item.id);
