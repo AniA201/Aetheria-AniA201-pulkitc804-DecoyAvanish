@@ -48,7 +48,7 @@ export function Overview() {
     : [];
 
   return (
-    <div className="page">
+    <div className="page researcher-page">
       <p className="kicker">{r.overview.kicker}</p>
       <h1>{r.overview.title}</h1>
       <div className="stat-row">
@@ -69,7 +69,9 @@ export function Overview() {
           <span>{r.overview.draft}</span>
         </article>
       </div>
-      <StarterSheets />
+      <Fold title={r.sheets.title}>
+        <StarterSheets />
+      </Fold>
     </div>
   );
 }
@@ -139,7 +141,7 @@ export function Integrity() {
   const { consent } = useSession();
 
   return (
-    <div className="page">
+    <div className="page researcher-page">
       <p className="kicker">{r.integrity.kicker}</p>
       <h1>{r.integrity.title}</h1>
       <TrialLookup />
@@ -201,7 +203,7 @@ export function Insights() {
   }));
 
   return (
-    <div className="page">
+    <div className="page researcher-page">
       <p className="kicker">{r.insights.kicker}</p>
       <h1>{r.nav[2]}.</h1>
       <div className="sheet-work">
@@ -300,7 +302,7 @@ export function Studio() {
   const { consent } = useSession();
 
   return (
-    <div className="page">
+    <div className="page researcher-page">
       <p className="kicker">{r.studio.kicker}</p>
       <h1>{r.studio.title}</h1>
       {consent ? (
@@ -335,7 +337,7 @@ export function Lab() {
   const passed = results?.filter((item) => item.passed).length ?? 0;
 
   return (
-    <div className="page">
+    <div className="page researcher-page">
       <p className="kicker">{r.lab.kicker}</p>
       <h1>{r.lab.title}</h1>
       <button type="button" className="btn solid dark" onClick={() => setResults(runChecks())}>
@@ -398,7 +400,7 @@ export function Documents() {
   };
 
   return (
-    <div className="page">
+    <div className="page researcher-page">
       <p className="kicker">{r.files.kicker}</p>
       <h1>{r.files.title}</h1>
       <VersionStanding version={consent?.version ?? consentDoc.version} language={language} />
@@ -441,17 +443,23 @@ export function Documents() {
           </article>
         ))}
       </section>
-      <label htmlFor="import-doc">{r.files.importLabel(study.id)}</label>
-      <input
-        id="import-doc"
-        type="file"
-        accept=".txt,.md,text/plain"
-        onChange={(event) => {
-          void onFile(event.target.files?.[0]);
-          event.target.value = "";
-        }}
-      />
-      {note ? <p className="fine">{note}</p> : null}
+      <section className="file-upload-card">
+        <div>
+          <p className="kicker">Add a file</p>
+          <h2>{r.files.importLabel(study.id)}</h2>
+          <p className="fine">Text or Markdown only.</p>
+        </div>
+        <input
+          id="import-doc"
+          type="file"
+          accept=".txt,.md,text/plain"
+          onChange={(event) => {
+            void onFile(event.target.files?.[0]);
+            event.target.value = "";
+          }}
+        />
+        {note ? <p className="fine">{note}</p> : null}
+      </section>
       <div className="sheet-work">
         <div>
           <ConsentElements />
@@ -502,7 +510,7 @@ export function Settings() {
   ];
 
   return (
-    <div className="page">
+    <div className="page researcher-page">
       <p className="kicker">{r.settings.kicker}</p>
       <h1>{r.settings.title}</h1>
       <ul className="stack">
