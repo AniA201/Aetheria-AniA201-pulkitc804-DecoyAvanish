@@ -3251,3 +3251,116 @@ html:not([data-contrast="high"]) .shell.participant .ask-studio textarea:focus {
 @media (prefers-reduced-motion: reduce) {
   .shell.researcher .rail-link, .shell.researcher .file-card { transition-duration: .01ms; }
 }
+/* Document integrity is a comparison desk: linked source records sit on Powder paper,
+   while decisions stay visibly separate from the evidence. */
+.shell.researcher .researcher-integrity {
+  max-width: 72rem;
+}
+.shell.researcher .researcher-integrity > .kicker {
+  margin-bottom: .55rem;
+}
+.shell.researcher .researcher-integrity > h1 {
+  max-width: 14ch;
+  margin-bottom: 1.55rem;
+}
+.shell.researcher .researcher-integrity .trial-lookup {
+  position: relative;
+  margin: 0 0 1.45rem;
+  border-color: rgba(16, 43, 53, .2);
+  border-radius: 1.7rem 1.7rem 1rem 1rem;
+  background: linear-gradient(135deg, rgba(247, 247, 242, .96), rgba(239, 248, 241, .86));
+  box-shadow: 0 18px 34px rgba(16, 43, 53, .1), inset 0 1px 0 rgba(255, 255, 255, .76);
+}
+.shell.researcher .researcher-integrity .trial-lookup::before {
+  content: "";
+  position: absolute;
+  inset: .75rem auto .75rem .75rem;
+  width: .24rem;
+  border-radius: 999px;
+  background: linear-gradient(var(--deep-teal), rgba(56, 125, 115, .18));
+}
+.shell.researcher .researcher-integrity .trial-lookup > * {
+  position: relative;
+  margin-left: .45rem;
+}
+.shell.researcher .researcher-integrity .tab-row {
+  gap: .55rem;
+  margin: 0 0 1.2rem;
+  padding: .45rem;
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid rgba(16, 43, 53, .15);
+  border-radius: 1.15rem;
+  background: rgba(247, 247, 242, .56);
+}
+.shell.researcher .researcher-integrity .tab-row .btn {
+  min-height: 2.65rem;
+  padding: .55rem .9rem;
+  border-color: transparent;
+  border-radius: .78rem;
+  color: #284743;
+}
+.shell.researcher .researcher-integrity .tab-row .btn[aria-pressed="true"] {
+  background: #102b35;
+  color: var(--powder);
+  box-shadow: 0 7px 15px rgba(16, 43, 53, .17);
+}
+.shell.researcher .researcher-integrity .sheet-work {
+  gap: .85rem;
+  margin-top: 0;
+}
+.shell.researcher .researcher-integrity .sheet-work > .fold,
+.shell.researcher .researcher-integrity .sheet-work .fold {
+  border: 1px solid rgba(16, 43, 53, .16);
+  border-radius: 1.15rem;
+  background: rgba(247, 247, 242, .8);
+  box-shadow: 0 10px 24px rgba(16, 43, 53, .07), inset 0 1px 0 rgba(255, 255, 255, .7);
+}
+.shell.researcher .researcher-integrity .fold > summary,
+.shell.researcher .researcher-integrity .sheet-work .fold > summary {
+  min-height: 3.3rem;
+  padding: .78rem 1rem;
+  border-radius: 1.1rem;
+}
+.shell.researcher .researcher-integrity .fold[open] > summary {
+  border-radius: 1.1rem 1.1rem .7rem .7rem;
+  background: rgba(208, 240, 220, .42);
+}
+.shell.researcher .researcher-integrity .fold-body {
+  padding: .45rem 1rem 1rem;
+}
+.shell.researcher .researcher-integrity .split {
+  gap: .8rem;
+  margin: .3rem 0 .9rem;
+}
+.shell.researcher .researcher-integrity .split > div {
+  padding: 1rem;
+  border: 1px solid rgba(16, 43, 53, .13);
+  border-radius: .9rem;
+  background: rgba(247, 247, 242, .88);
+  box-shadow: inset .22rem 0 0 rgba(56, 125, 115, .54);
+}
+.shell.researcher .researcher-integrity .split > div + div {
+  box-shadow: inset .22rem 0 0 rgba(118, 84, 130, .52);
+}
+.shell.researcher .researcher-integrity .split h3 {
+  margin-top: 0;
+}
+.shell.researcher .researcher-integrity textarea {
+  border-radius: .85rem;
+}
+.shell.researcher .researcher-integrity .action-row {
+  gap: .5rem;
+  margin-top: .75rem;
+}
+.shell.researcher .researcher-integrity .action-row .btn {
+  min-height: 2.6rem;
+  padding: .55rem .82rem;
+  border-radius: 999px;
+  background: rgba(247, 247, 242, .78);
+}
+@media (max-width: 640px) {
+  .shell.researcher .researcher-integrity .tab-row { width: 100%; }
+  .shell.researcher .researcher-integrity .tab-row .btn { flex: 1 1 9rem; }
+  .shell.researcher .researcher-integrity .trial-lookup::before { inset-block: .65rem; }
+}

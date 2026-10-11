@@ -142,7 +142,7 @@ export function Integrity() {
   const { consent } = useSession();
 
   return (
-    <div className="page">
+    <div className="page researcher-integrity">
       <p className="kicker">{r.integrity.kicker}</p>
       <h1>{r.integrity.title}</h1>
       <TrialLookup />
