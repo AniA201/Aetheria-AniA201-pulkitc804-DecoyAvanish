@@ -75,7 +75,14 @@ function PassageText({ text }: { text: string }) {
   );
 }
 
-const studyTitle = (consent: SubmittedConsent, language: Language) => (consent.sample && language !== "en" ? practice[language].studyName : consent.studyName);
+/** Uploaded forms can have very long titles; this picks a smaller size class for them. */
+const titleFit = (text: string) => (text.length > 90 ? "title-fit title-xlong" : text.length > 45 ? "title-fit title-long" : undefined);
+
+/** Upload names often come from file names (Long_Title_v3); show them with spaces so they wrap. */
+const readableName = (name: string) => name.replace(/[_]+/g, " ").replace(/\s+/g, " ").trim();
+
+const studyTitle = (consent: SubmittedConsent, language: Language) =>
+  consent.sample && language !== "en" ? practice[language].studyName : consent.sample ? consent.studyName : readableName(consent.studyName);
 
 export function ParticipantHome() {
   const t = useT();
@@ -96,8 +103,8 @@ export function ParticipantHome() {
 
   return (
     <div className="page participant-home">
-      <p className="kicker">{consent.sample ? t.home.practice : consent.filename}</p>
-      <h1>{studyTitle(consent, language)}</h1>
+      <p className="kicker kicker-file" title={consent.filename}>{consent.sample ? t.home.practice : consent.filename}</p>
+      <h1 className={titleFit(studyTitle(consent, language))}>{studyTitle(consent, language)}</h1>
       <p className="lede dark">{t.home.sections(consent.sections.length)}</p>
       <div className="stat-row">
         <article>
@@ -131,7 +138,7 @@ export function ParticipantHome() {
         <div>
           <span>{next.index}</span>
           <div>
-            <h2>{view(next).title}</h2>
+            <h2 className={titleFit(view(next).title)}>{view(next).title}</h2>
             <p>{view(next).short}</p>
           </div>
           <Link to={`/participant/explore-consent/${next.id}`} aria-label={`Read ${view(next).title}`}><span aria-hidden="true">→</span></Link>
@@ -146,7 +153,7 @@ export function ParticipantHome() {
           {consent.sections.map((section) => {
             const local = view(section);
             const done = reviewed.includes(section.id);
-            return <li key={section.id}><Link to={`/participant/explore-consent/${section.id}`}><span>{section.index}</span><strong>{local.title}</strong><em>{done ? "Read" : "Open"}</em></Link></li>;
+            return <li key={section.id}><Link to={`/participant/explore-consent/${section.id}`} title={local.title}><span>{section.index}</span><strong className="clamp-3">{local.title}</strong><em>{done ? "Read" : "Open"}</em></Link></li>;
           })}
         </ol>
       </section>
@@ -164,7 +171,7 @@ export function MyStudy() {
     <div className="page participant-form">
       <p className="kicker">{t.myStudy.kicker}</p>
       <h1>Your form</h1>
-      <p className="lede dark">
+      <p className="lede dark title-fit">
         {studyTitle(consent, language)} · {consent.filename}
         {consent.sample ? t.myStudy.practice : ""}
       </p>
@@ -240,7 +247,7 @@ export function Explore() {
             aria-current={item.id === section.id ? "page" : undefined}
           >
             <span>{item.index}</span>
-            {view(item).title}
+            <span className="clamp-3" title={view(item).title}>{view(item).title}</span>
             {reviewed.includes(item.id) ? <em>{t.read.done}</em> : null}
           </Link>
         ))}
@@ -255,7 +262,7 @@ export function Explore() {
         <p className="kicker">
           {section.index} / {sections.length} · {consent.version}
         </p>
-        <h1>{section.title}</h1>
+        <h1 className={titleFit(section.title)}>{section.title}</h1>
         <p className="fine">{section.citation}</p>
         {language !== "en" ? (
           <p className="fine">
