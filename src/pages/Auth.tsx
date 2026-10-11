@@ -116,7 +116,7 @@ export function Login() {
       <section className="auth-login-shell">
         <div className="auth-login-card">
           <div className="auth-login-icon" aria-hidden="true"><AetheriaMark /></div>
-          <div className="auth-login-title"><h2>Welcome back</h2><p>{copy.signInNote}</p></div>
+          <div className="auth-login-title"><h2>Welcome</h2><p>{copy.signInNote}</p></div>
           <form className="auth-form auth-form-reference" onSubmit={signIn}>
             <RoleSwitch value={accountType} onChange={setAccountType} />
             <label>Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="you@example.com" required /></label>

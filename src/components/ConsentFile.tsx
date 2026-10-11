@@ -57,7 +57,7 @@ export function ConsentFile() {
 
   return (
     <form
-      className="ask-form"
+      className="ask-form consent-upload-form"
       onSubmit={(event) => {
         event.preventDefault();
         void submit();

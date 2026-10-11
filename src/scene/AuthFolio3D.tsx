@@ -112,22 +112,6 @@ function makeTexture(side: "original" | "plain", anisotropy: number) {
     context.font = "400 43px Newsreader, Georgia, serif";
     wrap(context, "The medicine may make you nauseous, dizzy, or tired. It may not help your migraines.", 67, 446, 630, 57);
 
-    const point = (number: string, text: string, y: number) => {
-      context.fillStyle = "#0d5b58";
-      context.beginPath();
-      context.arc(87, y - 8, 18, 0, Math.PI * 2);
-      context.fill();
-      context.fillStyle = "#f7f7f2";
-      context.font = "600 18px Newsreader, Georgia, serif";
-      context.fillText(number, 78, y - 2);
-      context.fillStyle = "#243b37";
-      context.font = "400 31px Newsreader, Georgia, serif";
-      context.fillText(text, 128, y, 545);
-    };
-    point("1", "You may get Aetherol or a placebo.", 644);
-    point("2", "Neither you nor the doctor knows which.", 722);
-    point("3", "Ask the study team about anything unclear.", 800);
-
     context.strokeStyle = "#a8bdb4";
     context.lineWidth = 1;
     context.beginPath();
