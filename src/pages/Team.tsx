@@ -36,6 +36,7 @@ import {
 import { useSession, type ReviewState } from "../state/Session";
 import { useTitle } from "../components/Chrome";
 import { TrialLaySummary } from "../components/TrialPanels";
+import { TrialLookup } from "../components/TrialLookup";
 
 const wordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
 
@@ -92,6 +93,7 @@ export function Integrity() {
         <p className="kicker">{r.integrity.kicker}</p>
         <h1>{r.integrity.title}</h1>
         <p className="lede dark">{consent ? r.integrity.noProtocol : r.integrity.noConsent}</p>
+        <TrialLookup />
         <RealTrialWork />
         <div className="sheet-work">
           <PreFlight />
@@ -105,6 +107,7 @@ export function Integrity() {
     <div className="page">
       <p className="kicker">{r.integrity.kicker}</p>
       <h1>{r.integrity.title}</h1>
+      <TrialLookup />
       <div className="fact-list">
         {facts.map((fact) => {
           const flagged = factFlagged(fact);
@@ -377,9 +380,10 @@ export function Documents() {
       <p className="kicker">{r.files.kicker}</p>
       <h1>{r.files.title}</h1>
       <p className="fine">{consent ? r.files.using(`${consent.documentId} ${consent.version}`, consent.sample) : r.files.none}</p>
-      <ul className="stack">
+      <section className="file-card-grid" aria-label="Document library">
         {consent && (
-          <li>
+          <article className="file-card active">
+            <p className="kicker">Current form</p>
             <strong>
               {r.files.submitted} · {consent.documentId} {consent.version}
             </strong>
@@ -387,11 +391,12 @@ export function Documents() {
               {consent.filename} · {consent.status}
             </p>
             <small>{r.files.behind}</small>
-          </li>
+          </article>
         )}
         {(!consent || consent.hasProtocol) &&
           versions.map((item) => (
-            <li key={`${item.id}-${item.version}`} lang="en">
+            <article key={`${item.id}-${item.version}`} className="file-card" lang="en">
+              <p className="kicker">Reference</p>
               <strong>
                 {item.kind} · {item.id} {item.version}
               </strong>
@@ -399,10 +404,11 @@ export function Documents() {
                 {item.date} · {item.status}
               </p>
               <small>{item.note}</small>
-            </li>
+            </article>
           ))}
         {imports.map((item) => (
-          <li key={item.id}>
+          <article key={item.id} className="file-card">
+            <p className="kicker">Imported</p>
             <strong>
               {r.files.imported} · {item.documentId} {item.version}
             </strong>
@@ -410,9 +416,9 @@ export function Documents() {
               {item.filename} · {item.usable ? r.files.stored : r.files.notUsed}
             </p>
             <small>{r.files.sections(item.passageCount, item.studyId)}</small>
-          </li>
+          </article>
         ))}
-      </ul>
+      </section>
       <label htmlFor="import-doc">{r.files.importLabel(study.id)}</label>
       <input
         id="import-doc"

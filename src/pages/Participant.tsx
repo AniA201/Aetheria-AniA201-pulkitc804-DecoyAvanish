@@ -6,7 +6,7 @@ import { runAgent, type AgentEnv, type AgentReply } from "../lib/agent";
 import { assessTeachbackWithGemini, localBriefing, writeBriefingWithGemini, type Briefing } from "../lib/coach";
 import type { SubmittedConsent } from "../lib/consent";
 import { cachedGeminiStatus, type GeminiContent } from "../lib/gemini";
-import { sendHandoff, type SendState } from "../lib/handoff";
+import { loadParticipantMessages, sendHandoff, sendHandoffMessage, type HandoffMessage, type SendState } from "../lib/handoff";
 import { useT } from "../lib/i18n";
 import { languageInfo } from "../lib/languages";
 import { askIn, localBriefingIn, translate } from "../lib/multilingual";
@@ -990,8 +990,92 @@ export function Summary() {
             </ul>
           )}
         </section>
+        <ParticipantMessages />
       </div>
       <p className="fine">{t.summary.used(`${consent.documentId} ${consent.version}`, consent.date, consent.status)}</p>
     </div>
+  );
+}
+
+function ParticipantMessages() {
+  const [state, setState] = useState<"loading" | "ok" | "signed-out" | "offline">("loading");
+  const [messages, setMessages] = useState<HandoffMessage[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [note, setNote] = useState("");
+  const refresh = () =>
+    loadParticipantMessages().then((result) => {
+      setState(result.state);
+      setMessages(result.messages);
+    });
+
+  useEffect(() => {
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 15000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const grouped = messages.reduce<Record<string, HandoffMessage[]>>((all, message) => {
+    (all[message.handoff_id] ??= []).push(message);
+    return all;
+  }, {});
+
+  return (
+    <section className="participant-messages">
+      <div className="inbox-head">
+        <div>
+          <h2>Messages from your research team</h2>
+          <p className="fine">Replies appear here automatically.</p>
+        </div>
+        <button type="button" className="btn on-paper" onClick={() => void refresh()}>Refresh</button>
+      </div>
+      {state === "loading" ? <p className="fine">Checking for replies…</p> : null}
+      {state === "signed-out" ? <p className="fine">Sign in to see research-team replies.</p> : null}
+      {state === "offline" ? <p className="fine">Messages are unavailable right now.</p> : null}
+      {state === "ok" && Object.keys(grouped).length === 0 ? <p className="empty">No new messages.</p> : null}
+      {note ? <p className="fine" aria-live="polite">{note}</p> : null}
+      <div className="message-list">
+        {Object.entries(grouped).map(([handoffId, thread]) => (
+          <article className="message-card" key={handoffId}>
+            <header>
+              <div>
+                <strong>{thread[0].topic ?? "Your follow-up"}</strong>
+                <p>{thread[0].document_id} {thread[0].version}</p>
+              </div>
+            </header>
+            <div className="message-thread">
+              {thread.map((message) => (
+                <p key={message.id} className={message.author_role === "researcher" ? "from-researcher" : "from-participant"}>
+                  <strong>{message.author_role === "researcher" ? "Research team" : "You"}</strong> {message.message}
+                </p>
+              ))}
+            </div>
+            <div className="reply-row">
+              <label className="sr-only" htmlFor={`participant-reply-${handoffId}`}>Reply to your research team</label>
+              <input
+                id={`participant-reply-${handoffId}`}
+                value={drafts[handoffId] ?? ""}
+                placeholder="Write a reply"
+                onChange={(event) => setDrafts((current) => ({ ...current, [handoffId]: event.target.value }))}
+              />
+              <button
+                type="button"
+                className="btn solid dark"
+                disabled={!drafts[handoffId]?.trim()}
+                onClick={async () => {
+                  const result = await sendHandoffMessage(handoffId, drafts[handoffId].trim());
+                  setNote(result.detail);
+                  if (result.ok) {
+                    setDrafts((current) => ({ ...current, [handoffId]: "" }));
+                    await refresh();
+                  }
+                }}
+              >
+                Reply
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }

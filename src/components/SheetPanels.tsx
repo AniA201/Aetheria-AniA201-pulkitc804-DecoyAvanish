@@ -5,8 +5,8 @@ import { personaFixtures, teachPrompts } from "../data/study";
 import { blocks, blocksIn, extractValues, proposeChange, registryFields, render, sourceText, uses, type BlockId } from "../lib/blocks";
 import { draftFromBrief, usdmShape, type Brief } from "../lib/brief";
 import { consentElements } from "../lib/elements";
-import { loadHandoffs, type StoredHandoff } from "../lib/handoff";
-import { isLanguage, type Language } from "../lib/languages";
+import { loadHandoffs, sendHandoffMessage, type StoredHandoff } from "../lib/handoff";
+import { type Language } from "../lib/languages";
 import { layAudiences } from "../lib/laySummary";
 import { extractPdfText } from "../lib/pdf";
 import { checkDraft, readability, runPlantedDrafts, traceFigures } from "../lib/plainLab";
@@ -945,43 +945,88 @@ export function StoredHandoffs() {
   const h = r.handoffs;
   const [state, setState] = useState<"loading" | "ok" | "signed-out" | "forbidden" | "offline">("loading");
   const [items, setItems] = useState<StoredHandoff[]>([]);
-  useEffect(() => {
-    let live = true;
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [sending, setSending] = useState("");
+  const [note, setNote] = useState("");
+  const refresh = () =>
     loadHandoffs().then((result) => {
-      if (!live) return;
       setState(result.state);
       setItems(result.handoffs);
     });
-    return () => {
-      live = false;
-    };
+  useEffect(() => {
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 15000);
+    return () => window.clearInterval(timer);
   }, []);
 
   return (
     <section id="handoffs">
-      <h2>{h.title}</h2>
+      <div className="inbox-head">
+        <div>
+          <p className="kicker">Participant inbox</p>
+          <h2>{h.title}</h2>
+          <p className="fine">Reply in one place. Messages refresh automatically.</p>
+        </div>
+        <button type="button" className="btn on-paper" onClick={() => void refresh()}>Refresh</button>
+      </div>
       {state === "loading" ? <p className="fine">{h.loading}</p> : null}
       {state === "signed-out" ? <p className="fine">{h.signedOut}</p> : null}
       {state === "forbidden" ? <p className="fine">{h.forbidden}</p> : null}
       {state === "offline" ? <p className="fine">{h.offline}</p> : null}
       {state === "ok" && items.length === 0 ? <p className="empty">{h.none}</p> : null}
+      {note ? <p className="fine" aria-live="polite">{note}</p> : null}
       {state === "ok" && items.length > 0 ? (
-        <ul className="stack">
+        <div className="message-list">
           {items.map((item) => (
-            <li key={item.id} className={item.label === "Understands the key concept" ? "pass" : "fail"}>
-              <strong>
-                {item.participant} · <span lang="en">{item.topic}</span> · {r.understanding[item.label] ?? item.label}
-              </strong>
-              <p>“{item.response}”</p>
-              <small>
-                {item.document_id} {item.version} · {new Date(`${item.created_at}Z`).toLocaleString(r.locale)}
-                {item.speaker === "caregiver" ? ` · ${h.caregiver}` : ""}
-                {item.language !== "en" && isLanguage(item.language) ? ` · ${h.interpreter(r.languageName[item.language])}` : ""}
-                {item.misconception ? ` · ${h.misunderstanding(item.misconception)}` : ""}
-              </small>
-            </li>
+            <article key={item.id} className="message-card">
+              <header>
+                <div>
+                  <strong>{item.participant}</strong>
+                  <p>{item.topic}</p>
+                </div>
+                <span className={item.label === "Understands the key concept" ? "message-status clear" : "message-status"}>{r.understanding[item.label] ?? item.label}</span>
+              </header>
+              <p className="message-response">“{item.response}”</p>
+              {item.misconception ? <p className="notice">{h.misunderstanding(item.misconception)}</p> : null}
+              <small>{item.document_id} {item.version} · {new Date(`${item.created_at}Z`).toLocaleString(r.locale)}</small>
+              {item.messages.length > 0 ? (
+                <div className="message-thread">
+                  {item.messages.map((message) => (
+                    <p key={message.id} className={message.author_role === "researcher" ? "from-researcher" : "from-participant"}>
+                      <strong>{message.author_role === "researcher" ? "You" : item.participant}</strong> {message.message}
+                    </p>
+                  ))}
+                </div>
+              ) : null}
+              <div className="reply-row">
+                <label className="sr-only" htmlFor={`reply-${item.id}`}>Reply to {item.participant}</label>
+                <input
+                  id={`reply-${item.id}`}
+                  value={drafts[item.id] ?? ""}
+                  placeholder="Write a short reply"
+                  onChange={(event) => setDrafts((current) => ({ ...current, [item.id]: event.target.value }))}
+                />
+                <button
+                  type="button"
+                  className="btn solid dark"
+                  disabled={!drafts[item.id]?.trim() || sending === item.id}
+                  onClick={async () => {
+                    setSending(item.id);
+                    const result = await sendHandoffMessage(item.id, drafts[item.id].trim());
+                    setNote(result.detail);
+                    if (result.ok) {
+                      setDrafts((current) => ({ ...current, [item.id]: "" }));
+                      await refresh();
+                    }
+                    setSending("");
+                  }}
+                >
+                  {sending === item.id ? "Sending…" : "Reply"}
+                </button>
+              </div>
+            </article>
           ))}
-        </ul>
+        </div>
       ) : null}
     </section>
   );

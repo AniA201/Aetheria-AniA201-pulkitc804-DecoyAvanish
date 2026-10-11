@@ -20,6 +20,19 @@ export type StoredHandoff = {
   engine: string | null;
   created_at: string;
   participant: string;
+  messages: HandoffMessage[];
+};
+
+export type HandoffMessage = {
+  id: string;
+  handoff_id: string;
+  message: string;
+  created_at: string;
+  author: string;
+  author_role: "client" | "researcher";
+  topic?: string;
+  document_id?: string;
+  version?: string;
 };
 
 function token(): string | null {
@@ -75,5 +88,37 @@ export async function loadHandoffs(): Promise<{ state: "ok" | "signed-out" | "fo
     return { state: "ok", handoffs: body.handoffs };
   } catch {
     return { state: "offline", handoffs: [] };
+  }
+}
+
+export async function sendHandoffMessage(handoffId: string, message: string): Promise<{ ok: boolean; detail: string }> {
+  const bearer = token();
+  if (!bearer) return { ok: false, detail: "Sign in to send a message." };
+  try {
+    const response = await fetch(`/api/handoffs/${handoffId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${bearer}` },
+      body: JSON.stringify({ message }),
+    });
+    if (response.ok) return { ok: true, detail: "Sent." };
+    if (response.status === 401) return { ok: false, detail: "Your sign-in expired. Please sign in again." };
+    if (response.status === 403) return { ok: false, detail: "You cannot reply to this follow-up." };
+    return { ok: false, detail: "Message could not be sent." };
+  } catch {
+    return { ok: false, detail: "The account service is not available right now." };
+  }
+}
+
+export async function loadParticipantMessages(): Promise<{ state: "ok" | "signed-out" | "offline"; messages: HandoffMessage[] }> {
+  const bearer = token();
+  if (!bearer) return { state: "signed-out", messages: [] };
+  try {
+    const response = await fetch("/api/messages", { headers: { Authorization: `Bearer ${bearer}` } });
+    if (response.status === 401 || response.status === 403) return { state: "signed-out", messages: [] };
+    if (!response.ok) return { state: "offline", messages: [] };
+    const body = (await response.json()) as { messages: HandoffMessage[] };
+    return { state: "ok", messages: body.messages };
+  } catch {
+    return { state: "offline", messages: [] };
   }
 }

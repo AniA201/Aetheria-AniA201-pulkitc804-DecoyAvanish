@@ -60,6 +60,10 @@ class HandoffRequest(BaseModel):
     engine: Optional[Literal["gemini", "ollama", "local"]] = None
 
 
+class MessageRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)
+
+
 def initialise_database():
     with engine.begin() as connection:
         connection.execute(text("""
@@ -93,6 +97,16 @@ def initialise_database():
             )
         """))
         connection.execute(text("CREATE INDEX IF NOT EXISTS handoffs_created_idx ON handoffs (created_at)"))
+        connection.execute(text("""
+            CREATE TABLE IF NOT EXISTS handoff_messages (
+              id TEXT PRIMARY KEY,
+              handoff_id TEXT NOT NULL REFERENCES handoffs (id),
+              author_id TEXT NOT NULL REFERENCES users (id),
+              message TEXT NOT NULL,
+              created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        connection.execute(text("CREATE INDEX IF NOT EXISTS handoff_messages_handoff_idx ON handoff_messages (handoff_id, created_at)"))
 
 
 @app.on_event("startup")
@@ -161,7 +175,48 @@ def list_handoffs(user=Depends(current_user)):
             FROM handoffs h JOIN users u ON u.id = h.user_id
             ORDER BY h.created_at DESC LIMIT 100
         """)).mappings().all()
-    return {"handoffs": [dict(row) for row in rows]}
+        messages = connection.execute(text("""
+            SELECT m.id, m.handoff_id, m.message, m.created_at, u.full_name AS author, u.role AS author_role
+            FROM handoff_messages m JOIN users u ON u.id = m.author_id
+            ORDER BY m.created_at ASC
+        """)).mappings().all()
+    grouped = {}
+    for message in messages:
+        grouped.setdefault(message["handoff_id"], []).append(dict(message))
+    return {"handoffs": [{**dict(row), "messages": grouped.get(row["id"], [])} for row in rows]}
+
+
+@app.get("/api/messages")
+def list_participant_messages(user=Depends(current_user)):
+    if user["role"] != "client":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only participant accounts can read their messages.")
+    with engine.begin() as connection:
+        rows = connection.execute(text("""
+            SELECT m.id, m.handoff_id, m.message, m.created_at, u.full_name AS author, u.role AS author_role,
+                   h.topic, h.document_id, h.version
+            FROM handoff_messages m
+            JOIN handoffs h ON h.id = m.handoff_id
+            JOIN users u ON u.id = m.author_id
+            WHERE h.user_id = :user_id
+            ORDER BY m.created_at ASC
+        """), {"user_id": user["id"]}).mappings().all()
+    return {"messages": [dict(row) for row in rows]}
+
+
+@app.post("/api/handoffs/{handoff_id}/messages", status_code=status.HTTP_201_CREATED)
+def create_handoff_message(handoff_id: str, payload: MessageRequest, user=Depends(current_user)):
+    with engine.begin() as connection:
+        handoff = connection.execute(text("SELECT user_id FROM handoffs WHERE id = :id"), {"id": handoff_id}).mappings().first()
+        if not handoff:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="That follow-up no longer exists.")
+        if user["role"] == "client" and handoff["user_id"] != user["id"]:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only reply to your own follow-ups.")
+        row = {"id": str(uuid4()), "handoff_id": handoff_id, "author_id": user["id"], "message": payload.message.strip()}
+        connection.execute(text("""
+            INSERT INTO handoff_messages (id, handoff_id, author_id, message)
+            VALUES (:id, :handoff_id, :author_id, :message)
+        """), row)
+    return {"id": row["id"]}
 
 
 @app.post("/api/auth/register", status_code=status.HTTP_201_CREATED)
