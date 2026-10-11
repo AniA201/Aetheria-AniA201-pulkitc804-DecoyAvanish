@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AetheriaMark, useTitle } from "../components/Chrome";
-import { consentDoc, sections } from "../data/study";
+import { consentDoc, facts, sections } from "../data/study";
 import { MedicalField } from "../scene/MedicalField";
 import { useSession } from "../state/Session";
 
 const index = [
   { id: "read", number: "01", label: "Read" },
   { id: "ask", number: "02", label: "Ask" },
-  { id: "teach", number: "03", label: "Teach-back" },
+  { id: "teach", number: "03", label: "Feedback" },
   { id: "review", number: "04", label: "Review" },
 ];
 
@@ -16,6 +16,7 @@ export function Landing() {
   useTitle("Aetheria");
   const { reducedMotion, textOnly } = useSession();
   const progressRef = useRef(0);
+  const selectedPaperRef = useRef(-1);
   const rootRef = useRef<HTMLDivElement>(null);
   const quiet = reducedMotion || textOnly;
   const [menu, setMenu] = useState(false);
@@ -29,7 +30,14 @@ export function Landing() {
       const distance = Math.max(root.offsetHeight - window.innerHeight, 1);
       const progress = Math.min(1, Math.max(0, (window.scrollY - root.offsetTop) / distance));
       progressRef.current = progress;
-      const next = progress < 0.22 ? 0 : progress < 0.48 ? 1 : progress < 0.72 ? 2 : 3;
+      const fade = Math.min(1, Math.max(0, (progress - 0.12) / 0.26));
+      root.style.setProperty("--stage-opacity", String(1 - 0.04 * fade * fade * (3 - 2 * fade)));
+      const position = window.scrollY + window.innerHeight * 0.42;
+      const next = index.reduce((active, item, itemIndex) => {
+        const section = document.getElementById(item.id);
+        return section && section.offsetTop <= position ? itemIndex : active;
+      }, -1);
+      selectedPaperRef.current = next;
       setChapter((current) => (current === next ? current : next));
     };
     onScroll();
@@ -45,6 +53,23 @@ export function Landing() {
     if (quiet) return;
     const timer = window.setTimeout(() => setVeil(false), 1200);
     return () => window.clearTimeout(timer);
+  }, [quiet]);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || quiet) return;
+    const sectionsToReveal = root.querySelectorAll<HTMLElement>(".folio-split, .folio-chapters, .folio-review");
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        entry.target.classList.toggle("is-visible", entry.isIntersecting);
+      });
+    }, { threshold: 0.18, rootMargin: "0px 0px -12% 0px" });
+    root.classList.add("has-motion-reveal");
+    sectionsToReveal.forEach((section) => observer.observe(section));
+    return () => {
+      observer.disconnect();
+      root.classList.remove("has-motion-reveal");
+    };
   }, [quiet]);
 
   useEffect(() => {
@@ -64,7 +89,7 @@ export function Landing() {
 
       {veil && (
         <div className="veil" aria-hidden="true">
-          <span className="folio-seal" />
+          <AetheriaMark />
           <p>Informed consent</p>
           <div className="veil-rule">
             <span />
@@ -78,13 +103,13 @@ export function Landing() {
 
       <header className="folio-nav">
         <Link to="/" className="folio-brand">
-          <span className="folio-seal" aria-hidden="true" />
+          <AetheriaMark />
           <span>
             <strong>Aetheria</strong>
             <em>Informed consent</em>
           </span>
         </Link>
-        <nav aria-label="Enter">
+        <nav aria-label="Sections">
           {index.map((item) => (
             <a key={item.id} href={`#${item.id}`}>
               {item.label}
@@ -92,9 +117,6 @@ export function Landing() {
           ))}
         </nav>
         <div className="folio-nav-end">
-          <Link to="/" className="corner-mark" aria-label="Aetheria">
-            <AetheriaMark />
-          </Link>
           <button
             type="button"
             className="folio-menu"
@@ -129,32 +151,39 @@ export function Landing() {
         </div>
       )}
 
-      <p className="folio-word" aria-hidden="true">
-        Aetheria
-      </p>
       {!textOnly && (
         <div className="story-stage" aria-hidden="true">
-          <MedicalField reducedMotion={reducedMotion} progressRef={progressRef} />
+          <MedicalField reducedMotion={reducedMotion} progressRef={progressRef} selectedPaperRef={selectedPaperRef} />
         </div>
       )}
 
       <main id="content">
         <section className="folio-hero">
-          <p className="folio-kicker">Chapter 00 — The form</p>
-          <h1>Understand the consent before you decide.</h1>
+          <p className="folio-word" aria-hidden="true">Aetheria</p>
+          <p className="folio-kicker">Know what you are agreeing to</p>
+          <h1>Know before you sign.</h1>
           <p className="folio-lede">
-            Submit a consent form and read it with the original wording still in view. Aetheria explains,
-            answers, and checks understanding. It does not sign.
+            Upload a consent form to read its original wording beside clear explanations. Ask about anything uncertain.
           </p>
           <p className="folio-vertical">ICF-AETHER-01</p>
-          <Link className="folio-preview" to="/login?as=participant">
-            <span className="folio-preview-sheet" aria-hidden="true" />
-            <span>
-              Start
-              <em>Submit a form</em>
-            </span>
-          </Link>
-          <nav className="folio-index" aria-label="Chapters">
+          <div className="folio-hero-actions">
+            <Link className="folio-preview" to="/login?as=participant">
+              <span className="folio-preview-sheet" aria-hidden="true">
+                <span className="folio-preview-eyebrow">AETHER-01 / CONSENT</span>
+                <strong>Informed consent</strong>
+                <i />
+                <i />
+                <i />
+                <span className="folio-preview-signature">Your copy · 05 sections</span>
+              </span>
+              <span>
+                Submit a form
+                <em>Start reading →</em>
+              </span>
+            </Link>
+            <a className="folio-try" href="#read">Explore the sample <span aria-hidden="true">↗</span></a>
+          </div>
+          <nav className="folio-index" aria-label="Explore Aetheria">
             {index.map((item, itemIndex) => (
               <a key={item.id} href={`#${item.id}`} aria-current={chapter === itemIndex ? "true" : undefined}>
                 <b>{item.number}</b>
@@ -165,100 +194,33 @@ export function Landing() {
         </section>
 
         <section className="folio-split" id="read">
-          <h2>A yes is not understanding.</h2>
-          <div>
-            <p>
-              Consent forms are long, and “Do you understand?” often gets a yes when the important
-              parts were missed. The same facts are also rewritten by hand across the protocol and
-              the consent.
-            </p>
-            <p>Aetheria keeps both sentences visible. A shorter reading cannot change a number.</p>
-            <Link className="folio-link" to="/login?as=participant">
-              Open the form
-            </Link>
-          </div>
-        </section>
-
-        <section className="folio-facts" aria-label="Document facts">
-          <article>
-            <b>05</b>
-            <span>Chapters</span>
-          </article>
-          <article>
-            <b>{consentDoc.version}</b>
-            <span>Consent in the reader</span>
-          </article>
-          <article>
-            <b>12 Mar</b>
-            <span>2026</span>
-          </article>
-          <article>
-            <b>{consentDoc.status}</b>
-            <span>Unverified without an approval list</span>
-          </article>
+          <p className="folio-section-label">01 / Read</p>
+          <h2>Read.</h2>
+          <p className="folio-motto">“Keep the original close.”</p>
+          <p className="sr-only">The sample consent form says six clinic visits. The study plan says eight. Compare the original wording before relying on either number.</p>
         </section>
 
         <section className="folio-chapters" id="ask">
           <div className="folio-chapter-head">
-            <h2>Five chapters. One source.</h2>
-            <p>
-              Each chapter keeps the original clause beside a shorter reading. The citation stays
-              attached. Answers come only from this form.
-            </p>
+            <p className="folio-section-label">02 / Ask</p>
+            <h2>Ask.</h2>
           </div>
-          <ol>
-            {sections.map((section) => (
-              <li key={section.id}>
-                <span>{section.index}</span>
-                <h3>{section.title}</h3>
-                <p>{section.short}</p>
-              </li>
-            ))}
-          </ol>
+          <p className="folio-motto">“Ask before you sign.”</p>
+          <p className="sr-only">{sections.map((section) => `${section.ask} ${section.plain} Source: ${section.citation}, ${section.page}.`).join(" ")}</p>
         </section>
 
         <section className="folio-split folio-teach" id="teach">
-          <h2>Explain it in your own words.</h2>
-          <div>
-            <p>
-              Teach-back asks about randomization, withdrawal, and risks. “I consent” is not
-              understanding. “I don’t know” is a reason for a person to follow up.
-            </p>
-            <ul>
-              <li>Understands the key concept</li>
-              <li>Partially understands</li>
-              <li>Needs clarification</li>
-              <li>Requires human follow-up</li>
-            </ul>
-            <p className="folio-aside">The summary is a handoff. It is not a consent certificate.</p>
-          </div>
+          <p className="folio-section-label">03 / Feedback</p>
+          <h2>Feedback.</h2>
+          <p className="folio-motto">“Say it in your words.”</p>
+          <p className="sr-only">You cannot choose your study group. The sample form says chance assigns Aetherol or placebo. Neither you nor the study doctor knows your group during the study. Source: {sections[0].citation}, {sections[0].page}.</p>
         </section>
 
         <section className="folio-review" id="review">
-          <h2>Both sentences, side by side.</h2>
-          <p>
-            When the included sample is loaded, its protocol and consent disagree on visits, duration,
-            and payment. Aetheria shows both passages and does not decide which one is right. A consent
-            submitted without a protocol is not given invented flags.
-          </p>
-          <dl>
-            <div>
-              <dt>Visits</dt>
-              <dd>Protocol 8 · Consent 6</dd>
-            </div>
-            <div>
-              <dt>Duration</dt>
-              <dd>Protocol 24 weeks · Consent about 16 weeks</dd>
-            </div>
-            <div>
-              <dt>Payment</dt>
-              <dd>Protocol $80 · Consent $50</dd>
-            </div>
-          </dl>
-          <p className="folio-aside">
-            Blood volume and how long records are kept match. Accepting a plain-language draft does
-            not change the source.
-          </p>
+          <p className="folio-section-label">04 / Review</p>
+          <h2>Review.</h2>
+          <p className="folio-motto">“Check the differences.”</p>
+          <p className="sr-only">{facts.filter((fact) => fact.kind === "confirmed-textual-difference").map((fact) => `${fact.label}: consent says ${fact.consentValue}; study plan says ${fact.protocolValue}.`).join(" ")}</p>
         </section>
 
         <section className="folio-close">
@@ -269,39 +231,6 @@ export function Landing() {
             The included sample uses fictional names. This is not medical advice, and it is not a signed
             consent.
           </p>
-          <footer>
-            <div>
-              <h3>Chapters</h3>
-              <ul>
-                {sections.map((section) => (
-                  <li key={section.id}>{section.title}</li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h3>Practice</h3>
-              <ul>
-                <li>Read with the original clause</li>
-                <li>Ask only from the form</li>
-                <li>Teach it back</li>
-                <li>Compare both documents</li>
-              </ul>
-            </div>
-            <div>
-              <h3>Enter</h3>
-              <ul>
-                <li>
-                  <Link to="/login?as=participant">Start reading</Link>
-                </li>
-                <li>
-                  <Link to="/login?as=researcher">Researcher login</Link>
-                </li>
-                <li>
-                  <Link to="/register">Get started</Link>
-                </li>
-              </ul>
-            </div>
-          </footer>
         </section>
       </main>
     </div>

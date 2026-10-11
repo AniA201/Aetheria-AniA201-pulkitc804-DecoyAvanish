@@ -1,175 +1,31 @@
 import { useEffect, useRef, type RefObject } from "react";
 import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { makeFolioTextures } from "./documentTextures";
 
-const paper = "#f3efe4";
-const ink = "#1a1d1c";
-const clay = "#8d4e38";
-
-function wrap(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  max: number,
-  lineHeight: number,
-) {
-  const words = text.split(" ");
-  let line = "";
-  for (const word of words) {
-    const trial = line ? `${line} ${word}` : word;
-    if (ctx.measureText(trial).width > max && line) {
-      ctx.fillText(line, x, y);
-      y += lineHeight;
-      line = word;
-    } else {
-      line = trial;
+const scrollBlur = {
+  uniforms: {
+    tDiffuse: { value: null },
+    direction: { value: new THREE.Vector2() },
+  },
+  vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform vec2 direction;
+    varying vec2 vUv;
+    void main() {
+      vec4 color = texture2D(tDiffuse, vUv) * 0.58;
+      color += texture2D(tDiffuse, clamp(vUv + direction * 0.25, 0.0, 1.0)) * 0.14;
+      color += texture2D(tDiffuse, clamp(vUv - direction * 0.25, 0.0, 1.0)) * 0.14;
+      color += texture2D(tDiffuse, clamp(vUv + direction * 0.65, 0.0, 1.0)) * 0.07;
+      color += texture2D(tDiffuse, clamp(vUv - direction * 0.65, 0.0, 1.0)) * 0.07;
+      gl_FragColor = color;
     }
-  }
-  if (line) ctx.fillText(line, x, y);
-  return y + lineHeight;
-}
-
-function paintSheet(ctx: CanvasRenderingContext2D, kind: "consent" | "protocol", width: number, height: number) {
-  ctx.fillStyle = paper;
-  ctx.fillRect(0, 0, width, height);
-  ctx.strokeStyle = "rgba(26, 29, 28, 0.18)";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(36, 36, width - 72, height - 72);
-
-  ctx.fillStyle = ink;
-  ctx.fillRect(72, 78, 148, 3);
-
-  ctx.font = "500 22px Newsreader, Georgia, serif";
-  ctx.fillStyle = ink;
-  ctx.fillText(kind === "consent" ? "INFORMED CONSENT" : "PROTOCOL", 72, 128);
-
-  ctx.font = "500 54px Newsreader, Georgia, serif";
-  ctx.fillStyle = ink;
-  ctx.fillText(kind === "consent" ? "ICF-AETHER-01" : "PROT-AETHER-01", 72, 196);
-
-  ctx.font = "400 22px Newsreader, Georgia, serif";
-  ctx.fillStyle = ink;
-  ctx.fillText(kind === "consent" ? "Version 2.1  ·  12 March 2026" : "Version 3.0  ·  2 March 2026", 72, 238);
-
-  ctx.strokeStyle = clay;
-  ctx.lineWidth = 2;
-  ctx.strokeRect(width - 280, 92, 190, 48);
-  ctx.font = "500 18px Newsreader, Georgia, serif";
-  ctx.fillStyle = clay;
-  ctx.fillText("UNVERIFIED", width - 246, 124);
-
-  const rows =
-    kind === "consent"
-      ? [
-          ["Visits", "6"],
-          ["Duration", "about 16 weeks"],
-          ["Payment", "$50"],
-          ["Blood draw", "about 2 teaspoons"],
-          ["Records kept", "15 years"],
-        ]
-      : [
-          ["Visits", "8"],
-          ["Duration", "24 weeks"],
-          ["Payment", "$80"],
-          ["Blood draw", "about 2 teaspoons"],
-          ["Records kept", "15 years"],
-        ];
-
-  let y = 330;
-  rows.forEach(([label, value], index) => {
-    const flagged = index < 3;
-    ctx.fillStyle = flagged ? "rgba(141, 78, 56, 0.08)" : "transparent";
-    ctx.fillRect(72, y - 28, width - 144, 64);
-    ctx.fillStyle = ink;
-    ctx.font = "500 18px Newsreader, Georgia, serif";
-    ctx.fillText(label.toUpperCase(), 92, y);
-    ctx.font = "500 28px Newsreader, Georgia, serif";
-    ctx.fillText(value, 340, y + 2);
-    ctx.strokeStyle = "rgba(26, 29, 28, 0.45)";
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(92, y + 16);
-    ctx.lineTo(width - 110, y + 16);
-    ctx.stroke();
-    y += 78;
-  });
-
-  ctx.fillStyle = ink;
-  ctx.font = "400 22px Newsreader, Georgia, serif";
-  const blurb =
-    kind === "consent"
-      ? "This form explains the study. It does not record a signature, and it does not decide that someone has consented."
-      : "Schedule of assessments. Where this page and the consent disagree, both sentences stay visible until a person reviews them.";
-  wrap(ctx, blurb, 72, y + 36, width - 160, 34);
-
-  ctx.strokeStyle = "rgba(26, 29, 28, 0.35)";
-  ctx.beginPath();
-  ctx.moveTo(72, height - 150);
-  ctx.lineTo(width - 72, height - 150);
-  ctx.stroke();
-  ctx.font = "italic 400 20px Newsreader, Georgia, serif";
-  ctx.fillStyle = ink;
-  ctx.fillText(kind === "consent" ? "Signature line left blank" : "Not a consent form", 72, height - 112);
-}
-
-function paintLeaf(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  title: string,
-  lines: string[],
-) {
-  ctx.fillStyle = paper;
-  ctx.fillRect(0, 0, width, height);
-  ctx.strokeStyle = "rgba(26, 29, 28, 0.18)";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(36, 36, width - 72, height - 72);
-  ctx.fillStyle = ink;
-  ctx.fillRect(72, 88, 132, 3);
-  ctx.font = "500 22px Newsreader, Georgia, serif";
-  ctx.fillText("INFORMED CONSENT", 72, 140);
-  ctx.font = "500 48px Newsreader, Georgia, serif";
-  ctx.fillText(title, 72, 210);
-  ctx.font = "400 26px Newsreader, Georgia, serif";
-  let y = 280;
-  for (const line of lines) {
-    y = wrap(ctx, line, 72, y, width - 170, 40);
-    y += 16;
-  }
-  ctx.strokeStyle = "rgba(26, 29, 28, 0.35)";
-  ctx.beginPath();
-  ctx.moveTo(72, height - 150);
-  ctx.lineTo(width - 72, height - 150);
-  ctx.stroke();
-  ctx.font = "italic 400 20px Newsreader, Georgia, serif";
-  ctx.fillText("Signature line left blank", 72, height - 112);
-}
-
-function makeTexture(kind: "consent" | "protocol") {
-  const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 1320;
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("Could not draw the consent sheet.");
-  paintSheet(context, kind, canvas.width, canvas.height);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 8;
-  return { canvas, context, texture };
-}
-
-function makeLeafTexture(title: string, lines: string[]) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 1320;
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("Could not draw the consent sheet.");
-  paintLeaf(context, canvas.width, canvas.height, title, lines);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 8;
-  return { canvas, context, texture, title, lines };
-}
+  `,
+};
 
 function smoothstep(value: number) {
   const t = Math.min(1, Math.max(0, value));
@@ -194,9 +50,11 @@ function makePage(texture: THREE.Texture, width: number, height: number) {
 export function MedicalField({
   reducedMotion,
   progressRef,
+  selectedPaperRef,
 }: {
   reducedMotion: boolean;
   progressRef: RefObject<number>;
+  selectedPaperRef: RefObject<number>;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -206,7 +64,7 @@ export function MedicalField({
     if (!canvas || !parent) return;
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.08;
@@ -214,6 +72,14 @@ export function MedicalField({
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 40);
     camera.position.set(0.15, 0.05, 7.1);
+    const composer = reducedMotion ? null : new EffectComposer(renderer);
+    const blurPass = composer ? new ShaderPass(scrollBlur) : null;
+    const outputPass = composer ? new OutputPass() : null;
+    if (composer && blurPass && outputPass) {
+      composer.addPass(new RenderPass(scene, camera));
+      composer.addPass(blurPass);
+      composer.addPass(outputPass);
+    }
 
     const disposables: Array<{ dispose: () => void }> = [];
     const track = <T extends { dispose: () => void }>(item: T) => {
@@ -229,29 +95,12 @@ export function MedicalField({
     rim.position.set(-4, 1.4, 2);
     scene.add(rim);
 
-    const consentSheet = makeTexture("consent");
-    const protocolSheet = makeTexture("protocol");
-    const leafSheets = [
-      makeLeafTexture("Procedures", [
-        "The clinic asks you to come in six times across about sixteen weeks.",
-        "A visit takes about two hours.",
-      ]),
-      makeLeafTexture("Risks", [
-        "The form names the risks in plain sentences.",
-        "A shorter reading cannot change those words.",
-      ]),
-      makeLeafTexture("In your words", [
-        "Teach-back asks you to explain randomization, withdrawal, and risks.",
-        "A yes is not understanding.",
-      ]),
-    ];
-    [consentSheet, protocolSheet, ...leafSheets].forEach((sheet) => track(sheet.texture));
+    const folioTextures = makeFolioTextures(renderer.capabilities.getMaxAnisotropy());
+    folioTextures.textures.forEach(track);
 
     const folio = new THREE.Group();
     scene.add(folio);
-    const consent = makePage(consentSheet.texture, 1.56, 2.02);
-    const behind = [protocolSheet, ...leafSheets].map((sheet) => makePage(sheet.texture, 1.56, 2.02));
-    const pages = [...behind, consent];
+    const pages = folioTextures.pages.map((sheet) => makePage(sheet.texture, 1.56, 2.02));
     folio.add(...pages.map((page) => page.group));
     pages.forEach((page) => {
       track(page.face.geometry);
@@ -273,17 +122,7 @@ export function MedicalField({
       return mesh;
     });
 
-    const redraw = () => {
-      paintSheet(consentSheet.context, "consent", consentSheet.canvas.width, consentSheet.canvas.height);
-      paintSheet(protocolSheet.context, "protocol", protocolSheet.canvas.width, protocolSheet.canvas.height);
-      leafSheets.forEach((sheet) => {
-        paintLeaf(sheet.context, sheet.canvas.width, sheet.canvas.height, sheet.title, sheet.lines);
-        sheet.texture.needsUpdate = true;
-      });
-      consentSheet.texture.needsUpdate = true;
-      protocolSheet.texture.needsUpdate = true;
-    };
-    document.fonts?.ready.then(redraw).catch(() => undefined);
+    document.fonts?.ready.then(folioTextures.redraw).catch(() => undefined);
 
     const pointer = { x: 0, y: 0 };
     const sway = { x: 0, y: 0 };
@@ -298,6 +137,7 @@ export function MedicalField({
       const width = parent.clientWidth || window.innerWidth;
       const height = parent.clientHeight || window.innerHeight;
       renderer.setSize(width, height, false);
+      composer?.setSize(width, height);
       camera.aspect = width / Math.max(height, 1);
       camera.updateProjectionMatrix();
     };
@@ -307,43 +147,66 @@ export function MedicalField({
 
     let disposed = false;
     let frame = 0;
-    const clock = new THREE.Clock();
+    const focusLevels = pages.map(() => 0);
+    let previousProgress = progressRef.current ?? 0;
+    let blurVelocity = 0;
+    let scrollDirection = 1;
 
     const render = () => {
       if (disposed) return;
-      const elapsed = reducedMotion ? 0 : clock.getElapsedTime();
       const progress = Math.min(1, Math.max(0, progressRef.current ?? 0));
+      const scrollDelta = progress - previousProgress;
+      previousProgress = progress;
+      if (Math.abs(scrollDelta) > 0.0001) scrollDirection = Math.sign(scrollDelta);
+      blurVelocity += (Math.min(0.0042, Math.abs(scrollDelta) * 0.13) - blurVelocity) * 0.4;
+      blurPass?.uniforms.direction.value.set(scrollDirection * blurVelocity, blurVelocity * 0.06);
+      const narrow = parent.clientWidth < 900;
       sway.x += ((reducedMotion ? 0 : pointer.x) * 0.12 - sway.x) * 0.05;
       sway.y += ((reducedMotion ? 0 : pointer.y) * 0.06 - sway.y) * 0.05;
 
-      const turn = reducedMotion ? 1 : smoothstep(progress / 0.32);
-      const fan = smoothstep((progress - 0.28) / 0.42);
+      const turn = reducedMotion ? 1 : smoothstep(progress / 0.25);
+      // Have the full stack in view as the chapter list enters the viewport.
+      const fan = reducedMotion ? 1 : smoothstep((progress - 0.1) / 0.25);
       const yaw = -0.95 + turn * 0.8;
 
-      folio.position.set(0.85 - turn * 0.2, -0.02 + Math.sin(elapsed * 0.35) * 0.01, 0);
-      folio.scale.setScalar(0.92);
+      folio.position.set(
+        (narrow ? 1.15 : 0.85) - turn * (narrow ? 0.55 : 0.48),
+        narrow ? -0.35 : -0.02,
+        0,
+      );
+      folio.scale.setScalar(narrow ? 0.7 : 0.92);
       folio.rotation.set(sway.y * 0.04, yaw + sway.x * 0.06, 0);
 
-      consent.group.position.set(0, 0, 0.1);
-      consent.group.rotation.set(0, 0, 0);
-      consent.group.scale.setScalar(1);
-
+      const spacing = narrow ? 0.12 : 0.47;
       const lanes = [
-        { restX: -0.028, restZ: 0.055, outX: -0.58, outZ: 0.04 },
-        { restX: -0.052, restZ: 0.01, outX: -1.02, outZ: -0.01 },
-        { restX: -0.076, restZ: -0.035, outX: -1.4, outZ: -0.055 },
-        { restX: -0.1, restZ: -0.08, outX: -1.72, outZ: -0.1 },
+        { restX: 0, restZ: 0.1, outX: 0, outY: 0, outZ: 0.1 },
+        { restX: -0.03, restZ: 0.04, outX: spacing, outY: 0.07, outZ: 0.04 },
+        { restX: -0.06, restZ: -0.02, outX: spacing * 2, outY: 0.14, outZ: -0.02 },
+        { restX: -0.09, restZ: -0.08, outX: spacing * 3, outY: 0.21, outZ: -0.08 },
       ];
-      behind.forEach((page, index) => {
+      pages.forEach((page, index) => {
         const lane = lanes[index];
         const t = smoothstep(Math.min(1, Math.max(0, (fan - index * 0.06) / 0.82)));
         page.group.position.set(
           lane.restX + (lane.outX - lane.restX) * t,
-          0,
+          lane.outY * t,
           lane.restZ + (lane.outZ - lane.restZ) * t,
         );
-        page.group.rotation.set(0, 0, 0);
+        page.group.rotation.set(0, 0, [-0.018, 0.016, -0.014, 0.02][index] * fan);
         page.group.scale.setScalar(1);
+      });
+
+      const selectedIndex = selectedPaperRef.current;
+      pages.forEach((page, index) => {
+        focusLevels[index] += ((index === selectedIndex ? 1 : 0) - focusLevels[index]) * (reducedMotion ? 1 : 0.095);
+        page.group.position.x += focusLevels[index] * fan * (narrow ? -index * spacing : [1.12, 0.72, 0.45, 0.18][index]);
+        page.group.position.y -= focusLevels[index] * fan * 0.28;
+        page.group.position.z += focusLevels[index] * fan * 1.42;
+        page.group.scale.setScalar(1 + focusLevels[index] * fan * 0.31);
+        page.group.rotation.y -= focusLevels[index] * fan * 0.085;
+        page.group.rotation.z -= focusLevels[index] * fan * 0.025;
+        page.face.renderOrder = index === selectedIndex ? 2 : 0;
+        page.edge.renderOrder = index === selectedIndex ? 1 : 0;
       });
 
       const facing = 0.34 + turn * 0.66;
@@ -351,12 +214,13 @@ export function MedicalField({
         const shadow = shadows[index];
         shadow.position.set(page.group.position.x, -1.12, page.group.position.z + 0.04);
         shadow.scale.set(facing, 0.16, 1);
-        (shadow.material as THREE.MeshBasicMaterial).opacity = index === pages.length - 1 ? 0.32 : 0.22;
+        (shadow.material as THREE.MeshBasicMaterial).opacity = index === selectedIndex ? 0.47 : 0.22;
       });
 
       camera.position.set(0.15 + sway.x * 0.2, 0.06 - sway.y * 0.08, 7.35 - turn * 0.35);
       camera.lookAt(0.35, -0.05, 0);
-      renderer.render(scene, camera);
+      if (composer) composer.render();
+      else renderer.render(scene, camera);
       frame = requestAnimationFrame(render);
     };
     render();
@@ -367,6 +231,9 @@ export function MedicalField({
       observer.disconnect();
       window.removeEventListener("pointermove", onPointer);
       disposables.forEach((item) => item.dispose());
+      blurPass?.dispose();
+      outputPass?.dispose();
+      composer?.dispose();
       renderer.dispose();
     };
   }, [progressRef, reducedMotion]);

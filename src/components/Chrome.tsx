@@ -88,14 +88,7 @@ export function RequireRole({ role }: { role: Role }) {
 }
 
 export function AetheriaMark() {
-  return (
-    <svg className="aetheria-mark" viewBox="0 0 36 36" aria-hidden="true">
-      <rect x="3" y="8" width="22" height="25" rx="1.6" fill="#387D73" />
-      <rect x="10" y="3" width="23" height="26" rx="1.6" fill="#F4F1E8" stroke="#102B35" strokeWidth="1.3" />
-      <path d="M16.4 21.6 21.5 11.4 26.6 21.6" fill="none" stroke="#102B35" strokeWidth="1.6" strokeLinejoin="round" />
-      <path d="M18.4 17.9h6.2" stroke="#387D73" strokeWidth="1.6" />
-    </svg>
-  );
+  return <img className="aetheria-mark" src="/aetheria-mark.svg" alt="" aria-hidden="true" />;
 }
 
 export function CornerMark() {
@@ -205,16 +198,13 @@ export function Shell({ mode }: { mode: Role }) {
       </a>
       <header className="topbar">
         <NavLink to="/" className="folio-brand">
-          <span className="folio-seal" aria-hidden="true" />
+          <AetheriaMark />
           <span>
             <strong>Aetheria</strong>
             <em>{mode === "participant" ? "Participant" : "Research"}</em>
           </span>
         </NavLink>
         <span className="topbar-end">
-          <Link to="/" className="topbar-mark" aria-label="Aetheria">
-            <AetheriaMark />
-          </Link>
           <button
             type="button"
             className="folio-menu"
@@ -228,7 +218,7 @@ export function Shell({ mode }: { mode: Role }) {
       </header>
       <aside className={`rail ${open ? "open" : ""}`} id="app-nav">
         <NavLink to="/" className="folio-brand rail-mark">
-          <span className="folio-seal" aria-hidden="true" />
+          <AetheriaMark />
           <span>
             <strong>Aetheria</strong>
             <em>{mode === "participant" ? "Participant" : "Research"}</em>
