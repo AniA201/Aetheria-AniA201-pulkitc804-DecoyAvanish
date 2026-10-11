@@ -7,6 +7,7 @@ import { canSpeak, speak, stopSpeaking, type VoiceLang } from "../lib/voice";
 import { versionStanding } from "../lib/workbook";
 import { useSession, type Role } from "../state/Session";
 import { AgentPanel } from "./AgentPanel";
+import { RouteTechNote } from "./TechNote";
 
 export function useTitle(title: string) {
   useEffect(() => {
@@ -286,6 +287,7 @@ export function Shell({ mode }: { mode: Role }) {
             </p>
           ) : null}
           <Outlet />
+          <RouteTechNote />
         </main>
       </div>
       <div className="rail-utilities">
