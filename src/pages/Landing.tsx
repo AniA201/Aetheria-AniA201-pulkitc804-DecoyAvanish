@@ -38,6 +38,17 @@ const letterTransfers: Array<{ key: TransferKey; sourceIndex: number; lower: str
   { key: "review", sourceIndex: 5, lower: "r", upper: "R", phase: 4.7, sectionIndex: 3 },
 ];
 
+/** Places each title letter for a shatter amount from 0 (whole) to 1 (scattered). */
+function applyShatter(word: HTMLElement | null, progress: number) {
+  if (!word) return;
+  word.querySelectorAll<HTMLSpanElement>(":scope > span").forEach((span, index) => {
+    const [dx, dy, spin] = wordFlights[index] ?? [0, 0, 0];
+    const flight = Math.max(0, Math.min(1, (progress - index * 0.025) / (1 - index * 0.025)));
+    span.style.transform = flight === 0 ? "" : `translate3d(${dx * flight * 100}vw, ${dy * flight * 100}vh, 0) rotate(${spin * flight}rad) scale(${1 - flight * 0.2})`;
+    span.style.opacity = String([0, 4, 5].includes(index) ? 1 - Math.min(1, flight * 1.25) : 1 - flight * 0.74);
+  });
+}
+
 function BackgroundQuotes({ quotes }: { quotes: readonly string[] }) {
   return (
     <div className="folio-background-quotes" aria-label="Study form prompts">
@@ -55,6 +66,7 @@ export function Landing() {
   const { reducedMotion, textOnly } = useSession();
   const progressRef = useRef(0);
   const shatterProgressRef = useRef(0);
+  const shatterBucketRef = useRef(0);
   const selectedPaperRef = useRef(-1);
   const rootRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
@@ -147,21 +159,28 @@ export function Landing() {
   useEffect(() => {
     if (quiet) {
       shatterProgressRef.current = 0;
+      applyShatter(wordRef.current, 0);
       setShatterProgress(0);
       return;
     }
     let frame = 0;
-    const settle = () => {
+    let last = performance.now();
+    const settle = (now: number) => {
+      // Frame-rate independent easing, so the shatter feels the same at 60 Hz and 120 Hz.
+      const dt = Math.min(64, now - last);
+      last = now;
       const current = shatterProgressRef.current;
-      const next = current + (shatterTarget - current) * 0.14;
-      if (Math.abs(shatterTarget - next) < 0.0006) {
-        shatterProgressRef.current = shatterTarget;
-        setShatterProgress(shatterTarget);
-        return;
-      }
+      const done = Math.abs(shatterTarget - current) < 0.0006;
+      const next = done ? shatterTarget : current + (shatterTarget - current) * (1 - Math.exp(-dt / 110));
       shatterProgressRef.current = next;
-      setShatterProgress(next);
-      frame = requestAnimationFrame(settle);
+      applyShatter(wordRef.current, next);
+      // React only needs to know when the title is whole, shattering, or fully settled.
+      const bucket = next < 0.01 ? 0 : next > 0.975 ? 2 : 1;
+      if (bucket !== shatterBucketRef.current) {
+        shatterBucketRef.current = bucket;
+        setShatterProgress(next);
+      }
+      if (!done) frame = requestAnimationFrame(settle);
     };
     frame = requestAnimationFrame(settle);
     return () => cancelAnimationFrame(frame);
@@ -311,15 +330,7 @@ export function Landing() {
           ><span className="folio-transfer-glyph"><span className="folio-transfer-lower" style={{ opacity: 1 - capital }}>{spec.lower}</span><span className="folio-transfer-upper" style={{ opacity: capital }}>{spec.upper}</span><span className="folio-transfer-trail" style={{ opacity: motionBlur * .54 }}>{spec.upper}</span><span className="folio-transfer-trail folio-transfer-trail-far" style={{ opacity: motionBlur * .24 }}>{spec.upper}</span></span></span>;
         })}
         <section className="folio-hero">
-          <p ref={wordRef} className={`folio-word${wordHovered ? " is-hovered" : ""}`} aria-hidden="true" onPointerEnter={() => setWordHovered(true)} onPointerLeave={() => setWordHovered(false)}>{"Aetheria".split("").map((letter, index) => {
-            const [dx, dy, spin] = wordFlights[index];
-            const flight = Math.max(0, Math.min(1, (shatterProgress - index * 0.025) / (1 - index * 0.025)));
-            return <span key={`${letter}-${index}`} style={quiet ? undefined : {
-              transform: `translate3d(${dx * flight * 100}vw, ${dy * flight * 100}vh, 0) rotate(${spin * flight}rad) scale(${1 - flight * 0.2})`,
-              opacity: [0, 4, 5].includes(index) ? 1 - Math.min(1, flight * 1.25) : 1 - flight * 0.74,
-              filter: `blur(${flight * 1.6}px)`,
-            }}>{letter}</span>;
-          })}</p>
+          <p ref={wordRef} className={`folio-word${wordHovered && shatterProgress < 0.01 ? " is-hovered" : ""}`} aria-hidden="true" onPointerEnter={() => setWordHovered(true)} onPointerLeave={() => setWordHovered(false)}>{"Aetheria".split("").map((letter, index) => <span key={`${letter}-${index}`}>{letter}</span>)}</p>
           <h1><span>Long forms.</span><span>Plain words.</span></h1>
           <p className="folio-lede">
             Long study forms are hard to read. Aetheria puts a shorter explanation beside the original text, with sources you can check. Ask about visits, risks, costs, or privacy before you decide.
