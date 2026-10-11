@@ -13,10 +13,10 @@ const index = [
 ];
 
 const backgroundQuotes = {
-  read: ["Keep the original close.", "Read it twice.", "The source stays with you."],
-  ask: ["Ask before you sign.", "Pause for the answer.", "A question can wait."],
-  feedback: ["Say it in your words.", "Make room to clarify.", "Your words count."],
-  review: ["Check the differences.", "Notice what changed.", "Compare before deciding."],
+  read: ["6 visits or 8?", "About 2 hours each", "Blood draws at three visits"],
+  ask: ["Can I leave later?", "Who pays for travel?", "Who sees my records?"],
+  feedback: ["Who chooses my group?", "Aetherol or placebo?", "No promised benefit"],
+  review: ["6 visits / 8 visits", "16 weeks / 24 weeks", "$50 / $80 per visit"],
 };
 
 function BackgroundQuotes({ quotes }: { quotes: readonly string[] }) {
@@ -157,13 +157,13 @@ export function Landing() {
               </a>
             ))}
             <Link to="/login?as=participant" onClick={() => setMenu(false)}>
-              Start reading
+              Sign in to read
             </Link>
             <Link to="/login?as=researcher" onClick={() => setMenu(false)}>
               Researcher login
             </Link>
             <Link to="/register" onClick={() => setMenu(false)}>
-              Get started
+              Create account
             </Link>
           </nav>
         </div>
@@ -178,10 +178,10 @@ export function Landing() {
       <main id="content">
         <section className="folio-hero">
           <p className="folio-word" aria-hidden="true">Aetheria</p>
-          <p className="folio-kicker">Know what you are agreeing to</p>
-          <h1>Know before you sign.</h1>
+          <p className="folio-kicker">Before you agree to a study</p>
+          <h1>Read the form. Then decide.</h1>
           <p className="folio-lede">
-            Upload a consent form to read its original wording beside clear explanations. Ask about anything uncertain.
+            See the consent form beside a shorter explanation. Check the visits, risks, costs, and privacy terms. Save questions for the study team.
           </p>
           <p className="folio-vertical">ICF-AETHER-01</p>
           <div className="folio-hero-actions">
@@ -195,11 +195,11 @@ export function Landing() {
                 <span className="folio-preview-signature">Your copy · 05 sections</span>
               </span>
               <span>
-                Submit a form
-                <em>Start reading →</em>
+                Your consent form
+                <em>Sign in to upload →</em>
               </span>
             </Link>
-            <a className="folio-try" href="#read">Explore the sample <span aria-hidden="true">↗</span></a>
+            <a className="folio-try" href="#read">See the sample <span aria-hidden="true">↗</span></a>
           </div>
           <nav className="folio-index" aria-label="Explore Aetheria">
             {index.map((item, itemIndex) => (
@@ -243,11 +243,10 @@ export function Landing() {
 
         <section className="folio-close">
           <Link className="folio-pill" to="/login?as=participant">
-            Begin the reading
+            Sign in to read
           </Link>
           <p>
-            The included sample uses fictional names. This is not medical advice, and it is not a signed
-            consent.
+            The sample is fictional. Aetheria does not record your consent or make a medical decision.
           </p>
         </section>
       </main>

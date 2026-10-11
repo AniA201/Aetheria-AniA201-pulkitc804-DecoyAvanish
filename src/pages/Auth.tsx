@@ -45,31 +45,31 @@ function AuthFooter() {
 
 const accountCopy = {
   client: {
-    eyebrow: "Clinical research, clearly explained",
-    title: <>Know your<br />care first.</>,
-    description: "Read your study details, ask questions, and decide at your own pace.",
-    trust: "Made for study clients",
-    trustDetail: "Your information stays private.",
-    signInNote: "Sign in to view your study and consent information.",
-    registerTitle: <>Join your<br />study.</>,
-    registerNote: "Create an account to keep your study details in one place.",
+    eyebrow: "For people considering a study",
+    title: <>Read the form.<br />Then decide.</>,
+    description: "Check the visits, risks, costs, and privacy terms in the consent form. Save what you want to ask the study team.",
+    trust: "For study participants",
+    trustDetail: "Reading here does not sign the form.",
+    signInNote: "Sign in to read a form and save your questions.",
+    registerTitle: <>Read your<br />consent form.</>,
+    registerNote: "Create an account, then upload a form or open the sample.",
   },
   researcher: {
-    eyebrow: "A simple space for your study team",
-    title: <>Keep your<br />study clear.</>,
-    description: "Review study information, support clients, and keep your research work organized.",
-    trust: "Made for research teams",
-    trustDetail: "Private access for approved team members.",
-    signInNote: "Sign in to manage your research workspace.",
-    registerTitle: <>Set up your<br />team space.</>,
-    registerNote: "Use the private key from your study lead to create your account.",
+    eyebrow: "For teams reviewing consent forms",
+    title: <>Check the form.<br />Check the plan.</>,
+    description: "Compare what participants are told with the study protocol. Review differences in visits, study length, and payment.",
+    trust: "For research teams",
+    trustDetail: "A reviewer decides which figures are correct.",
+    signInNote: "Sign in to compare documents and review participant questions.",
+    registerTitle: <>Review the<br />study documents.</>,
+    registerNote: "Use the key from your study lead to create a research account.",
   },
 };
 
 function RoleSwitch({ value, onChange }: { value: AccountType; onChange: (role: AccountType) => void }) {
   return <div className="auth-role-switch" role="radiogroup" aria-label="Account type">
-    <button type="button" role="radio" aria-checked={value === "client"} className={value === "client" ? "on" : ""} onClick={() => onChange("client")}><span>01</span><strong>Client</strong><small>My study &amp; consent</small></button>
-    <button type="button" role="radio" aria-checked={value === "researcher"} className={value === "researcher" ? "on" : ""} onClick={() => onChange("researcher")}><span>02</span><strong>Researcher</strong><small>Study workspace</small></button>
+    <button type="button" role="radio" aria-checked={value === "client"} className={value === "client" ? "on" : ""} onClick={() => onChange("client")}><span>01</span><strong>Participant</strong><small>Read my consent form</small></button>
+    <button type="button" role="radio" aria-checked={value === "researcher"} className={value === "researcher" ? "on" : ""} onClick={() => onChange("researcher")}><span>02</span><strong>Researcher</strong><small>Review study documents</small></button>
   </div>;
 }
 
@@ -164,7 +164,7 @@ export function Login() {
             <p className="auth-signup-line">New to Aetheria? <Link to="/register">Create an account</Link></p>
           </form>
         </div>
-        <p className="auth-login-note">Secure access for study clients and research teams.</p>
+        <p className="auth-login-note">Choose the account type you registered with.</p>
       </section>
     </section>
   </main>;
@@ -204,7 +204,7 @@ export function Register() {
     }
   }
 
-  return <main className="auth-gate auth-reference" id="content"><section className="auth-reference-layout" aria-label="Create an account"><aside className="auth-showcase auth-showcase-minimal"><Link to="/" className="auth-showcase-brand"><AetheriaMark /><strong>Aetheria</strong></Link><p className="auth-showcase-word" aria-hidden="true">Aetheria</p><div className="auth-showcase-copy"><p className="kicker">{copy.eyebrow}</p><h1>{copy.registerTitle}</h1><p>{copy.registerNote}</p></div><div className="auth-showcase-trust"><span className="auth-trust-icon">+</span><p><strong>{copy.trust}</strong><small>{copy.trustDetail}</small></p></div></aside><section className="auth-login-shell"><div className="auth-login-card"><div className="auth-login-icon" aria-hidden="true">+</div><div className="auth-login-title"><h2>Create account</h2><p>{accountType === "client" ? "Start with your study details." : "Create access for your research team."}</p></div><form className="auth-form auth-form-reference" onSubmit={createAccount}><RoleSwitch value={accountType} onChange={setAccountType} /><label>Your name<input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" placeholder="Your full name" required /></label><label>Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="you@example.com" required /></label><label>Password <small>At least 8 characters</small><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" placeholder="Create a password" minLength={8} required /></label><label>Confirm password<input type="password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} autoComplete="new-password" placeholder="Type your password again" minLength={8} required /></label>{accountType === "researcher" && <label>Private researcher key<input type="password" value={researcherKey} onChange={(event) => setResearcherKey(event.target.value)} autoComplete="off" placeholder="Enter the key from your study lead" required /></label>}{error && <p className="auth-error" role="alert">{error}</p>}{notice && <p className="auth-notice" role="status">{notice}</p>}<button className="btn auth-submit" type="submit" disabled={loading}>{loading ? "Creating account…" : "Create account"}</button><p className="auth-signup-line">Already have an account? <Link to="/login">Sign in</Link></p></form></div><p className="auth-login-note">{accountType === "researcher" ? "Ask your study lead if you need the private key." : "Researcher? Select Researcher above."}</p></section></section></main>;
+  return <main className="auth-gate auth-reference" id="content"><section className="auth-reference-layout" aria-label="Create an account"><aside className="auth-showcase auth-showcase-minimal"><Link to="/" className="auth-showcase-brand"><AetheriaMark /><strong>Aetheria</strong></Link><p className="auth-showcase-word" aria-hidden="true">Aetheria</p><div className="auth-showcase-copy"><p className="kicker">{copy.eyebrow}</p><h1>{copy.registerTitle}</h1><p>{copy.registerNote}</p></div><div className="auth-showcase-trust"><span className="auth-trust-icon">+</span><p><strong>{copy.trust}</strong><small>{copy.trustDetail}</small></p></div></aside><section className="auth-login-shell"><div className="auth-login-card"><div className="auth-login-icon" aria-hidden="true">+</div><div className="auth-login-title"><h2>Create account</h2><p>{accountType === "client" ? "Upload a form after you create your account." : "You need the key from your study lead."}</p></div><form className="auth-form auth-form-reference" onSubmit={createAccount}><RoleSwitch value={accountType} onChange={setAccountType} /><label>Your name<input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" placeholder="Your full name" required /></label><label>Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="you@example.com" required /></label><label>Password <small>At least 8 characters</small><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" placeholder="Create a password" minLength={8} required /></label><label>Confirm password<input type="password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} autoComplete="new-password" placeholder="Type your password again" minLength={8} required /></label>{accountType === "researcher" && <label>Private researcher key<input type="password" value={researcherKey} onChange={(event) => setResearcherKey(event.target.value)} autoComplete="off" placeholder="Enter the key from your study lead" required /></label>}{error && <p className="auth-error" role="alert">{error}</p>}{notice && <p className="auth-notice" role="status">{notice}</p>}<button className="btn auth-submit" type="submit" disabled={loading}>{loading ? "Creating account…" : "Create account"}</button><p className="auth-signup-line">Already have an account? <Link to="/login">Sign in</Link></p></form></div><p className="auth-login-note">{accountType === "researcher" ? "Ask your study lead if you need the private key." : "Researcher? Select Researcher above."}</p></section></section></main>;
 }
 
 export function ForgotPassword() {

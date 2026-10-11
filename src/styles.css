@@ -646,7 +646,7 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   font-size: clamp(3.5rem, 5.2vw, 5.8rem);
 }
 .folio-lede {
-  max-width: 26rem;
+  max-width: min(22rem, 32vw);
   margin-top: 1.5rem;
   font-size: 1.12rem;
   line-height: 1.45;
@@ -1305,7 +1305,7 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   .folio-hero, .folio-split, .folio-chapters, .folio-review, .folio-close { padding-left: 22px; padding-right: 22px; }
   .folio-hero { width: auto; min-height: 115svh; padding-right: 22px; }
   .folio-hero h1 { max-width: 56vw; font-size: clamp(2.7rem, 8vw, 4.5rem); }
-  .folio-lede { max-width: 52vw; }
+  .folio-lede { max-width: min(18rem, 38vw); }
   .folio-word { top: 80vh; font-size: 20vw; }
   .folio-hero-actions { max-width: 55vw; }
   .folio-preview-sheet { width: 82px; height: 65px; }
@@ -1795,9 +1795,13 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
 .auth-entry .auth-signup-line { margin-top: 0.4rem; }
 @media (max-width: 900px) {
   .auth-entry .auth-showcase.auth-showcase-minimal { min-height: 30rem; padding: 2.5rem 7vw; }
-  .auth-entry .auth-folio-art { position: absolute; top: 5rem; right: 10%; width: 11rem; height: 14rem; min-height: 0; margin: 0; }
+  .auth-entry .auth-folio-art { position: absolute; top: 4.5rem; right: 8%; width: 13rem; height: 18rem; min-height: 0; margin: 0; }
   .auth-entry .auth-showcase-copy { max-width: 55%; }
   .auth-entry .auth-showcase-copy h1 { font-size: clamp(2.7rem, 6vw, 4rem); }
+}
+@media (max-width: 700px) {
+  .auth-entry .auth-folio-art { width: 10rem; height: 14rem; }
+  .auth-entry .auth-folio-section, .auth-entry .auth-folio-front p, .auth-entry .auth-folio-seal { display: none; }
 }
 @media (max-width: 600px) {
   .auth-entry .auth-showcase.auth-showcase-minimal { min-height: 35rem; padding: 1.5rem 6vw; }

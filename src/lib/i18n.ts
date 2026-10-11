@@ -32,7 +32,7 @@ const en = {
     sections: (n: number) => `${n} sections.`,
     opened: "Sections opened",
     saved: "Saved questions",
-    replies: "Teach-back replies",
+    replies: "Answers checked",
     read: "Read the form",
     ask: "Ask a question",
     another: "Check another form",
@@ -115,7 +115,7 @@ const en = {
   } as Record<string, string>,
   summary: {
     title: "Summary",
-    heading: "What you have read.",
+    heading: "What you read and asked.",
     notSignature: "This is not a signature.",
     coordinator: "For your coordinator",
     nothing: "Nothing is waiting. You can still ask for a conversation.",
@@ -133,7 +133,7 @@ const en = {
     noSaved: "No questions saved in this browser session.",
     followUp: "Marked for follow-up. ",
     notAnswered: "Not answered from the form",
-    handoff: "Handoff for the coordinator",
+    handoff: "Questions for the study team",
     noChecks: "No explanation has been checked yet. You can still ask for a conversation.",
     byCaregiver: "Answered by a caregiver.",
     answeredIn: {

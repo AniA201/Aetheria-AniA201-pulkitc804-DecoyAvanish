@@ -104,7 +104,7 @@ export const sections: Section[] = [
     id: "procedures",
     index: "01",
     title: "Study procedures and time commitment",
-    short: "Visits, time, and how assignment works",
+    short: "6 visits, about 16 weeks, group chosen by chance",
     original: consentPassage("procedures").text,
     plain:
       "The clinic asks you to come in 6 times across about 16 weeks. A visit takes about 2 hours. Some visits include a small blood draw of about 2 teaspoons. A chance process assigns you to Aetherol or placebo. You and the study doctor are not told which one you receive while the study is going on.",
@@ -127,7 +127,7 @@ export const sections: Section[] = [
     id: "risks",
     index: "02",
     title: "Risks and possible benefits",
-    short: "What the form says could happen",
+    short: "Nausea, dizziness, bruising; no promised benefit",
     original: consentPassage("risks").text,
     plain:
       "Aetherol can cause nausea, dizziness, or tiredness. This form says about 1 in 10 people in earlier studies felt nausea. Allergic reactions are described as rare. Blood draws can bruise. The form does not promise that the study will help your migraines.",
@@ -149,7 +149,7 @@ export const sections: Section[] = [
     id: "rights",
     index: "03",
     title: "Participant rights and withdrawal",
-    short: "You can leave",
+    short: "You can leave without losing regular care",
     original: consentPassage("rights").text,
     plain:
       "You can say no, and you can leave later. Leaving does not take away regular care from your own doctor. The team may keep safety information already collected. They must tell you about new information that could change your decision to stay.",
@@ -167,7 +167,7 @@ export const sections: Section[] = [
     id: "costs",
     index: "04",
     title: "Costs and compensation",
-    short: "What you pay and what you receive",
+    short: "No charge for study visits; $50 per completed visit",
     original: consentPassage("costs").text,
     plain:
       "You do not pay for the study drug or the required study visits. You receive $50 after each clinic visit you complete. That payment does not cover your usual migraine care or extra travel costs.",
@@ -185,7 +185,7 @@ export const sections: Section[] = [
     id: "privacy",
     index: "05",
     title: "Privacy and use of data",
-    short: "Who can see coded records",
+    short: "Coded records may be kept for 15 years",
     original: consentPassage("privacy").text,
     plain:
       "Your name is replaced with a code in study records. The sponsor and monitors can see coded records to check that the study was done as written. Records may be kept for 15 years. Published results and the public listing do not include your name.",
@@ -216,7 +216,7 @@ export const facts: Fact[] = [
     consentQuote: "You will come to the study clinic 6 times over about 16 weeks.",
     protocolSource: protocolPassage("visits").citation,
     consentSource: consentPassage("procedures").citation,
-    why: "Confirmed textual difference: the visit count is not the same number in the two synthetic documents. This is not an inferred omission.",
+    why: "The consent says 6 visits; the protocol says 8. The study team needs to confirm which number participants should be told.",
   },
   {
     id: "duration",
@@ -228,7 +228,7 @@ export const facts: Fact[] = [
     consentQuote: "You will come to the study clinic 6 times over about 16 weeks.",
     protocolSource: protocolPassage("duration").citation,
     consentSource: consentPassage("procedures").citation,
-    why: "Confirmed textual difference: the stated length of participation does not match. A person has to decide which sentence should remain.",
+    why: "The consent says about 16 weeks; the protocol says 24. The study team needs to confirm the schedule.",
   },
   {
     id: "pay",
@@ -240,7 +240,7 @@ export const facts: Fact[] = [
     consentQuote: "You will receive $50 for each completed clinic visit, paid after the visit.",
     protocolSource: protocolPassage("pay").citation,
     consentSource: consentPassage("costs").citation,
-    why: "Confirmed textual difference: the payment amount for a completed visit is different.",
+    why: "The consent says $50 per completed visit; the protocol says $80. The study team needs to confirm the payment.",
   },
   {
     id: "blood",
@@ -252,7 +252,7 @@ export const facts: Fact[] = [
     consentQuote: "A blood sample of about 2 teaspoons is taken at visits 1, 3, and 6.",
     protocolSource: protocolPassage("blood").citation,
     consentSource: consentPassage("procedures").citation,
-    why: "The stated sample volume matches in this synthetic pair. Matching text is not marked as a discrepancy.",
+    why: "Both documents say the blood sample is about 2 teaspoons.",
   },
   {
     id: "retention",
@@ -264,7 +264,7 @@ export const facts: Fact[] = [
     consentQuote: "Records may be kept for 15 years.",
     protocolSource: protocolPassage("retention").citation,
     consentSource: consentPassage("privacy").citation,
-    why: "The retention period matches in this synthetic pair. Matching text is not marked as a discrepancy.",
+    why: "Both documents say records may be kept for 15 years.",
   },
 ];
 
