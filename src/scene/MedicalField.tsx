@@ -36,12 +36,12 @@ function makePage(texture: THREE.Texture, width: number, height: number) {
   const group = new THREE.Group();
   const face = new THREE.Mesh(
     new THREE.PlaneGeometry(width, height),
-    new THREE.MeshBasicMaterial({ map: texture, color: "#f7f7f2", toneMapped: false, side: THREE.DoubleSide }),
+    new THREE.MeshBasicMaterial({ map: texture, color: "#f7f7f2", toneMapped: false, side: THREE.DoubleSide, transparent: true }),
   );
   face.position.z = 0.02;
   const edge = new THREE.Mesh(
     new THREE.BoxGeometry(width, height, 0.028),
-    new THREE.MeshBasicMaterial({ color: "#f7f7f2", toneMapped: false }),
+    new THREE.MeshBasicMaterial({ color: "#f7f7f2", toneMapped: false, transparent: true }),
   );
   group.add(edge, face);
   return { group, face, edge };
@@ -100,6 +100,27 @@ export function MedicalField({
 
     const folio = new THREE.Group();
     scene.add(folio);
+
+    // Start with a closed, navy file folder. It opens vertically, then falls
+    // away from the viewer while the papers become the focus of the scene.
+    const folder = new THREE.Group();
+    const navyBack = track(new THREE.MeshBasicMaterial({ color: "#102b4d", toneMapped: false, transparent: true }));
+    const navyFront = track(new THREE.MeshBasicMaterial({ color: "#173d67", toneMapped: false, transparent: true }));
+    const navyEdge = track(new THREE.MeshBasicMaterial({ color: "#0b233d", toneMapped: false, transparent: true }));
+    const folderBack = new THREE.Mesh(track(new THREE.BoxGeometry(2.04, 2.32, 0.075)), navyBack);
+    folderBack.position.set(0, 0.05, -0.12);
+    const folderTab = new THREE.Mesh(track(new THREE.BoxGeometry(0.78, 0.22, 0.08)), navyBack);
+    folderTab.position.set(-0.48, 1.19, -0.115);
+    const folderFront = new THREE.Mesh(track(new THREE.BoxGeometry(2.14, 2.24, 0.11)), navyFront);
+    folderFront.position.set(0, -0.08, 0.085);
+    folderFront.rotation.x = 0;
+    const folderLeft = new THREE.Mesh(track(new THREE.BoxGeometry(0.09, 1.86, 0.13)), navyEdge);
+    folderLeft.position.set(-1.03, -0.15, 0);
+    const folderRight = folderLeft.clone();
+    folderRight.position.x = 1.03;
+    folder.add(folderBack, folderTab, folderFront, folderLeft, folderRight);
+    folio.add(folder);
+
     const pages = folioTextures.pages.map((sheet) => makePage(sheet.texture, 1.56, 2.02));
     folio.add(...pages.map((page) => page.group));
     pages.forEach((page) => {
@@ -167,9 +188,11 @@ export function MedicalField({
       const turn = reducedMotion ? 1 : smoothstep(progress / 0.25);
       // Have the full stack in view as the chapter list enters the viewport.
       const fan = reducedMotion ? 1 : smoothstep((progress - 0.1) / 0.25);
+      const folderOpen = reducedMotion ? 1 : smoothstep((progress - 0.06) / 0.28);
+      const folderExit = reducedMotion ? 1 : smoothstep((progress - 0.36) / 0.27);
       const yaw = -0.95 + turn * 0.8;
       const heroPosition = 1 - turn;
-      const heroRightShift = parent.clientWidth < 600 ? 0.18 : 0.7;
+      const heroRightShift = parent.clientWidth < 600 ? 0.18 : 1.35;
 
       folio.position.set(
         (narrow ? 1.15 : 0.85) - turn * (narrow ? 0.55 : 0.48) - heroPosition * (narrow ? 0.16 : 0.27) + heroPosition * heroRightShift,
@@ -178,6 +201,18 @@ export function MedicalField({
       );
       folio.scale.setScalar(narrow ? 0.7 : 0.92);
       folio.rotation.set(sway.y * 0.04, yaw + sway.x * 0.06, 0);
+
+      // Fold the front panel down as if the folder is opening, then let the
+      // empty shell recede and dissolve without obscuring the documents.
+      folderFront.scale.y = 1 - folderOpen * 0.58;
+      folderFront.position.y = -0.08 - folderOpen * 0.73;
+      folderFront.rotation.x = -folderOpen * 0.32;
+      folder.position.set(0.16 * folderExit, 0.08 + folderExit * 0.36, -folderExit * 0.74);
+      folder.rotation.set(folderExit * -0.18, folderExit * 0.26, folderExit * 0.08);
+      folder.scale.setScalar(0.74 * (1 - folderExit * 0.12));
+      [navyBack, navyFront, navyEdge].forEach((material) => {
+        material.opacity = Math.max(0, 1 - folderExit * 1.08);
+      });
 
       const spacing = narrow ? 0.12 : 0.47;
       const lanes = [
@@ -196,6 +231,9 @@ export function MedicalField({
         );
         page.group.rotation.set(0, 0, [-0.018, 0.016, -0.014, 0.02][index] * fan);
         page.group.scale.setScalar(1);
+        const pageReveal = reducedMotion ? 1 : smoothstep((folderOpen - 0.22) / 0.6);
+        (page.face.material as THREE.MeshBasicMaterial).opacity = pageReveal;
+        (page.edge.material as THREE.MeshBasicMaterial).opacity = pageReveal;
       });
 
       const selectedIndex = selectedPaperRef.current;

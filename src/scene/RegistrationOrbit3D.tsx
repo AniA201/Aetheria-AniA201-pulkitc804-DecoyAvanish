@@ -18,11 +18,8 @@ export function RegistrationOrbit3D({ reducedMotion }: { reducedMotion: boolean 
     camera.position.set(0, 0, 5);
     const orbit = new THREE.Group();
     scene.add(orbit);
-
-    const ringMaterial = new THREE.MeshBasicMaterial({ color: "#3c3f44", transparent: true, opacity: 0.72 });
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.15, 0.028, 10, 72), ringMaterial);
-    ring.rotation.x = Math.PI * 0.36;
-    orbit.add(ring);
+    let targetX = 0;
+    let targetY = 0;
 
     const cardGeometry = new THREE.BoxGeometry(0.46, 0.6, 0.08);
     const cardMaterial = new THREE.MeshBasicMaterial({ color: "#0d5b58" });
@@ -54,11 +51,26 @@ export function RegistrationOrbit3D({ reducedMotion }: { reducedMotion: boolean 
     observer.observe(canvas);
     resize();
 
+    const onPointerMove = (event: PointerEvent) => {
+      if (reducedMotion) return;
+      const bounds = canvas.getBoundingClientRect();
+      targetY = ((event.clientX - bounds.left) / bounds.width - 0.5) * 0.55;
+      targetX = ((event.clientY - bounds.top) / bounds.height - 0.5) * -0.28;
+    };
+    const onPointerLeave = () => {
+      targetX = 0;
+      targetY = 0;
+    };
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerleave", onPointerLeave);
+
     let frame = 0;
     const tick = () => {
       if (!reducedMotion) {
         orbit.rotation.y += 0.008;
         orbit.rotation.z += 0.0015;
+        orbit.rotation.x += (targetX - orbit.rotation.x) * 0.055;
+        orbit.rotation.y += (targetY - orbit.rotation.y) * 0.02;
       }
       renderer.render(scene, camera);
       if (!reducedMotion) frame = requestAnimationFrame(tick);
@@ -67,10 +79,10 @@ export function RegistrationOrbit3D({ reducedMotion }: { reducedMotion: boolean 
     return () => {
       cancelAnimationFrame(frame);
       observer.disconnect();
-      ring.geometry.dispose();
+      canvas.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("pointerleave", onPointerLeave);
       cardGeometry.dispose();
       lineGeometry.dispose();
-      ringMaterial.dispose();
       cardMaterial.dispose();
       accentMaterial.dispose();
       lineMaterial.dispose();

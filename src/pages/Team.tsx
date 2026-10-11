@@ -48,9 +48,12 @@ export function Overview() {
     : [];
 
   return (
-    <div className="page">
-      <p className="kicker">{r.overview.kicker}</p>
-      <h1>{r.overview.title}</h1>
+    <div className="page researcher-overview">
+      <section className="researcher-overview-hero" aria-label={r.overview.title}>
+        <p className="kicker">{r.overview.kicker}</p>
+        <h1>{r.overview.title}</h1>
+        <p className="researcher-overview-note">A calm review desk for the study team.</p>
+      </section>
       <div className="stat-row">
         <article>
           <strong>{openFlags.length}</strong>
@@ -110,17 +113,20 @@ function PracticeFacts() {
               <>
                 <label htmlFor={`note-${fact.id}`}>{r.integrity.note}</label>
                 <textarea id={`note-${fact.id}`} rows={2} value={reviewNotes[fact.id] ?? ""} onChange={(event) => setReviewNote(fact.id, event.target.value)} />
-                <div className="action-row">
-                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "under-review")}>
+                <p className="researcher-decision-feedback" role="status" aria-live="polite">
+                  {r.review[state]}
+                </p>
+                <div className="action-row researcher-review-actions" role="group" aria-label={`${fact.label} review decision`}>
+                  <button type="button" className="btn on-paper" aria-pressed={state === "under-review"} onClick={() => setReview(fact.id, "under-review")}>
                     {r.integrity.markUnder}
                   </button>
-                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "resolved")}>
+                  <button type="button" className="btn on-paper" aria-pressed={state === "resolved"} onClick={() => setReview(fact.id, "resolved")}>
                     {r.integrity.markReviewed}
                   </button>
-                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "dismissed")}>
+                  <button type="button" className="btn on-paper" aria-pressed={state === "dismissed"} onClick={() => setReview(fact.id, "dismissed")}>
                     {r.integrity.dismiss}
                   </button>
-                  <button type="button" className="btn on-paper" onClick={() => setReview(fact.id, "open")}>
+                  <button type="button" className="btn on-paper" aria-pressed={state === "open"} onClick={() => setReview(fact.id, "open")}>
                     {r.integrity.reopen}
                   </button>
                 </div>
@@ -139,7 +145,7 @@ export function Integrity() {
   const { consent } = useSession();
 
   return (
-    <div className="page">
+    <div className="page researcher-integrity">
       <p className="kicker">{r.integrity.kicker}</p>
       <h1>{r.integrity.title}</h1>
       <TrialLookup />
@@ -201,7 +207,7 @@ export function Insights() {
   }));
 
   return (
-    <div className="page">
+    <div className="page research-insights">
       <p className="kicker">{r.insights.kicker}</p>
       <h1>{r.nav[2]}.</h1>
       <div className="sheet-work">
@@ -300,7 +306,7 @@ export function Studio() {
   const { consent } = useSession();
 
   return (
-    <div className="page">
+    <div className="page research-studio">
       <p className="kicker">{r.studio.kicker}</p>
       <h1>{r.studio.title}</h1>
       {consent ? (
@@ -335,7 +341,7 @@ export function Lab() {
   const passed = results?.filter((item) => item.passed).length ?? 0;
 
   return (
-    <div className="page">
+    <div className="page researcher-lab">
       <p className="kicker">{r.lab.kicker}</p>
       <h1>{r.lab.title}</h1>
       <button type="button" className="btn solid dark" onClick={() => setResults(runChecks())}>
@@ -398,7 +404,7 @@ export function Documents() {
   };
 
   return (
-    <div className="page">
+    <div className="page researcher-documents">
       <p className="kicker">{r.files.kicker}</p>
       <h1>{r.files.title}</h1>
       <VersionStanding version={consent?.version ?? consentDoc.version} language={language} />
@@ -502,7 +508,7 @@ export function Settings() {
   ];
 
   return (
-    <div className="page">
+    <div className="page researcher-settings">
       <p className="kicker">{r.settings.kicker}</p>
       <h1>{r.settings.title}</h1>
       <ul className="stack">

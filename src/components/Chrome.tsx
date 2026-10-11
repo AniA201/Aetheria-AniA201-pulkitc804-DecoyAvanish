@@ -103,6 +103,7 @@ export function CornerMark() {
 function TypeDock() {
   const { fontScale, setFontScale, contrast, setContrast, narrationRate, lastSpoken, language, setLanguage } = useSession();
   const t = strings[language];
+  const [expanded, setExpanded] = useState(false);
   const sizes = [
     ["md", t.dock.sizes[0], "0.92rem"],
     ["lg", t.dock.sizes[1], "1.12rem"],
@@ -110,7 +111,18 @@ function TypeDock() {
   ] as const;
 
   return (
-    <div className="type-dock">
+    <div className={`type-dock${expanded ? " is-open" : ""}`}>
+      <button
+        type="button"
+        className="type-dock-trigger"
+        aria-expanded={expanded}
+        aria-controls="type-dock-options"
+        aria-label={expanded ? "Close reading preferences" : "Open reading preferences"}
+        onClick={() => setExpanded((value) => !value)}
+      >
+        Aa
+      </button>
+      <div className="type-dock-options" id="type-dock-options">
       <div role="radiogroup" aria-label={t.dock.size}>
         {sizes.map(([size, label, sample]) => (
           <button
@@ -161,6 +173,7 @@ function TypeDock() {
       >
         ↺
       </button>
+      </div>
     </div>
   );
 }
@@ -175,7 +188,9 @@ export function Shell({ mode }: { mode: Role }) {
     : researcherNav.map((link, index) => ({ ...link, label: r.nav[index] }));
   const translated = language !== "en";
   const roleName = participant ? t.roleName : r.roleName;
-  const blocked = mode === "participant" && consent !== null && versionStanding(consent.version, approvedVersions) === "not-listed";
+  // The built-in sample is a self-contained practice document. A research
+  // version list can still block submitted forms, but never the sample route.
+  const blocked = mode === "participant" && consent !== null && !consent.sample && versionStanding(consent.version, approvedVersions) === "not-listed";
   const [open, setOpen] = useState(false);
   const [railCompact, setRailCompact] = useState(false);
   const location = useLocation();
@@ -266,9 +281,11 @@ export function Shell({ mode }: { mode: Role }) {
           <Outlet />
         </main>
       </div>
-      {blocked ? null : <AgentPanel role={mode} />}
+      <div className="rail-utilities">
+        <TypeDock />
+        {blocked ? null : <AgentPanel role={mode} />}
+      </div>
       <CornerMark />
-      <TypeDock />
     </div>
   );
 }
