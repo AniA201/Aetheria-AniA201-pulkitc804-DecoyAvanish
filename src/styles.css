@@ -4344,3 +4344,9 @@ html[data-contrast="high"] .tech-note strong,
 html[data-contrast="high"] .tech-note summary,
 html[data-contrast="high"] .tech-note summary span { color: #fff; }
 .shell main > .tech-note { width: min(46rem, calc(100% - 3.2rem)); margin: 2.2rem auto 5.5rem; }
+
+/* Landing hero: center "Long forms. Plain words." on the document stack, but never let it reach the
+   large "Aetheria" word (top: 72vh). The text block is about 27rem tall including a safety gap. */
+@media (min-width: 901px) {
+  .folio-hero { padding-top: max(8vh, min(18vh, calc(72vh - 27rem))); }
+}
