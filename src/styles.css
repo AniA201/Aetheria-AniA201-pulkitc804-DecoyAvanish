@@ -2611,8 +2611,8 @@ html[data-contrast="high"] .guide-close { color: #fff; }
 
 /* Ask prompt controls: optically centered and intentionally irregular sample prompts. */
 .shell.participant .ask-form-actions { align-items: center; }
-.shell.participant .ask-form-actions .ask-dictate { display: grid; place-items: center; line-height: 0; transform: translateY(0); }
-.shell.participant .ask-form-actions .ask-dictate svg { display: block; transform: translateY(1px); }
+.shell.participant .ask-form-actions .ask-dictate { display: flex; align-items: center; justify-content: center; line-height: 0; transform: none; }
+.shell.participant .ask-form-actions .ask-dictate svg { display: block; flex: 0 0 auto; transform: none; }
 .shell.participant .ask-whispers { position: relative; min-height: 3rem; align-items: center; }
 .shell.participant .ask-whispers button { position: relative; }
 .shell.participant .ask-whispers button:nth-child(1) { transform: rotate(-3deg) translateY(2px); }
