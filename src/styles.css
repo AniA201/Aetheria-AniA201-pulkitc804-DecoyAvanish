@@ -779,7 +779,7 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   width: max-content;
   max-width: 18ch;
   margin: 0;
-  color: rgba(112, 81, 140, 0.22);
+  color: rgba(112, 81, 140, 0.12);
   font-family: var(--serif);
   font-size: clamp(1.15rem, 2vw, 2.15rem);
   font-style: italic;
@@ -787,7 +787,7 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   letter-spacing: -0.04em;
   pointer-events: auto;
   cursor: default;
-  text-shadow: 0 5px 16px rgba(74, 42, 101, 0.07);
+  text-shadow: none;
   transform: rotate(-3deg);
   transform-origin: left center;
   transition: color 220ms ease, opacity 220ms ease, text-shadow 220ms ease, transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -798,8 +798,8 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
 .folio-background-quote:nth-child(3) { bottom: 10%; left: 18%; font-size: clamp(0.95rem, 1.35vw, 1.3rem); transform: rotate(-6deg); }
 .folio-background-quote:hover {
   z-index: 2;
-  color: rgba(112, 81, 140, 0.72);
-  text-shadow: 0 9px 24px rgba(74, 42, 101, 0.2);
+  color: rgba(112, 81, 140, 0.58);
+  text-shadow: 0 8px 18px rgba(74, 42, 101, 0.14);
   transform: translateY(-5px) rotate(0deg) scale(1.12);
 }
 .folio-background-quote:nth-child(2):hover { transform: translateY(-5px) rotate(0deg) scale(1.12); }

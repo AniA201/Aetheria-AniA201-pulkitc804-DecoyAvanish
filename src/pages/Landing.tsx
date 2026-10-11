@@ -49,8 +49,7 @@ export function Landing() {
       const distance = Math.max(root.offsetHeight - window.innerHeight, 1);
       const progress = Math.min(1, Math.max(0, (window.scrollY - root.offsetTop) / distance));
       progressRef.current = progress;
-      const fade = Math.min(1, Math.max(0, (progress - 0.12) / 0.26));
-      root.style.setProperty("--stage-opacity", String(1 - 0.04 * fade * fade * (3 - 2 * fade)));
+      root.style.setProperty("--stage-opacity", "1");
       const position = window.scrollY + window.innerHeight * 0.42;
       const next = index.reduce((active, item, itemIndex) => {
         const section = document.getElementById(item.id);

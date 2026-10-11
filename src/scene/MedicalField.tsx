@@ -158,7 +158,7 @@ export function MedicalField({
       const scrollDelta = progress - previousProgress;
       previousProgress = progress;
       if (Math.abs(scrollDelta) > 0.0001) scrollDirection = Math.sign(scrollDelta);
-      blurVelocity += (Math.min(0.0042, Math.abs(scrollDelta) * 0.13) - blurVelocity) * 0.4;
+      blurVelocity += (Math.min(0.0013, Math.abs(scrollDelta) * 0.075) - blurVelocity) * 0.28;
       blurPass?.uniforms.direction.value.set(scrollDirection * blurVelocity, blurVelocity * 0.06);
       const narrow = parent.clientWidth < 900;
       sway.x += ((reducedMotion ? 0 : pointer.x) * 0.12 - sway.x) * 0.05;
