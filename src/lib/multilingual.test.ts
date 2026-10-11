@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { research } from "./researchI18n";
 import { personaFixtures, sections, teachPrompts } from "../data/study";
 import { practice } from "../data/practiceLanguages";
 import { acceptTranslation, asksForAdvice, keepsNumbers, plausibleLength, topicOf } from "./multilingual";
@@ -281,5 +282,42 @@ describe("machine translation guard", () => {
     expect(keepsNumbers("You receive $50 after each of 6 visits.", "Recibe $80 después de cada visita.")).toBe(false);
     expect(keepsNumbers("About 16 weeks.", "大约 16 周。")).toBe(true);
     expect(keepsNumbers("About 16 weeks.", "大约十六周。")).toBe(false);
+  });
+});
+
+describe("research workspace in four languages", () => {
+  const leaves = (value: unknown, path = ""): [string, unknown][] =>
+    value && typeof value === "object" && !Array.isArray(value)
+      ? Object.entries(value).flatMap(([key, item]) => leaves(item, `${path}.${key}`))
+      : [[path, value]];
+
+  it("has every interface string in Spanish, French, and Mandarin, with numbers kept", () => {
+    const english = new Map(leaves(research.en));
+    for (const language of ["es", "fr", "zh"] as const) {
+      const other = new Map(leaves(research[language]));
+      expect([...other.keys()].sort(), language).toEqual([...english.keys()].sort());
+      for (const [path, value] of other) {
+        const source = english.get(path);
+        if (Array.isArray(value)) expect(value.length, `${language}${path}`).toBe((source as unknown[]).length);
+        if (typeof value === "function" && path !== ".caseLine" && path !== ".files.using") {
+          const args = Array.from({ length: value.length }, (_, index) => 10 + index);
+          const said = String(value(...args));
+          for (const arg of args) expect(said, `${language}${path}`).toContain(String(arg));
+        }
+      }
+    }
+  });
+
+  it("names the four languages and the seven lay-summary readers in each language", () => {
+    for (const language of ["en", "es", "fr", "zh"] as const) {
+      expect(Object.keys(research[language].lay.audiences)).toHaveLength(7);
+      expect(research[language].nav).toHaveLength(7);
+    }
+    expect(research.zh.lay.audiences["lay-zh"]).toBe("普通话草稿（成人）");
+    for (const language of ["es", "fr", "zh"] as const) {
+      const line = research[language].caseLine(["a"], ["b"], ["c"], ["d"]);
+      for (const token of ["a", "b", "c", "d"]) expect(line, language).toContain(token);
+      expect(research[language].files.using("ICF v2.1", true), language).toContain("ICF v2.1");
+    }
   });
 });

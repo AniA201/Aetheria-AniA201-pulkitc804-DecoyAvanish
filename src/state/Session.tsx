@@ -611,7 +611,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           audit: pushAudit(
             current,
             "Lay summary translation handoff",
-            layHandoff ? `Spanish draft marked ready for a ${layHandoff.language} translation reviewer.` : "Handoff withdrawn.",
+            layHandoff ? `${layHandoff.language} lay-summary draft marked ready for a translation reviewer.` : "Handoff withdrawn.",
           ),
         })),
       addImport: (document) =>

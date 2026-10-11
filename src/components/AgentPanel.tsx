@@ -4,6 +4,7 @@ import { runAgent, type AgentEnv, type AgentReply } from "../lib/agent";
 import { cachedGeminiStatus, type GeminiContent, type GeminiStatus } from "../lib/gemini";
 import { languageInfo, type OtherLanguage } from "../lib/languages";
 import { askIn } from "../lib/multilingual";
+import { research } from "../lib/researchI18n";
 import { useSession, type Role } from "../state/Session";
 
 type Turn = { id: string; question: string; reply: AgentReply | null; localized?: { text: string; how: string } };
@@ -101,6 +102,7 @@ export function AgentPanel({ role }: { role: Role }) {
   const session = useSession();
   const other: OtherLanguage | null = role === "participant" && session.language !== "en" ? session.language : null;
   const words = other ? guide[other] : null;
+  const ui = words ?? (role === "researcher" && session.language !== "en" ? research[session.language].guide : null);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<GeminiStatus | null>(null);
@@ -156,32 +158,32 @@ export function AgentPanel({ role }: { role: Role }) {
   if (!open) {
     return (
       <button type="button" className="guide-launch" onClick={() => setOpen(true)}>
-        {words ? words.launch : "Ask the Guide"}
+        {ui ? ui.launch : "Ask the Guide"}
       </button>
     );
   }
 
   return (
-    <aside className="guide-panel" aria-label={words ? words.title : "Aetheria Guide"} lang={other ? languageInfo[other].html : "en"}>
+    <aside className="guide-panel" aria-label={ui ? ui.title : "Aetheria Guide"} lang={languageInfo[ui ? session.language : "en"].html}>
       <header className="guide-head">
         <div>
-          <strong>{words ? words.title : "Aetheria Guide"}</strong>
+          <strong>{ui ? ui.title : "Aetheria Guide"}</strong>
           <small>
             {status === null
-              ? (words?.checking ?? "Checking for Gemini…")
+              ? (ui?.checking ?? "Checking for Gemini…")
               : status.configured
                 ? `Gemini · ${status.model}`
-                : (words?.onComputer ?? "Answering on this computer")}
+                : (ui?.onComputer ?? "Answering on this computer")}
           </small>
         </div>
-        <button type="button" className="guide-close" onClick={() => setOpen(false)} aria-label={words ? words.closeLabel : "Close the Guide"}>
-          {words ? words.close : "Close"}
+        <button type="button" className="guide-close" onClick={() => setOpen(false)} aria-label={ui ? ui.closeLabel : "Close the Guide"}>
+          {ui ? ui.close : "Close"}
         </button>
       </header>
 
       <p className="guide-notice">
-        {words
-          ? words.notice
+        {ui
+          ? ui.notice
           : role === "participant"
             ? "Questions and the matching parts of your form go to Google’s Gemini. Free-tier data may be used by Google. Do not type health details."
             : "Questions and matching passages go to Google’s Gemini. Free-tier data may be used by Google. The Guide cannot change a review."}
@@ -190,9 +192,9 @@ export function AgentPanel({ role }: { role: Role }) {
       <div className="guide-log" aria-live="polite">
         {turns.length === 0 ? (
           <div className="guide-starters">
-            {(words ? words.starters : starters[role]).map((text) => (
+            {(words ? words.starters : starters[role]).map((text, index) => (
               <button key={text} type="button" className="chip" onClick={() => ask(text)}>
-                {text}
+                {ui && !words ? ui.starters[index] : text}
               </button>
             ))}
           </div>
@@ -201,7 +203,7 @@ export function AgentPanel({ role }: { role: Role }) {
           <div key={turn.id} className="guide-turn">
             <p className="guide-question">{turn.question}</p>
             {turn.reply === null ? (
-              <p className="guide-thinking">{words ? words.working : "Working…"}</p>
+              <p className="guide-thinking">{ui ? ui.working : "Working…"}</p>
             ) : (
               <div className="guide-reply">
                 {turn.reply.steps.length > 0 && !turn.localized ? (
@@ -256,17 +258,17 @@ export function AgentPanel({ role }: { role: Role }) {
         }}
       >
         <label className="sr-only" htmlFor="guide-input">
-          {words ? words.launch : "Ask the Guide"}
+          {ui ? ui.launch : "Ask the Guide"}
         </label>
         <input
           id="guide-input"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          placeholder={words ? words.placeholder : role === "participant" ? "Ask about your form" : "Ask about the documents"}
+          placeholder={ui ? ui.placeholder : role === "participant" ? "Ask about your form" : "Ask about the documents"}
           disabled={busy}
         />
         <button type="submit" className="btn" disabled={busy || !draft.trim()}>
-          {words ? words.send : "Ask"}
+          {ui ? ui.send : "Ask"}
         </button>
       </form>
     </aside>

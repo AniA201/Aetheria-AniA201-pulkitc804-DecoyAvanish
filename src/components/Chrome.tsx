@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 import { strings, useT } from "../lib/i18n";
+import { useR } from "../lib/researchI18n";
 import { languageInfo, languages } from "../lib/languages";
 import { canSpeak, speak, stopSpeaking, type VoiceLang } from "../lib/voice";
 import { versionStanding } from "../lib/workbook";
@@ -69,13 +70,13 @@ const participantNav = [
 ] as const;
 
 const researcherNav = [
-  { to: "/researcher/overview", label: "Start", end: true },
-  { to: "/researcher/document-integrity", label: "Compare" },
-  { to: "/researcher/insights", label: "Questions" },
-  { to: "/researcher/plain-language", label: "Plain language" },
-  { to: "/researcher/test-lab", label: "Checks" },
-  { to: "/researcher/documents", label: "Files" },
-  { to: "/researcher/settings", label: "Settings" },
+  { to: "/researcher/overview", end: true },
+  { to: "/researcher/document-integrity" },
+  { to: "/researcher/insights" },
+  { to: "/researcher/plain-language" },
+  { to: "/researcher/test-lab" },
+  { to: "/researcher/documents" },
+  { to: "/researcher/settings" },
 ];
 
 export function RequireRole({ role }: { role: Role }) {
@@ -100,9 +101,9 @@ export function CornerMark() {
   );
 }
 
-function TypeDock({ mode }: { mode: Role }) {
-  const { fontScale, setFontScale, contrast, setContrast, narrationRate, setNarrationRate, lastSpoken, language, setLanguage } = useSession();
-  const t = strings[mode === "participant" ? language : "en"];
+function TypeDock() {
+  const { fontScale, setFontScale, contrast, setContrast, narrationRate, lastSpoken, language, setLanguage } = useSession();
+  const t = strings[language];
   const sizes = [
     ["md", t.dock.sizes[0], "0.92rem"],
     ["lg", t.dock.sizes[1], "1.12rem"],
@@ -135,54 +136,28 @@ function TypeDock({ mode }: { mode: Role }) {
       >
         <span aria-hidden="true" />
       </button>
-      <div role="radiogroup" aria-label={t.dock.speed}>
-        {(
-          [
-            [0.85, t.dock.speeds[0]],
-            [1, t.dock.speeds[1]],
-            [1.15, t.dock.speeds[2]],
-          ] as const
-        ).map(([rate, label]) => (
+      <div role="radiogroup" aria-label="Language / Idioma / Langue / 语言" className="language-switch">
+        {languages.map((code) => (
           <button
-            key={rate}
+            key={code}
             type="button"
             role="radio"
-            aria-label={label}
-            aria-checked={narrationRate === rate}
-            onClick={() => setNarrationRate(rate)}
+            lang={languageInfo[code].html}
+            aria-label={languageInfo[code].native}
+            title={languageInfo[code].native}
+            aria-checked={language === code}
+            onClick={() => setLanguage(code)}
           >
-            {rate === 0.85 ? "S" : rate === 1 ? "M" : "F"}
+            {languageInfo[code].dock}
           </button>
         ))}
       </div>
-      {mode === "participant" ? (
-        <div role="radiogroup" aria-label="Language / Idioma / Langue / 语言" className="language-switch">
-          {languages.map((code) => (
-            <button
-              key={code}
-              type="button"
-              role="radio"
-              lang={languageInfo[code].html}
-              aria-label={languageInfo[code].native}
-              title={languageInfo[code].native}
-              aria-checked={language === code}
-              onClick={() => setLanguage(code)}
-            >
-              {languageInfo[code].dock}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <button type="button" disabled aria-label="The research workspace is in English.">
-          EN
-        </button>
-      )}
       <button
         type="button"
         aria-label={t.dock.repeat}
         disabled={!lastSpoken}
         onClick={() => {
-          if (lastSpoken) void speak(lastSpoken, mode === "participant" ? language : "en", narrationRate);
+          if (lastSpoken) void speak(lastSpoken, language, narrationRate);
         }}
       >
         ↺
@@ -194,9 +169,13 @@ function TypeDock({ mode }: { mode: Role }) {
 export function Shell({ mode }: { mode: Role }) {
   const { setRole, consent, approvedVersions, language } = useSession();
   const t = useT();
-  const links =
-    mode === "participant" ? participantNav.map((link) => ({ to: link.to, end: "end" in link ? link.end : undefined, label: t.nav[link.key] })) : researcherNav;
-  const translated = mode === "participant" && language !== "en";
+  const r = useR();
+  const participant = mode === "participant";
+  const links = participant
+    ? participantNav.map((link) => ({ to: link.to, end: "end" in link ? link.end : undefined, label: t.nav[link.key] }))
+    : researcherNav.map((link, index) => ({ ...link, label: r.nav[index] }));
+  const translated = language !== "en";
+  const roleName = participant ? t.roleName : r.roleName;
   const blocked = mode === "participant" && consent !== null && versionStanding(consent.version, approvedVersions) === "not-listed";
   const [open, setOpen] = useState(false);
   const location = useLocation();
@@ -236,7 +215,7 @@ export function Shell({ mode }: { mode: Role }) {
           <AetheriaMark />
           <span>
             <strong>Aetheria</strong>
-            <em>{mode === "participant" ? t.roleName : "Research"}</em>
+            <em>{roleName}</em>
           </span>
         </NavLink>
         <span className="topbar-end">
@@ -247,7 +226,7 @@ export function Shell({ mode }: { mode: Role }) {
             aria-controls="app-nav"
             onClick={() => setOpen((value) => !value)}
           >
-            {open ? "Close" : "Menu"}
+            {open ? r.close : r.menu}
           </button>
         </span>
       </header>
@@ -256,10 +235,10 @@ export function Shell({ mode }: { mode: Role }) {
           <AetheriaMark />
           <span>
             <strong>Aetheria</strong>
-            <em>{mode === "participant" ? t.roleName : "Research"}</em>
+            <em>{roleName}</em>
           </span>
         </NavLink>
-        <nav aria-label={mode === "participant" ? "Participant" : "Research team"}>
+        <nav aria-label={roleName}>
           {links.map((link, index) => (
             <NavLink key={link.to} to={link.to} end={link.end} className="rail-link">
               <span>{String(index + 1).padStart(2, "0")}</span>
@@ -268,17 +247,17 @@ export function Shell({ mode }: { mode: Role }) {
           ))}
         </nav>
         <NavLink className="mode-switch" to="/login">
-          {mode === "participant" ? t.nav.switchRole : "Switch role"}
+          {participant ? t.nav.switchRole : r.switchRole}
         </NavLink>
         <button type="button" className="mode-switch sign-out" onClick={signOut}>
-          {mode === "participant" ? t.nav.signOut : "Sign out"}
+          {participant ? t.nav.signOut : r.signOut}
         </button>
       </aside>
       <div className="workspace">
         <main id="content" tabIndex={-1} lang={translated ? languageInfo[language].html : "en"}>
           {translated ? (
             <p className="notice machine-notice" role="note">
-              {t.machineNotice}
+              {participant ? t.machineNotice : r.notice}
             </p>
           ) : null}
           <Outlet />
@@ -286,7 +265,7 @@ export function Shell({ mode }: { mode: Role }) {
       </div>
       {blocked ? null : <AgentPanel role={mode} />}
       <CornerMark />
-      <TypeDock mode={mode} />
+      <TypeDock />
     </div>
   );
 }

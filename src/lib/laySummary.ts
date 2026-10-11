@@ -1,19 +1,22 @@
 // Lay summary of results (EU CTR 536/2014 Annex V) built only from the ClinicalTrials.gov results
 // fields of one completed trial. Every number in a draft must trace back to a registry field.
 import type { DraftCheck } from "./plainLab";
+import type { Language, OtherLanguage } from "./languages";
 import type { RegistryStudy } from "./publicTrial";
 
 export type GroupKey = "placebo" | "low" | "high";
 export type LayFact = { id: string; label: string; value: string; path: string; group?: GroupKey; derived?: string };
-export type LayAudience = "lay-adult" | "lay-caregiver" | "lay-teen" | "lay-physician" | "lay-es";
+export type LayAudience = "lay-adult" | "lay-caregiver" | "lay-teen" | "lay-physician" | "lay-es" | "lay-fr" | "lay-zh";
 export type LaySection = { id: string; element: string; text: string };
 
-export const layAudiences: { id: LayAudience; label: string; reader: string; language: "en" | "es" }[] = [
+export const layAudiences: { id: LayAudience; label: string; reader: string; language: Language }[] = [
   { id: "lay-adult", label: "Adult reader", reader: "An adult with limited health literacy", language: "en" },
   { id: "lay-caregiver", label: "Caregiver", reader: "A family member who helps someone with migraine", language: "en" },
   { id: "lay-teen", label: "Teen reader", reader: "A teenager, who could not have joined this adult study", language: "en" },
   { id: "lay-physician", label: "Physician", reader: "A doctor who wants the statistics", language: "en" },
   { id: "lay-es", label: "Spanish draft (adult)", reader: "A Spanish-speaking adult; draft for a qualified translator to review", language: "es" },
+  { id: "lay-fr", label: "French draft (adult)", reader: "A French-speaking adult; draft for a qualified translator to review", language: "fr" },
+  { id: "lay-zh", label: "Mandarin draft (adult)", reader: "A Mandarin-speaking adult; draft for a qualified translator to review", language: "zh" },
 ];
 
 export const annexElements: { id: string; element: string }[] = [
@@ -29,6 +32,51 @@ export const annexElements: { id: string; element: string }[] = [
   { id: "more", element: "10. Where to find more information" },
 ];
 
+const annexHeadings: Record<OtherLanguage, string[]> = {
+  es: [
+    "1. Identificación del ensayo",
+    "2. Nombre y contacto del patrocinador",
+    "3. Información general (dónde, cuándo, por qué)",
+    "4. Quiénes participaron",
+    "5. Medicamento en investigación",
+    "6. Efectos secundarios y con qué frecuencia ocurrieron",
+    "7. Resultados generales",
+    "8. Comentarios sobre el resultado",
+    "9. Si se planean ensayos de seguimiento",
+    "10. Dónde encontrar más información",
+  ],
+  fr: [
+    "1. Identification de l'essai",
+    "2. Nom et coordonnées du promoteur",
+    "3. Informations générales (où, quand, pourquoi)",
+    "4. Qui a participé",
+    "5. Médicament expérimental",
+    "6. Effets indésirables et leur fréquence",
+    "7. Résultats globaux",
+    "8. Commentaires sur le résultat",
+    "9. Essais de suivi prévus ou non",
+    "10. Où trouver plus d'informations",
+  ],
+  zh: [
+    "1. 试验识别信息",
+    "2. 申办方名称和联系方式",
+    "3. 一般信息（地点、时间、原因）",
+    "4. 参加者",
+    "5. 试验药物",
+    "6. 副作用及其发生频率",
+    "7. 总体结果",
+    "8. 对结果的说明",
+    "9. 是否计划后续试验",
+    "10. 更多信息",
+  ],
+};
+
+const withHeadings = (sections: LaySection[], language: Language) =>
+  sections.map((section) => {
+    const index = annexElements.findIndex((item) => item.id === section.id);
+    return { ...section, element: language === "en" ? annexElements[index].element : annexHeadings[language][index] };
+  });
+
 const groupOf = (id: string): GroupKey | undefined => (id.endsWith("000") ? "placebo" : id.endsWith("001") ? "low" : id.endsWith("002") ? "high" : undefined);
 function longDate(iso: string | undefined): string {
   if (!iso) return "not stated";
@@ -41,6 +89,17 @@ function longDateEs(iso: string | undefined): string {
   const [y, m, d] = iso.split("-").map(Number);
   const months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
   return d ? `${d} de ${months[m - 1]} de ${y}` : `${months[m - 1]} de ${y}`;
+}
+function longDateFr(iso: string | undefined): string {
+  if (!iso) return "date non indiquée";
+  const [y, m, d] = iso.split("-").map(Number);
+  const months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+  return d ? `${d === 1 ? "1er" : d} ${months[m - 1]} ${y}` : `${months[m - 1]} ${y}`;
+}
+function longDateZh(iso: string | undefined): string {
+  if (!iso) return "日期未说明";
+  const [y, m, d] = iso.split("-").map(Number);
+  return d ? `${y}年${m}月${d}日` : `${y}年${m}月`;
 }
 
 export type LayCorrection = { path: string; label: string; from: string; to: string } | null;
@@ -143,17 +202,23 @@ export function layFacts(study: RegistryStudy, retrieved: string, correction: La
 
 const fact = (facts: LayFact[], id: string) => facts.find((item) => item.id === id)?.value ?? "[not in the record]";
 
-const plainTerms: Record<string, { en: string; es: string }> = {
-  Cholelithiasis: { en: "gallstones (cholelithiasis)", es: "cálculos en la vesícula (cholelithiasis)" },
-  Hypersensitivity: { en: "an allergic reaction (hypersensitivity)", es: "una reacción alérgica (hypersensitivity)" },
-  Gastroenteritis: { en: "stomach flu (gastroenteritis)", es: "infección del estómago (gastroenteritis)" },
-  "Migraine with aura": { en: "migraine with aura", es: "migraña con aura (migraine with aura)" },
-  "Polycystic ovaries": { en: "polycystic ovaries", es: "ovarios poliquísticos (polycystic ovaries)" },
-  "Erythema nodosum": { en: "painful red lumps on the skin (erythema nodosum)", es: "bultos rojos y dolorosos en la piel (erythema nodosum)" },
-  Nasopharyngitis: { en: "a cold (nasopharyngitis)", es: "un resfriado (nasopharyngitis)" },
+const plainTerms: Record<string, Record<Language, string>> = {
+  Cholelithiasis: { en: "gallstones (cholelithiasis)", es: "cálculos en la vesícula (cholelithiasis)", fr: "des calculs biliaires (cholelithiasis)", zh: "胆结石（cholelithiasis）" },
+  Hypersensitivity: { en: "an allergic reaction (hypersensitivity)", es: "una reacción alérgica (hypersensitivity)", fr: "une réaction allergique (hypersensitivity)", zh: "过敏反应（hypersensitivity）" },
+  Gastroenteritis: { en: "stomach flu (gastroenteritis)", es: "infección del estómago (gastroenteritis)", fr: "une gastro-entérite (gastroenteritis)", zh: "肠胃炎（gastroenteritis）" },
+  "Migraine with aura": { en: "migraine with aura", es: "migraña con aura (migraine with aura)", fr: "une migraine avec aura (migraine with aura)", zh: "先兆偏头痛（migraine with aura）" },
+  "Polycystic ovaries": { en: "polycystic ovaries", es: "ovarios poliquísticos (polycystic ovaries)", fr: "des ovaires polykystiques (polycystic ovaries)", zh: "多囊卵巢（polycystic ovaries）" },
+  "Erythema nodosum": {
+    en: "painful red lumps on the skin (erythema nodosum)",
+    es: "bultos rojos y dolorosos en la piel (erythema nodosum)",
+    fr: "des bosses rouges et douloureuses sur la peau (erythema nodosum)",
+    zh: "皮肤上疼痛的红色肿块（erythema nodosum）",
+  },
+  Nasopharyngitis: { en: "a cold (nasopharyngitis)", es: "un resfriado (nasopharyngitis)", fr: "un rhume (nasopharyngitis)", zh: "感冒（nasopharyngitis）" },
 };
-const plainTerm = (term: string, lang: "en" | "es") => plainTerms[term]?.[lang] ?? term;
+const plainTerm = (term: string, lang: Language) => plainTerms[term]?.[lang] ?? term;
 const listOf = (items: string[], and: string) => (items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(", ")}, ${and} ${items.at(-1)}`);
+const listZh = (items: string[]) => (items.length <= 1 ? items.join("") : `${items.slice(0, -1).join("、")}和${items.at(-1)}`);
 const esNum = (value: string) => value.replace(/(\d)\.(\d)/, "$1,$2");
 
 /** One Annex V summary for one reader. Only values from `facts` are used. */
@@ -165,6 +230,8 @@ export function laySummary(facts: LayFact[], audience: LayAudience): LaySection[
     `${f(`${key}-placebo`)} of ${f(`${risk}-placebo`)} ${unit} on placebo${sep}${f(`${key}-low`)} of ${f(`${risk}-low`)} ${unit} on 210 mg${sep}and ${f(`${key}-high`)} of ${f(`${risk}-high`)} ${unit} on 420 mg`;
 
   if (audience === "lay-es") return laySummaryEs(facts);
+  if (audience === "lay-fr") return laySummaryFr(facts);
+  if (audience === "lay-zh") return laySummaryZh(facts);
 
   if (audience === "lay-physician") {
     return [
@@ -258,7 +325,49 @@ function laySummaryEs(facts: LayFact[]): LaySection[] {
     { id: "follow", element: "", text: `El registro no dice si se planean más estudios de ${f("drug")}.` },
     { id: "more", element: "", text: `El registro completo, con todos los resultados (en inglés), está en clinicaltrials.gov/study/${f("nct")}. Este resumen se hizo con el registro descargado el ${longDateEs(dateIso(f("retrieved")))}.` },
   ];
-  return sections.map((section) => ({ ...section, element: annexElements.find((item) => item.id === section.id)!.element }));
+  return withHeadings(sections, "es");
+}
+
+function laySummaryFr(facts: LayFact[]): LaySection[] {
+  const f = (id: string) => fact(facts, id);
+  const terms = f("sae-terms").split(", ").filter(Boolean);
+  const deaths = ["placebo", "low", "high"].reduce((sum, group) => sum + Number(f(`deaths-${group}`)), 0);
+  const per = (key: string) =>
+    `${f(`${key}-placebo`)} personnes sur ${f("risk-placebo")} sous placebo, ${f(`${key}-low`)} personnes sur ${f("risk-low")} sous 210 mg et ${f(`${key}-high`)} personnes sur ${f("risk-high")} sous 420 mg`;
+  const sections: LaySection[] = [
+    { id: "id", element: "", text: `Ce résumé porte sur une étude clinique. Son titre officiel (en anglais) est « ${f("title")} ». Le numéro ClinicalTrials.gov est ${f("nct")}. Le numéro d'étude de ${f("sponsor")} est ${f("org-id")}.` },
+    { id: "sponsor", element: "", text: `${f("sponsor")} a mené et financé l'étude. Les questions peuvent être adressées à l'Information médicale de ${f("sponsor")} : medinfo@amgen.com ou 866-572-6436.` },
+    { id: "general", element: "", text: `L'étude s'est déroulée du ${longDateFr(dateIso(f("start")))} au ${longDateFr(dateIso(f("end")))}, dans ${f("sites")} centres de ${f("countries")} pays. Elle cherchait à savoir si un médicament à l'essai appelé ${f("drug")} diminue le nombre de jours de migraine par mois. ${f("drug")} a été comparé à un placebo. Un placebo a le même aspect mais ne contient pas de médicament.` },
+    { id: "population", element: "", text: `${f("total")} adultes ont participé : ${f("women")} femmes et ${f("men")} hommes. Leur âge moyen était de ${esNum(f("age-mean"))} ans. Pour participer, il fallait avoir de ${f("age-min")} à ${f("age-max")} ans, au moins ${f("min-days")} jours de migraine par mois, et avoir essayé au moins ${f("failed")} autre médicament préventif qui n'a pas marché ou a causé des problèmes.` },
+    { id: "product", element: "", text: `Un tirage au sort a placé chaque personne dans l'un des ${f("arms")} groupes. ${f("started-placebo")} personnes ont reçu le placebo. ${f("started-low")} personnes ont reçu 210 mg d'${f("drug")} toutes les 4 semaines. ${f("started-high")} personnes ont reçu 420 mg d'${f("drug")} toutes les 2 semaines. Tout le monde a reçu des injections sous la peau pendant ${f("weeks")} semaines. Personne ne savait dans quel groupe il était.` },
+    { id: "safety", element: "", text: `Des problèmes de santé graves ont été signalés pendant l'étude, qu'ils soient dus ou non au médicament. Ils sont arrivés à ${per("sae")}. Les problèmes graves étaient ${listOf(terms.map((term) => plainTerm(term, "fr")), "et")}. ${deaths === 0 ? "Personne n'est décédé." : `${deaths} personnes sont décédées.`} Des problèmes moins graves sont arrivés à ${per("other")}. Le plus fréquent était ${plainTerm(f("top-other"), "fr")}. Ils ont été comptés pendant les ${f("weeks")} semaines de traitement et les ${f("follow-weeks")} semaines de suivi.` },
+    { id: "results", element: "", text: `Après ${f("weeks")} semaines, le nombre de jours de migraine par mois a baissé dans les ${f("arms")} groupes. En moyenne, il a baissé d'environ ${esNum(f("mmd-round-placebo"))} jours sous placebo, d'environ ${esNum(f("mmd-round-low"))} jours sous 210 mg et d'environ ${esNum(f("mmd-round-high"))} jours sous 420 mg. L'étude n'a pas montré qu'${f("drug")} réduisait les jours de migraine plus que le placebo. ${esNum(f("resp-placebo"))} % des personnes sous placebo, ${esNum(f("resp-low"))} % sous 210 mg et ${esNum(f("resp-high"))} % sous 420 mg ont vu leurs jours de migraine diminuer au moins de moitié. Ces moyennes viennent des ${f("analysed-total")} personnes ayant assez de données dans leur journal. ${f("completed-total")} personnes sur ${f("total")} ont terminé l'étude.` },
+    { id: "comments", element: "", text: "Ce sont les résultats d'une seule étude. Une seule étude ne montre pas si un médicament fonctionne ou s'il est sûr. Ce résumé n'est pas un avis médical. Ne changez pas votre traitement sans en parler à votre médecin." },
+    { id: "follow", element: "", text: `Le registre ne dit pas si d'autres études d'${f("drug")} sont prévues.` },
+    { id: "more", element: "", text: `Le registre complet, avec tous les résultats (en anglais), se trouve sur clinicaltrials.gov/study/${f("nct")}. Ce résumé a été rédigé à partir du registre téléchargé le ${longDateFr(dateIso(f("retrieved")))}.` },
+  ];
+  return withHeadings(sections, "fr");
+}
+
+function laySummaryZh(facts: LayFact[]): LaySection[] {
+  const f = (id: string) => fact(facts, id);
+  const terms = f("sae-terms").split(", ").filter(Boolean);
+  const deaths = ["placebo", "low", "high"].reduce((sum, group) => sum + Number(f(`deaths-${group}`)), 0);
+  const per = (key: string) =>
+    `安慰剂组 ${f("risk-placebo")} 人中有 ${f(`${key}-placebo`)} 人，210 mg 组 ${f("risk-low")} 人中有 ${f(`${key}-low`)} 人，420 mg 组 ${f("risk-high")} 人中有 ${f(`${key}-high`)} 人`;
+  const sections: LaySection[] = [
+    { id: "id", element: "", text: `本摘要介绍一项临床研究。它的正式标题（英文）是“${f("title")}”。ClinicalTrials.gov 编号是 ${f("nct")}。${f("sponsor")} 的研究编号是 ${f("org-id")}。` },
+    { id: "sponsor", element: "", text: `${f("sponsor")} 主持并资助了这项研究。如有问题，可以联系 ${f("sponsor")} 医学信息部：medinfo@amgen.com 或 866-572-6436。` },
+    { id: "general", element: "", text: `研究从${longDateZh(dateIso(f("start")))}进行到${longDateZh(dateIso(f("end")))}，在 ${f("countries")} 个国家的 ${f("sites")} 个研究中心开展。研究想了解一种名为 ${f("drug")} 的试验药物能否减少每月的偏头痛天数。${f("drug")} 与安慰剂进行了比较。安慰剂看起来一样，但不含药物。` },
+    { id: "population", element: "", text: `共有 ${f("total")} 名成年人参加：${f("women")} 名女性和 ${f("men")} 名男性。平均年龄为 ${f("age-mean")} 岁。参加的人必须在 ${f("age-min")} 至 ${f("age-max")} 岁之间，每月至少有 ${f("min-days")} 天偏头痛，并且至少试过 ${f("failed")} 种其他预防药物，但没有效果或引起了问题。` },
+    { id: "product", element: "", text: `随机分组把每个人分到 ${f("arms")} 个组中的一组。${f("started-placebo")} 人使用安慰剂。${f("started-low")} 人每 4 周使用 210 mg ${f("drug")}。${f("started-high")} 人每 2 周使用 420 mg ${f("drug")}。每个人都接受了 ${f("weeks")} 周的皮下注射。没有人知道自己在哪一组。` },
+    { id: "safety", element: "", text: `研究期间报告了严重的健康问题，无论是否由药物引起。发生严重问题的有：${per("sae")}。这些严重问题是${listZh(terms.map((term) => plainTerm(term, "zh")))}。${deaths === 0 ? "没有人死亡。" : `有 ${deaths} 人死亡。`}发生较轻问题的有：${per("other")}。最常见的是${plainTerm(f("top-other"), "zh")}。这些问题是在 ${f("weeks")} 周治疗和 ${f("follow-weeks")} 周随访期间统计的。` },
+    { id: "results", element: "", text: `${f("weeks")} 周后，${f("arms")} 个组的每月偏头痛天数都减少了。平均来看，安慰剂组减少了约 ${f("mmd-round-placebo")} 天，210 mg 组减少了约 ${f("mmd-round-low")} 天，420 mg 组减少了约 ${f("mmd-round-high")} 天。研究没有发现 ${f("drug")} 比安慰剂更能减少偏头痛天数。安慰剂组有 ${f("resp-placebo")}% 的人、210 mg 组有 ${f("resp-low")}% 的人、420 mg 组有 ${f("resp-high")}% 的人偏头痛天数至少减少了一半。这些平均值来自 ${f("analysed-total")} 名有足够日记数据的人。${f("total")} 人中有 ${f("completed-total")} 人完成了研究。` },
+    { id: "comments", element: "", text: "这些是一项研究的结果。仅凭一项研究不能说明一种药物是否有效或安全。本摘要不是医疗建议。未与医生商量前，请不要改变您的治疗。" },
+    { id: "follow", element: "", text: `登记记录没有说明是否计划对 ${f("drug")} 进行更多研究。` },
+    { id: "more", element: "", text: `完整的登记记录及所有结果（英文）见 clinicaltrials.gov/study/${f("nct")}。本摘要根据${longDateZh(dateIso(f("retrieved")))}下载的登记记录编写。` },
+  ];
+  return withHeadings(sections, "zh");
 }
 
 function dateIso(long: string): string {
@@ -277,17 +386,30 @@ const normal = (token: string) => token.replace(/^[−-]/, "").replace(",", ".")
 
 /** Numbers in prose, skipping identifiers like NCT03238781, 2017-000630-57, and phone numbers. */
 export function numbersIn(text: string): string[] {
-  return (text.replace(/\b\d{3}-\d{3}-\d{4}\b/g, " ").match(numberToken) ?? []).map(normal);
+  const plain = text
+    .replace(/\b\d{3}-\d{3}-\d{4}\b/g, " ")
+    .replace(/(\d{4})年(\d{1,2})月(?:(\d{1,2})日)?/g, (_, year: string, month: string, dayOf?: string) => ` ${dayOf ?? ""} ${englishMonths[Number(month) - 1] ?? month} ${year} `);
+  return (plain.match(numberToken) ?? []).map(normal);
 }
+
+const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 function factNumbers(facts: LayFact[], filter: (item: LayFact) => boolean = () => true): Set<string> {
   return new Set(facts.filter(filter).flatMap((item) => (item.value.match(/\d+(?:\.\d+)?/g) ?? []).map(normal)));
 }
 
-const groupWords: Record<GroupKey, RegExp> = { placebo: /placebo/i, low: /210 mg/i, high: /420 mg/i };
-const promo = ["breakthrough", "proven", "cure", "miracle", "game-changing", "revolutionary", "remarkable", "promising", "highly effective", "avance revolucionario", "milagro", "cura", "comprobado"];
-const benefitClaim = /\b(fewer|less|lower(?:ed)?|better|more effective|outperform\w*|superior|menos|mejor|redujo)\b[^.]{0,60}\b(than|que)\b[^.]{0,25}placebo/i;
-const negation = /\b(not|no|did not|didn't|neither|nor|no encontró)\b/i;
+const groupWords: Record<GroupKey, RegExp> = { placebo: /placebo|安慰剂/i, low: /210 mg/i, high: /420 mg/i };
+const promo = [
+  "breakthrough", "proven", "cure", "miracle", "game-changing", "revolutionary", "remarkable", "promising", "highly effective",
+  "avance revolucionario", "milagro", "cura", "comprobado",
+  "révolutionnaire", "miraculeux", "guérison", "prouvé",
+  "突破", "奇迹", "神奇", "治愈", "革命性",
+];
+const benefitClaim = /\b(fewer|less|lower(?:ed)?|better|more effective|outperform\w*|superior|menos|mejor|redujo|moins|mieux|meilleur\w*|rédui\w*)\b[^.]{0,60}\b(than\b|que\b|qu')[^.]{0,25}placebo/i;
+const negation = /\b(not|no|did not|didn't|neither|nor|no encontró|pas|aucun\w*)\b/i;
+const benefitClaimZh = /比安慰剂[^。]{0,12}(更|好|多|少)/;
+const negationZh = /没有|未|并不|不/;
+const cjk = /[\u4e00-\u9fff]/;
 
 export function checkLay(text: string, facts: LayFact[]): DraftCheck[] {
   const known = factNumbers(facts);
@@ -303,7 +425,7 @@ export function checkLay(text: string, facts: LayFact[]): DraftCheck[] {
   const neutral = factNumbers(facts, (item) => !item.group);
   const own = (group: GroupKey) => factNumbers(facts, (item) => item.group === group);
   const swaps: string[] = [];
-  for (const clause of text.split(/[,;.]\s+|\s+y\s+|\s+and\s+/)) {
+  for (const clause of text.split(/[,;.]\s+|\s+y\s+|\s+et\s+|\s+and\s+|[，；。、]/)) {
     const named = (Object.keys(groupWords) as GroupKey[]).filter((group) => groupWords[group].test(clause));
     if (named.length !== 1) continue;
     const group = named[0];
@@ -318,9 +440,11 @@ export function checkLay(text: string, facts: LayFact[]): DraftCheck[] {
   const lower = text.toLowerCase();
   const dropped = terms.filter((term) => !lower.includes(term.toLowerCase()));
   checks.push({ id: "serious", label: "Every serious event is named", passed: dropped.length === 0, note: dropped.length === 0 ? `All ${terms.length} serious events in the record are named.` : `Leaves out: ${dropped.join(", ")}.` });
-  const words = promo.filter((word) => new RegExp(`\\b${word}\\b`, "i").test(text));
+  const words = promo.filter((word) => (cjk.test(word) ? text.includes(word) : new RegExp(`(?<![\\p{L}])${word}(?![\\p{L}])`, "iu").test(text)));
   checks.push({ id: "neutral", label: "Neutral wording", passed: words.length === 0, note: words.length === 0 ? "No promotional words." : `Promotional: ${words.join(", ")}.` });
-  const claims = text.split(/(?<=[.!?])\s+/).filter((sentence) => benefitClaim.test(sentence) && !negation.test(sentence));
+  const claims = text
+    .split(/(?<=[.!?])\s+|(?<=[。！？])/)
+    .filter((sentence) => (benefitClaim.test(sentence) && !negation.test(sentence)) || (benefitClaimZh.test(sentence) && !negationZh.test(sentence)));
   checks.push({ id: "claim", label: "No benefit the results do not show", passed: claims.length === 0, note: claims.length === 0 ? "No sentence says AMG 301 beat placebo." : `Claims a benefit the record does not show: “${claims[0]}”` });
   return checks;
 }

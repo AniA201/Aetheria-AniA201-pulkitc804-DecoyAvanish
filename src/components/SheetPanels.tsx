@@ -6,7 +6,8 @@ import { blocks, blocksIn, extractValues, proposeChange, registryFields, render,
 import { draftFromBrief, usdmShape, type Brief } from "../lib/brief";
 import { consentElements } from "../lib/elements";
 import { loadHandoffs, type StoredHandoff } from "../lib/handoff";
-import { isLanguage, languageInfo, type Language } from "../lib/languages";
+import { isLanguage, type Language } from "../lib/languages";
+import { layAudiences } from "../lib/laySummary";
 import { extractPdfText } from "../lib/pdf";
 import { checkDraft, readability, runPlantedDrafts, traceFigures } from "../lib/plainLab";
 import {
@@ -24,9 +25,9 @@ import {
   type ProtocolMeta,
   type ProtocolSection,
 } from "../lib/protocolCheck";
+import { useR, type ResearchStrings } from "../lib/researchI18n";
 import { assessTeachback } from "../lib/teachback";
 import { readingSource, versionNote } from "../lib/workbook";
-import { publicNct } from "../lib/publicTrial";
 import { TrialLaySummary, TrialPreFlight, TrialPrecedent, TrialWriteOnce, useTrialSummary } from "./TrialPanels";
 import { useSession, type CommentTarget, type ReviewerComment } from "../state/Session";
 
@@ -82,9 +83,22 @@ export function VersionGate({ version, title, language = "en" }: { version: stri
   );
 }
 
+/** Names reviewers in the reader's language, joined with "and". */
+export function blockerFor(r: ResearchStrings, comments: ReviewerComment[], holds: boolean) {
+  const approves = comments.filter((comment) => comment.stance === "approve");
+  const changes = comments.filter((comment) => comment.stance === "change");
+  const names = (list: ReviewerComment[]) => [...new Set(list.map((item) => r.comments.people[item.reviewer] ?? item.reviewer))].join(r.blockers.and);
+  if (!holds) return r.blockers.fails;
+  if (approves.length > 0 && changes.length > 0) return r.blockers.disagree(names(approves), names(changes));
+  if (changes.length > 0) return r.blockers.asks(names(changes));
+  return "";
+}
+
 /* ---------- Overview ---------- */
 
 export function StarterSheets() {
+  const r = useR();
+  const t = r.sheets;
   const values = extractValues();
   const bound = uses.filter((use) => sourceText(use) !== null);
   const matching = bound.filter((use) => sourceText(use)!.includes(render(use.template, use.side, values))).length;
@@ -96,75 +110,64 @@ export function StarterSheets() {
     (fixture) => assessTeachback(fixture.promptId, fixture.response, teachPrompts, fixture.speaker).label === fixture.expect,
   ).length;
   const real = useTrialSummary();
-  const wait = `Loading ${publicNct}…`;
   const cards = [
     {
       name: "Teach It Back",
-      lines: [
-        `${teachPrompts.length} check questions, one per sample section, in English, Spanish, French, and Mandarin`,
-        `${personas} of ${personaFixtures.length} personas get the expected result (the Spanish, French, and Mandarin replies are checked against their own answer keys)`,
-        "Voice session: reads each section, asks, listens, checks, and hands off; “person” stops it and flags the coordinator",
-        `${publicNct} posts no consent form, so Teach It Back uses the practice form or an uploaded one`,
-      ],
+      lines: [t.tbQuestions(teachPrompts.length), t.tbPersonas(personas, personaFixtures.length), t.tbVoice, t.tbNoConsent],
       links: [
-        { to: "/researcher/insights#handoffs", label: "Handoffs from participants" },
-        { to: "/researcher/insights#personas", label: "Persona results" },
+        { to: "/researcher/insights#handoffs", label: t.handoffs },
+        { to: "/researcher/insights#personas", label: t.personas },
       ],
     },
     {
       name: "Say It Plainly",
       lines: [
-        real
-          ? `${publicNct} lay summary from ${real.facts} registry facts: 5 versions (adult, caregiver, teen, physician, Spanish), Annex V headings`
-          : wait,
-        real ? `Planted-error test on the real results: ${real.lay.caught} of ${real.lay.planted} caught, ${real.lay.falseAlarms} false alarms` : wait,
-        `Practice consent readings: planted-error test ${lab.caught} of ${lab.planted} caught, ${lab.falseAlarms} false alarms`,
-        "Reviewer comments; a disagreement blocks Accept; regenerate keeps a version history",
+        real ? t.spLay(real.facts, layAudiences.length) : t.loading,
+        real ? `${t.real}${t.plantedShort(real.lay.caught, real.lay.planted, real.lay.falseAlarms)}` : t.loading,
+        `${t.practice}${t.plantedShort(lab.caught, lab.planted, lab.falseAlarms)}`,
+        t.spReview,
       ],
       links: [
-        { to: "/researcher/plain-language#lay-summary", label: `${publicNct} lay summaries` },
-        { to: "/researcher/plain-language#say-it-plainly", label: "Practice consent readings" },
+        { to: "/researcher/plain-language#lay-summary", label: t.laySummaries },
+        { to: "/researcher/plain-language#say-it-plainly", label: t.readings },
       ],
     },
     {
       name: "Write Once",
       lines: [
-        real ? `${publicNct}: ${real.rows} facts compared across protocol, SAP, and registry; ${real.differs} real wording difference${real.differs === 1 ? "" : "s"} found` : wait,
-        real ? `Planted-error test: ${real.writePlants.caught} of ${real.writePlants.planted} caught, ${real.writePlants.falseAlarms} false alarms` : wait,
-        "Change one block (for example, add a week-36 visit) and every affected sentence and page is listed with its owner",
-        `Practice pair: ${blocks.length} blocks, ${matching} of ${bound.length} source sentences rebuilt exactly`,
+        real ? t.woFacts(real.rows, real.differs) : t.loading,
+        real ? `${t.real}${t.plantedShort(real.writePlants.caught, real.writePlants.planted, real.writePlants.falseAlarms)}` : t.loading,
+        t.woChange,
+        t.woPractice(blocks.length, matching, bound.length),
       ],
       links: [
-        { to: "/researcher/document-integrity#nct-write-once", label: `${publicNct} Write Once` },
-        { to: "/researcher/document-integrity#write-once", label: "Practice blocks" },
+        { to: "/researcher/document-integrity#nct-write-once", label: t.woReal },
+        { to: "/researcher/document-integrity#write-once", label: t.woBlocks },
       ],
     },
     {
       name: "Protocol Pre-Flight",
       lines: [
-        real ? `${publicNct} protocol (${real.pages} PDF pages): checklist count ${real.score.value} of 100 (M11 + SPIRIT 2025, ${real.score.total} items)` : wait,
-        real ? `Planted-error test on the real protocol: ${real.plants.caught} of ${real.plants.planted} caught, ${real.plants.falseAlarms} false alarms` : wait,
-        real ? `${real.amendments.length} real amendments read from the PDF; compared with ${real.peers} similar completed trials` : wait,
-        `Practice protocol: ${score.value} of 100; planted-error test ${planted.caught} of ${planted.planted}`,
+        real ? t.pfScore(real.pages, real.score.value, real.score.total) : t.loading,
+        real ? `${t.real}${t.plantedShort(real.plants.caught, real.plants.planted, real.plants.falseAlarms)}` : t.loading,
+        real ? t.pfHistory(real.amendments.length, real.peers) : t.loading,
+        t.pfPractice(score.value, planted.caught, planted.planted),
       ],
       links: [
-        { to: "/researcher/document-integrity#nct-pre-flight", label: `${publicNct} pre-flight` },
-        { to: "/researcher/document-integrity#design-brief", label: "Design brief" },
+        { to: "/researcher/document-integrity#nct-pre-flight", label: t.pfReal },
+        { to: "/researcher/document-integrity#design-brief", label: t.pfBrief },
       ],
     },
   ];
 
   return (
-    <section className="sheet-cards" aria-label="Starter sheets">
-      <h2>Starter sheets</h2>
-      <p className="fine">
-        Computed now from the stored files. {publicNct} numbers come from its public ClinicalTrials.gov record and posted PDFs{real ? `, retrieved ${new Date(real.retrieved).toLocaleDateString()}` : ""}. The practice
-        study is synthetic. Nothing here is an approval.
-      </p>
+    <section className="sheet-cards" aria-label={t.title}>
+      <h2>{t.title}</h2>
+      <p className="fine">{t.note}</p>
       <div className="sheet-card-grid">
         {cards.map((card) => (
           <article key={card.name} className="fact">
-            <h3>{card.name}</h3>
+            <h3 lang="en">{card.name}</h3>
             <ul>
               {card.lines.map((line, index) => (
                 <li key={index}>{line}</li>
@@ -187,27 +190,24 @@ export function StarterSheets() {
 /* ---------- Write Once ---------- */
 
 function BlockLibrary() {
+  const r = useR();
+  const w = r.writeOnce;
   const values = extractValues();
   return (
     <section id="write-once">
-      <h2>Shared blocks</h2>
-      <p className="fine">
-        Each value is read from the stored files, not typed in. Every sentence below is rebuilt from its template and compared with the stored sentence, so a mismatch shows up here.
-      </p>
+      <h2>{w.blocks}</h2>
       {blocks.map((block) => {
         const value = values[block.id];
         const agrees = value.protocol === value.consent;
         return (
           <article key={block.id} className={agrees ? "fact" : "fact flagged"}>
             <header>
-              <h3>{block.label}</h3>
+              <h3 lang="en">{block.label}</h3>
               <p className="flag">
-                {block.owner} · block practice-1 · {agrees ? "same in both files" : "files disagree"}
+                {block.owner} · {agrees ? w.same : w.differ}
               </p>
             </header>
-            <p>
-              Protocol: {value.protocol} {block.unit}. Consent: {value.consent} {block.unit}.
-            </p>
+            <p>{w.values(value.protocol, value.consent, block.unit)}</p>
             <ul className="stack">
               {uses
                 .filter((use) => blocksIn(use.template).includes(block.id))
@@ -216,15 +216,9 @@ function BlockLibrary() {
                   const stored = sourceText(use);
                   return (
                     <li key={use.id}>
-                      <strong>{use.place}</strong>
-                      <p>{text}</p>
-                      <small>
-                        {stored === null
-                          ? `Generated reading, owned by ${use.owner}.`
-                          : stored.includes(text)
-                            ? `Matches the stored sentence. Owner: ${use.owner}.`
-                            : `Does not match the stored sentence. Owner: ${use.owner}.`}
-                      </small>
+                      <strong lang="en">{use.place}</strong>
+                      <p lang="en">{text}</p>
+                      <small>{stored === null ? w.generated(use.owner) : stored.includes(text) ? w.matches(use.owner) : w.mismatch(use.owner)}</small>
                     </li>
                   );
                 })}
@@ -237,6 +231,8 @@ function BlockLibrary() {
 }
 
 function ProposeChange() {
+  const r = useR();
+  const w = r.writeOnce;
   const { proposals, addProposal, decideLine } = useSession();
   const values = extractValues();
   const [blockId, setBlockId] = useState<BlockId>("visits");
@@ -244,28 +240,22 @@ function ProposeChange() {
   const block = blocks.find((item) => item.id === blockId)!;
   const current = values[blockId];
   const clean = next.trim();
-  const problem = !/^\d{1,4}$/.test(clean)
-    ? "Enter a whole number."
-    : clean === current.protocol && clean === current.consent
-      ? "Both files already say this."
-      : "";
+  const problem = !/^\d{1,4}$/.test(clean) ? w.whole : clean === current.protocol && clean === current.consent ? w.already : "";
 
   return (
     <section>
-      <h2>Propose a change</h2>
-      <p className="fine">
-        Pick any block and type a new value. Every sentence that uses the block is listed with its owner. Accepting a line records a decision; it does not edit the protocol or the consent.
-      </p>
+      <h2>{w.propose}</h2>
+      <p className="fine">{w.proposeNote}</p>
       <div className="sheet-form">
-        <label htmlFor="block-pick">Block</label>
+        <label htmlFor="block-pick">{w.block}</label>
         <select id="block-pick" value={blockId} onChange={(event) => setBlockId(event.target.value as BlockId)}>
           {blocks.map((item) => (
             <option key={item.id} value={item.id}>
-              {item.label} (protocol {values[item.id].protocol}, consent {values[item.id].consent})
+              {w.option(item.label, values[item.id].protocol, values[item.id].consent)}
             </option>
           ))}
         </select>
-        <label htmlFor="block-value">New value ({block.unit})</label>
+        <label htmlFor="block-value">{w.newValue(block.unit)}</label>
         <input id="block-value" inputMode="numeric" value={next} onChange={(event) => setNext(event.target.value)} />
         <button
           type="button"
@@ -273,12 +263,12 @@ function ProposeChange() {
           disabled={Boolean(problem)}
           onClick={() => addProposal(blockId, `protocol ${current.protocol} · consent ${current.consent}`, clean)}
         >
-          Propose
+          {w.submit}
         </button>
         {problem ? <p className="fine">{problem}</p> : null}
       </div>
 
-      <h3>Version history</h3>
+      <h3>{w.history}</h3>
       <ol className="stack">
         {proposals.map((proposal) => {
           const label = blocks.find((item) => item.id === proposal.blockId)?.label ?? proposal.blockId;
@@ -300,39 +290,39 @@ function ProposeChange() {
             <li key={proposal.id}>
               <details open={proposal === proposals[0]}>
                 <summary>
-                  {proposal.id}: {label} {proposal.from} → {proposal.to} · {decided}/{lines.length} lines decided
+                  {proposal.id}: {label} {proposal.from} → {proposal.to} · {w.decided(decided, lines.length)}
                 </summary>
                 {lines.map((line) => (
                   <article key={line.id} className={line.warnings.length > 0 ? "fact flagged" : "fact"}>
-                    <h3>{line.place}</h3>
-                    <p className="fine">Routed to: {line.owner}</p>
-                    <div className="split">
+                    <h3 lang="en">{line.place}</h3>
+                    <p className="fine">{w.routed(line.owner)}</p>
+                    <div className="split" lang="en">
                       <div>
-                        <h3>Current</h3>
+                        <h3>{w.current}</h3>
                         <blockquote>{line.before}</blockquote>
                       </div>
                       <div>
-                        <h3>Proposed</h3>
+                        <h3>{w.proposed}</h3>
                         <blockquote>{line.after}</blockquote>
                       </div>
                     </div>
                     {line.warnings.map((warning) => (
-                      <p key={warning} className="notice">
+                      <p key={warning} className="notice" lang="en">
                         {warning}
                       </p>
                     ))}
                     <div className="action-row">
                       <button type="button" className="btn on-paper" onClick={() => decideLine(proposal.id, line.id, "accepted")}>
-                        {proposal.decisions[line.id] === "accepted" ? "Accepted" : "Accept this line"}
+                        {proposal.decisions[line.id] === "accepted" ? r.states.accepted : w.acceptLine}
                       </button>
                       <button type="button" className="btn on-paper" onClick={() => decideLine(proposal.id, line.id, "rejected")}>
-                        {proposal.decisions[line.id] === "rejected" ? "Rejected" : "Reject this line"}
+                        {proposal.decisions[line.id] === "rejected" ? r.states.rejected : w.rejectLine}
                       </button>
                     </div>
                   </article>
                 ))}
                 <button type="button" className="btn on-paper" onClick={() => download(`${proposal.id}-redline.txt`, redline)}>
-                  Download redline (.txt)
+                  {w.redline}
                 </button>
               </details>
             </li>
@@ -340,7 +330,7 @@ function ProposeChange() {
         })}
         <li>
           <strong>practice-1</strong>
-          <p>Values as read from PROT-AETHER-01 v3.0 and ICF-AETHER-01 v2.1. Later entries are proposals; the files stay as they are.</p>
+          <p>{w.base}</p>
         </li>
       </ol>
     </section>
@@ -348,17 +338,17 @@ function ProposeChange() {
 }
 
 export function RegistryCard() {
+  const r = useR();
   const fields = registryFields(extractValues());
   return (
     <section id="registry">
-      <h2>Registry card</h2>
-      <p className="fine">Built from the same blocks as the protocol and the consent. Where the files disagree, both values are shown.</p>
+      <h2>{r.files.registry}</h2>
       <ul className="stack">
         {fields.map((field) => (
           <li key={field.id}>
-            <strong>{field.label}</strong>
-            <p>{field.value}</p>
-            <small>{field.agrees ? "Same in both files" : "Files disagree. A person has to pick one."}</small>
+            <strong lang="en">{field.label}</strong>
+            <p lang="en">{field.value}</p>
+            <small>{field.agrees ? r.files.same : r.files.differ}</small>
           </li>
         ))}
       </ul>
@@ -370,15 +360,15 @@ export function RegistryCard() {
 
 type ProtocolSource = { name: string; sections: ProtocolSection[]; meta: ProtocolMeta; practice: boolean };
 
-async function readProtocol(file: File): Promise<ProtocolSource | string> {
+async function readProtocol(file: File, r: ResearchStrings): Promise<ProtocolSource | string> {
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
   if (ext === "pdf" || file.type === "application/pdf") {
     const extract = await extractPdfText(new Uint8Array(await file.arrayBuffer()));
     if (!extract.ok) return extract.error;
     const sections = sectionsFromText(extract.pages, file.name);
-    return sections.length === 0 ? "No text sections were found in that PDF." : { name: file.name, sections, meta: {}, practice: false };
+    return sections.length === 0 ? r.preflight.noPdfText : { name: file.name, sections, meta: {}, practice: false };
   }
-  if (!["txt", "md"].includes(ext)) return "Use a PDF, .txt, or .md protocol.";
+  if (!["txt", "md"].includes(ext)) return r.preflight.formats;
   const raw = await file.text();
   const parsed = parseDocument(raw, file.name, { anyStudy: true });
   if (parsed.ok) {
@@ -397,20 +387,21 @@ async function readProtocol(file: File): Promise<ProtocolSource | string> {
     };
   }
   const sections = sectionsFromText([{ number: 1, text: raw }], file.name);
-  return sections.length === 0 ? "No text was found in that file." : { name: file.name, sections, meta: {}, practice: false };
+  return sections.length === 0 ? r.preflight.noText : { name: file.name, sections, meta: {}, practice: false };
 }
 
 export function FindingList({ findings }: { findings: Finding[] }) {
+  const r = useR();
   return (
     <ul className="stack">
       {findings.map((finding) => (
         <li key={finding.id} className={finding.status === "flag" ? "fail" : finding.status === "ok" ? "pass" : ""}>
           <strong>
-            {finding.status === "flag" ? "Flag" : finding.status === "ok" ? "Consistent" : "Cannot check"} · {finding.title}
+            {finding.status === "flag" ? r.preflight.flag : finding.status === "ok" ? r.preflight.ok : r.preflight.cannot} · <span lang="en">{finding.title}</span>
           </strong>
-          <p>{finding.why}</p>
+          <p lang="en">{finding.why}</p>
           <small>
-            Where: {finding.where}. Fix: {finding.fix}
+            {r.where}{r.colon}<span lang="en">{finding.where}</span>. {r.fix}{r.colon}<span lang="en">{finding.fix}</span>
           </small>
         </li>
       ))}
@@ -419,25 +410,26 @@ export function FindingList({ findings }: { findings: Finding[] }) {
 }
 
 export function ChecklistTable({ rows }: { rows: ChecklistResult[] }) {
+  const r = useR();
   return (
     <>
       {(["ICH M11", "SPIRIT 2025"] as const).map((list) => {
         const part = rows.filter((row) => row.list === list);
-        const missing = part.filter((row) => row.mark === "missing").length;
+        const count = (mark: ChecklistResult["mark"]) => part.filter((row) => row.mark === mark).length;
         return (
           <details key={list}>
-            <summary>
-              {list}: {part.length} items · {part.filter((row) => row.mark === "present").length} present ·{" "}
-              {part.filter((row) => row.mark === "thin").length} thin · {missing} missing
-            </summary>
+            <summary>{r.preflight.summary(list, part.length, count("present"), count("thin"), count("missing"))}</summary>
             <ul className="stack">
               {part.map((row) => (
                 <li key={row.id} className={row.mark === "missing" ? "fail" : row.mark === "present" ? "pass" : ""}>
                   <strong>
-                    {row.ref} {row.item} · {row.mark}
+                    <span lang="en">
+                      {row.ref} {row.item}
+                    </span>{" "}
+                    · {r.marks[row.mark]}
                   </strong>
-                  <p>{row.why}</p>
-                  <small>
+                  <p lang="en">{row.why}</p>
+                  <small lang="en">
                     {row.where}
                     {row.evidence ? ` · “${row.evidence}”` : ""}
                   </small>
@@ -451,7 +443,23 @@ export function ChecklistTable({ rows }: { rows: ChecklistResult[] }) {
   );
 }
 
+export function PlantedCases({ cases, withExpected = false }: { cases: { id: string; label: string; expected?: string[]; found: string[]; missed: string[]; falseAlarms: string[] }[]; withExpected?: boolean }) {
+  const r = useR();
+  return (
+    <ul className="stack">
+      {cases.map((item) => (
+        <li key={item.id} className={item.missed.length === 0 && item.falseAlarms.length === 0 ? "pass" : "fail"}>
+          <strong lang="en">{item.label}</strong>
+          <p>{r.caseLine(withExpected ? (item.expected ?? []) : null, item.found, item.missed, item.falseAlarms)}</p>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function PreFlight() {
+  const r = useR();
+  const p = r.preflight;
   const practice = useMemo<ProtocolSource>(() => ({ ...practiceProtocol(), name: "PROT-AETHER-01 v3.0 (practice)", practice: true }), []);
   const [source, setSource] = useState<ProtocolSource>(practice);
   const [note, setNote] = useState("");
@@ -465,11 +473,9 @@ export function PreFlight() {
 
   return (
     <section id="pre-flight">
-      <h2>Pre-flight protocol check</h2>
-      <p className="fine">
-        Checking {source.name}: {source.sections.length} sections. Headings come from ICH M11 (FDA copy, adopted 19 Nov 2025) and SPIRIT 2025 Table 1. Every mark is computed from the text on screen.
-      </p>
-      <label htmlFor="protocol-file">Check another protocol (PDF, .txt, or .md)</label>
+      <h2>{p.title}</h2>
+      <p className="fine">{p.checking(source.name, source.sections.length)}</p>
+      <label htmlFor="protocol-file">{p.file}</label>
       <input
         id="protocol-file"
         type="file"
@@ -478,88 +484,68 @@ export function PreFlight() {
           const file = event.target.files?.[0];
           event.target.value = "";
           if (!file) return;
-          setNote(`Reading ${file.name}…`);
-          const result = await readProtocol(file);
+          setNote(p.reading(file.name));
+          const result = await readProtocol(file, r);
           if (typeof result === "string") {
             setNote(result);
             return;
           }
           setSource(result);
-          setNote(`${file.name}: ${result.sections.length} sections found. Cross-document checks need the practice pair, so they are skipped for this file.`);
+          setNote(p.read(file.name, result.sections.length));
         }}
       />
       {!source.practice ? (
-        <button type="button" className="btn on-paper" onClick={() => { setSource(practice); setNote(""); }}>
-          Back to the practice protocol
+        <button
+          type="button"
+          className="btn on-paper"
+          onClick={() => {
+            setSource(practice);
+            setNote("");
+          }}
+        >
+          {p.back}
         </button>
       ) : null}
       {note ? <p className="fine">{note}</p> : null}
 
       <article className="fact">
-        <h3>Checklist coverage: {score.value} of 100</h3>
-        <p>
-          ({score.present} present + 0.5 × {score.thin} thin) ÷ {score.total} items × 100 = {score.value}
-        </p>
-        <p className="fine">
-          Present = 1, thin = 0.5, missing = 0. This counts whether each heading’s content appears in the text. It is a checklist count, not an approval, a quality grade, or a prediction of amendments.
-        </p>
+        <h3>{p.coverage(score.value)}</h3>
+        <p>{p.formula(score.present, score.thin, score.total, score.value)}</p>
+        <p className="fine">{p.notApproval}</p>
       </article>
       <ChecklistTable rows={rows} />
 
-      <h3>Inside the protocol</h3>
+      <h3>{p.inside}</h3>
       <FindingList findings={internal} />
       {source.practice ? (
         <>
-          <h3>Protocol against consent</h3>
+          <h3>{p.againstConsent}</h3>
           <FindingList findings={cross} />
         </>
       ) : null}
 
-      <h3>Amendment-risk areas</h3>
-      <p className="fine">
-        Based on the gaps and flags above. The categories follow the starter sheet’s summary of Tufts CSDD amendment research; no amendment rate is predicted for this study.
-      </p>
+      <h3>{p.risks}</h3>
       <ul className="stack">
-        {spots.length === 0 ? <li>No risk areas from these checks.</li> : null}
+        {spots.length === 0 ? <li>{p.noRisks}</li> : null}
         {spots.map((spot) => (
           <li key={spot.id}>
-            <strong>{spot.category}</strong>
-            <p>{spot.why}</p>
+            <strong lang="en">{spot.category}</strong>
+            <p lang="en">{spot.why}</p>
             <small>
-              Where: {spot.where}. Fix: {spot.fix}
+              {r.where}{r.colon}<span lang="en">{spot.where}</span>. {r.fix}{r.colon}<span lang="en">{spot.fix}</span>
             </small>
           </li>
         ))}
       </ul>
 
-      <h3>Planted-error test</h3>
-      <p>
-        Caught {planted.caught} of {planted.planted} known errors, with {planted.falseAlarms} false alarm{planted.falseAlarms === 1 ? "" : "s"}.
-      </p>
-      <p className="fine">
-        Each case changes the practice protocol in one known way and runs the same checks. The three real disagreements in the practice pair count as known errors in every case. This measures these checks on these cases only.
-      </p>
-      <ul className="stack">
-        {planted.cases.map((item) => (
-          <li key={item.id} className={item.missed.length === 0 && item.falseAlarms.length === 0 ? "pass" : "fail"}>
-            <strong>{item.label}</strong>
-            <p>
-              Found: {item.found.join(", ") || "nothing"}. {item.missed.length ? `Missed: ${item.missed.join(", ")}. ` : ""}
-              {item.falseAlarms.length ? `False alarms: ${item.falseAlarms.join(", ")}.` : ""}
-            </p>
-          </li>
-        ))}
-      </ul>
+      <h3>{r.plantedTitle}</h3>
+      <p>{r.planted(planted.caught, planted.planted, planted.falseAlarms)}</p>
+      <PlantedCases cases={planted.cases} />
 
-      {source.practice ? (
+      {source.practice && hours.protocol !== null && hours.consent !== null ? (
         <>
-          <h3>Participant time</h3>
-          <p>{hours.assumption}</p>
-          {hours.protocol !== null && hours.consent !== null ? (
-            <p>
-              About {hours.protocol} clinic hours by the protocol’s visit count and {hours.consent} by the consent’s. Travel and waiting time are not counted.
-            </p>
-          ) : null}
+          <h3>{p.time}</h3>
+          <p>{p.hours(hours.protocol, hours.consent)}</p>
         </>
       ) : null}
     </section>
@@ -568,52 +554,41 @@ export function PreFlight() {
 
 /* ---------- Design brief ---------- */
 
-const briefFields: { key: keyof Brief; label: string }[] = [
-  { key: "title", label: "Title" },
-  { key: "condition", label: "Condition" },
-  { key: "phase", label: "Phase" },
-  { key: "intervention", label: "Intervention" },
-  { key: "comparator", label: "Comparator" },
-  { key: "population", label: "Population (who can join)" },
-  { key: "primaryEndpoint", label: "Primary endpoint" },
-  { key: "endpointWeek", label: "Endpoint week" },
-  { key: "visits", label: "Number of clinic visits" },
-  { key: "weeks", label: "Treatment weeks" },
-];
+const briefKeys: (keyof Brief)[] = ["title", "condition", "phase", "intervention", "comparator", "population", "primaryEndpoint", "endpointWeek", "visits", "weeks"];
 
 export function DesignBrief() {
+  const r = useR();
+  const b = r.brief;
   const { brief, setBrief, briefDecisions, decideBrief } = useSession();
   const sections = draftFromBrief(brief);
   const accepted = new Set(Object.entries(briefDecisions).filter(([, value]) => value === "accepted").map(([key]) => key));
 
   return (
     <section id="design-brief">
-      <h2>Design brief to draft</h2>
-      <p className="fine">
-        Type a short brief. Each M11 section is drafted only from what the brief says; anything missing is left for the author. Accepting a section records a decision. It does not approve a protocol.
-      </p>
+      <h2>{b.title}</h2>
+      <p className="fine">{b.note}</p>
       <div className="brief-grid">
-        {briefFields.map((field) => (
-          <label key={field.key}>
-            {field.label}
-            <input value={brief[field.key]} onChange={(event) => setBrief({ ...brief, [field.key]: event.target.value })} />
+        {briefKeys.map((key) => (
+          <label key={key}>
+            {b.fields[key]}
+            <input value={brief[key]} onChange={(event) => setBrief({ ...brief, [key]: event.target.value })} />
           </label>
         ))}
       </div>
       {sections.map((section) => (
         <article key={section.id} className={section.missing ? "fact flagged" : "fact"}>
-          <h3>
+          <h3 lang="en">
             M11 {section.ref} {section.heading}
           </h3>
-          <p>{section.text}</p>
-          <small>{section.source}</small>
+          <p lang="en">{section.text}</p>
+          <small lang="en">{section.source}</small>
           {!section.missing ? (
             <div className="action-row">
               <button type="button" className="btn on-paper" onClick={() => decideBrief(section.id, "accepted")}>
-                {briefDecisions[section.id] === "accepted" ? "Accepted" : "Accept section"}
+                {briefDecisions[section.id] === "accepted" ? r.states.accepted : b.acceptSection}
               </button>
               <button type="button" className="btn on-paper" onClick={() => decideBrief(section.id, "rejected")}>
-                {briefDecisions[section.id] === "rejected" ? "Rejected" : "Reject section"}
+                {briefDecisions[section.id] === "rejected" ? r.states.rejected : b.rejectSection}
               </button>
             </div>
           ) : null}
@@ -624,9 +599,9 @@ export function DesignBrief() {
         className="btn on-paper"
         onClick={() => download("design-brief-usdm-shaped.json", JSON.stringify(usdmShape(brief, accepted), null, 2), "application/json")}
       >
-        Download USDM-shaped JSON
+        {b.usdm}
       </button>
-      <p className="fine">Loosely follows CDISC USDM names. It has not been validated against the USDM schema.</p>
+      <p className="fine">{b.usdmNote}</p>
       <TrialPrecedent />
     </section>
   );
@@ -634,11 +609,10 @@ export function DesignBrief() {
 
 /** Pre-Flight and Write Once on the real public trial, then the same tools on the practice pair. */
 export function RealTrialWork() {
+  const r = useR();
   return (
     <div className="sheet-work">
-      <p className="pack-line">
-        Real trial first: {publicNct} (Amgen, Phase 2a migraine prevention, completed). Its protocol, SAP, and registry record are public. Below it, the same tools run on the synthetic practice pair.
-      </p>
+      <p className="pack-line">{r.brief.realLine}</p>
       <TrialPreFlight />
       <TrialWriteOnce />
     </div>
@@ -664,6 +638,8 @@ export function CompareWorkbook() {
 const reviewers: ReviewerComment["reviewer"][] = ["Medical", "Legal", "Patient advocate"];
 
 export function Comments({ audience }: { audience: CommentTarget }) {
+  const r = useR();
+  const c = r.comments;
   const { comments, addComment, removeComment } = useSession();
   const [reviewer, setReviewer] = useState<ReviewerComment["reviewer"]>("Legal");
   const [stance, setStance] = useState<ReviewerComment["stance"]>("change");
@@ -672,32 +648,34 @@ export function Comments({ audience }: { audience: CommentTarget }) {
 
   return (
     <div>
-      <h4>Reviewer comments</h4>
+      <h4>{c.title}</h4>
       <ul className="stack">
-        {mine.length === 0 ? <li>No comments yet.</li> : null}
+        {mine.length === 0 ? <li>{c.none}</li> : null}
         {mine.map((comment) => (
           <li key={comment.id}>
             <strong>
-              {comment.reviewer} · {comment.stance === "approve" ? "approves" : "asks for a change"}
+              {c.people[comment.reviewer] ?? comment.reviewer} · {comment.stance === "approve" ? c.approves : c.asks}
             </strong>
             <p>{comment.text}</p>
             <button type="button" className="text-button" onClick={() => removeComment(comment.id)}>
-              Resolve and remove
+              {c.resolve}
             </button>
           </li>
         ))}
       </ul>
       <div className="sheet-form">
-        <select aria-label="Reviewer" value={reviewer} onChange={(event) => setReviewer(event.target.value as ReviewerComment["reviewer"])}>
+        <select aria-label={c.reviewer} value={reviewer} onChange={(event) => setReviewer(event.target.value as ReviewerComment["reviewer"])}>
           {reviewers.map((item) => (
-            <option key={item}>{item}</option>
+            <option key={item} value={item}>
+              {c.people[item]}
+            </option>
           ))}
         </select>
-        <select aria-label="Stance" value={stance} onChange={(event) => setStance(event.target.value as ReviewerComment["stance"])}>
-          <option value="approve">Approves</option>
-          <option value="change">Asks for a change</option>
+        <select aria-label={c.stance} value={stance} onChange={(event) => setStance(event.target.value as ReviewerComment["stance"])}>
+          <option value="approve">{c.approve}</option>
+          <option value="change">{c.change}</option>
         </select>
-        <input aria-label="Comment" value={text} onChange={(event) => setText(event.target.value)} placeholder="Comment" />
+        <input aria-label={c.placeholder} value={text} onChange={(event) => setText(event.target.value)} placeholder={c.placeholder} />
         <button
           type="button"
           className="btn on-paper"
@@ -707,14 +685,18 @@ export function Comments({ audience }: { audience: CommentTarget }) {
             setText("");
           }}
         >
-          Add comment
+          {c.add}
         </button>
       </div>
     </div>
   );
 }
 
+const handoffChoices = ["Spanish", "French", "Mandarin Chinese", "Vietnamese", "Arabic", "Haitian Creole"];
+
 export function PlainWorkbook() {
+  const r = useR();
+  const p = r.plain;
   const {
     consent,
     audienceText,
@@ -732,68 +714,49 @@ export function PlainWorkbook() {
   const lab = useMemo(() => runPlantedDrafts(), []);
   const [language, setLanguage] = useState("Spanish");
   const [handoffNote, setHandoffNote] = useState("");
+  const when = (iso: string) => new Date(iso).toLocaleString(r.locale);
 
   return (
     <div className="sheet-work">
       <section id="say-it-plainly">
-        <h2>Two readers, one source</h2>
-        <p className="fine">
-          Source: {source.title}. Both readings must keep {source.mustKeep.join(", ") || "the source figures"}
-          {source.mustNotAdd.length ? ` and must not use the protocol’s ${source.mustNotAdd.join(", ")}` : ""}. Submitting a new consent regenerates both and moves the old ones to the history.
-        </p>
-        <p className="fine">
-          Flesch Reading Ease = 206.835 − 1.015 × (words ÷ sentences) − 84.6 × (syllables ÷ words). Syllables are estimated with a vowel-group rule. Higher is easier. It is a formula, not a test with readers. Source text: {sourceEase.readingEase} (grade {sourceEase.grade}).
-        </p>
+        <h2>{p.title}</h2>
+        <p className="fine">{p.source(source.title, source.mustKeep.join(", ") || "—", source.mustNotAdd.join(", "))}</p>
+        <p className="fine">{p.flesch(sourceEase.readingEase, sourceEase.grade)}</p>
         <button type="button" className="btn on-paper" onClick={() => regenerateReadings("Regenerated by a person from the current source")}>
-          Regenerate both readings
+          {p.regenerate}
         </button>
         {(["adult", "caregiver"] as const).map((audience) => {
           const text = audienceText[audience];
           const ease = readability(text);
           const checks = checkDraft(text, source);
           const holds = checks.every((check) => check.passed);
-          const mine = comments.filter((comment) => comment.audience === audience);
-          const approves = mine.filter((comment) => comment.stance === "approve");
-          const changes = mine.filter((comment) => comment.stance === "change");
-          const conflict = approves.length > 0 && changes.length > 0;
-          const names = (list: ReviewerComment[]) => [...new Set(list.map((item) => item.reviewer))].join(" and ");
-          const blocker = !holds
-            ? "A check below fails."
-            : conflict
-              ? `Reviewers disagree. Approves: ${names(approves)}. Asks for a change: ${names(changes)}. Resolve it before accepting.`
-              : changes.length > 0
-                ? `Asks for a change: ${names(changes)}. Resolve it before accepting.`
-                : "";
+          const blocker = blockerFor(r, comments.filter((comment) => comment.audience === audience), holds);
           const trace = traceFigures(text, source.passages);
+          const name = audience === "adult" ? p.adult : p.caregiver;
           return (
             <article key={audience} className="fact">
               <header>
-                <h3>{audience === "adult" ? "Adult reader" : "Caregiver"}</h3>
-                <p className="flag">{audienceState[audience]}</p>
+                <h3>{name}</h3>
+                <p className="flag">{r.states[audienceState[audience]]}</p>
               </header>
-              <textarea
-                rows={4}
-                aria-label={audience === "adult" ? "Adult reader draft" : "Caregiver draft"}
-                value={text}
-                onChange={(event) => setAudienceText(audience, event.target.value)}
-              />
-              <p className="fine">
-                Reading Ease {ease.readingEase}, grade {ease.grade} ({ease.words} words, {ease.sentences} sentences).
-              </p>
+              <textarea rows={4} aria-label={name} lang="en" value={text} onChange={(event) => setAudienceText(audience, event.target.value)} />
+              <p className="fine">{p.ease(ease.readingEase, ease.grade, ease.words, ease.sentences)}</p>
               <ul className="plain-list">
                 {checks.map((check) => (
                   <li key={check.id}>
-                    {check.label}: {check.note}
-                    <span>{check.passed ? "Holds" : "Check"}</span>
+                    <span lang="en">
+                      {check.label}: {check.note}
+                    </span>
+                    <span>{check.passed ? r.holds : r.check}</span>
                   </li>
                 ))}
               </ul>
-              <h4>Where each figure comes from</h4>
+              <h4>{p.figures}</h4>
               <ul className="stack">
                 {trace.map((item) => (
                   <li key={item.figure}>
                     <strong>{item.figure}</strong>
-                    <p>{item.citation ? `${item.citation}: “${item.quote}”` : "Not found in the consent. Remove it or cite it."}</p>
+                    <p>{item.citation ? <span lang="en">{`${item.citation}: “${item.quote}”`}</span> : p.notFound}</p>
                   </li>
                 ))}
               </ul>
@@ -801,29 +764,29 @@ export function PlainWorkbook() {
               {blocker ? <p className="notice">{blocker}</p> : null}
               <div className="action-row">
                 <button type="button" className="btn on-paper" disabled={!holds} onClick={() => setAudienceState(audience, "in-review")}>
-                  Send to review
+                  {r.sendReview}
                 </button>
                 <button type="button" className="btn solid dark" disabled={Boolean(blocker)} onClick={() => setAudienceState(audience, "accepted")}>
-                  Accept reading
+                  {p.acceptReading}
                 </button>
                 <button type="button" className="btn on-paper" onClick={() => setAudienceState(audience, "rejected")}>
-                  Reject reading
+                  {p.rejectReading}
                 </button>
               </div>
             </article>
           );
         })}
         <details>
-          <summary>Version history ({audienceHistory.length})</summary>
+          <summary>{r.history(audienceHistory.length)}</summary>
           <ul className="stack">
-            {audienceHistory.length === 0 ? <li>No earlier readings yet.</li> : null}
+            {audienceHistory.length === 0 ? <li>{r.noHistory}</li> : null}
             {audienceHistory.map((item) => (
               <li key={item.id}>
                 <strong>
-                  {item.audience} · was {item.state} · {new Date(item.at).toLocaleString()}
+                  {item.audience === "adult" ? p.adult : p.caregiver} · {r.was(r.states[item.state], when(item.at))}
                 </strong>
-                <p>{item.text}</p>
-                <small>{item.reason}</small>
+                <p lang="en">{item.text}</p>
+                <small lang="en">{item.reason}</small>
               </li>
             ))}
           </ul>
@@ -831,52 +794,51 @@ export function PlainWorkbook() {
       </section>
 
       <section>
-        <h2>Planted-error test</h2>
-        <p>
-          Caught {lab.caught} of {lab.planted} planted errors, with {lab.falseAlarms} false alarm{lab.falseAlarms === 1 ? "" : "s"} on the faithful control.
-        </p>
+        <h2>{r.plantedTitle}</h2>
+        <p>{r.planted(lab.caught, lab.planted, lab.falseAlarms)}</p>
         <ul className="stack">
           {lab.results.map((item) => (
             <li key={item.id} className={item.caught ? "pass" : "fail"}>
               <strong>
-                {item.label} · {item.caught ? (item.expect ? "caught" : "passed clean") : item.expect ? "missed" : "false alarm"}
+                <span lang="en">{item.label}</span> ·{" "}
+                {item.caught ? (item.expect ? r.plantStatus.caught : r.plantStatus.clean) : item.expect ? r.plantStatus.missed : r.plantStatus.falseAlarm}
               </strong>
-              <p>“{item.text}”</p>
-              <small>{item.failed.map((check) => check.note).join(" ") || "No check failed."}</small>
+              <p lang="en">“{item.text}”</p>
+              <small>{item.failed.map((check) => check.note).join(" ") || r.noCheckFailed}</small>
             </li>
           ))}
         </ul>
       </section>
 
       <section>
-        <h2>Translation</h2>
-        <p>
-          English is the only reviewed language. Participants can switch the screens to machine-written Spanish, French, or Mandarin Chinese (labelled as not reviewed, with the English form as the official text). This handoff asks a qualified translator to review a language.
-        </p>
+        <h2>{p.translation}</h2>
+        <p className="fine">{p.translationNote}</p>
         {translationHandoff ? (
           <>
             <p>
-              Marked ready for a {translationHandoff.language} translation reviewer on {new Date(translationHandoff.at).toLocaleString()}.
-              {translationHandoff.note ? ` Note: ${translationHandoff.note}` : ""}
+              {r.readyFor(r.handoffLanguages[translationHandoff.language] ?? translationHandoff.language, when(translationHandoff.at))}
+              {translationHandoff.note ? r.note(translationHandoff.note) : ""}
             </p>
             <button type="button" className="btn on-paper" onClick={() => setTranslationHandoff(null)}>
-              Withdraw handoff
+              {r.withdraw}
             </button>
           </>
         ) : (
           <div className="sheet-form">
-            <select aria-label="Language" value={language} onChange={(event) => setLanguage(event.target.value)}>
-              {["Spanish", "French", "Mandarin Chinese", "Vietnamese", "Arabic", "Haitian Creole"].map((item) => (
-                <option key={item}>{item}</option>
+            <select aria-label={p.language} value={language} onChange={(event) => setLanguage(event.target.value)}>
+              {handoffChoices.map((item) => (
+                <option key={item} value={item}>
+                  {r.handoffLanguages[item]}
+                </option>
               ))}
             </select>
-            <input aria-label="Handoff note" value={handoffNote} onChange={(event) => setHandoffNote(event.target.value)} placeholder="Note for the reviewer" />
+            <input aria-label={r.notePlaceholder} value={handoffNote} onChange={(event) => setHandoffNote(event.target.value)} placeholder={r.notePlaceholder} />
             <button
               type="button"
               className="btn on-paper"
               onClick={() => setTranslationHandoff({ language, at: new Date().toISOString(), note: handoffNote.trim() })}
             >
-              Mark ready for a translation reviewer
+              {p.markReady}
             </button>
           </div>
         )}
@@ -890,22 +852,24 @@ export function PlainWorkbook() {
 /* ---------- Files and Settings ---------- */
 
 export function ConsentElements() {
+  const r = useR();
   const { consent } = useSession();
   if (!consent) return null;
   const rows = consentElements(consent.passages);
   return (
     <section id="elements">
-      <h2>Required consent elements</h2>
-      <p className="fine">
-        21 CFR 50.25(a)(1)–(8) and (c), checked against {consent.documentId} {consent.version}. Found by key phrases in the text; a person still reads the form. This is not a regulatory review.
-      </p>
+      <h2>{r.files.elements}</h2>
+      <p className="fine">{r.files.elementsNote(`${consent.documentId} ${consent.version}`)}</p>
       <ul className="stack">
         {rows.map((row) => (
           <li key={row.id} className={row.mark === "missing" ? "fail" : row.mark === "present" ? "pass" : ""}>
             <strong>
-              {row.ref} {row.element} · {row.mark}
+              <span lang="en">
+                {row.ref} {row.element}
+              </span>{" "}
+              · {r.marks[row.mark]}
             </strong>
-            <p>{row.note}</p>
+            <p lang="en">{row.note}</p>
           </li>
         ))}
       </ul>
@@ -914,16 +878,15 @@ export function ConsentElements() {
 }
 
 export function ApprovedList() {
+  const r = useR();
   const { approvedVersions, setApprovedVersions } = useSession();
   const [text, setText] = useState(approvedVersions.join("\n"));
 
   return (
     <section>
-      <h2>Approved versions</h2>
-      <p className="fine">
-        Enter one version per line, such as v2.1. An empty list means every version stays Unverified. Once a list is saved, participants cannot read, ask about, or check a version that is not on it. Saving this list is not an IRB approval.
-      </p>
-      <textarea rows={3} aria-label="Approved versions" value={text} onChange={(event) => setText(event.target.value)} />
+      <h2>{r.settings.approved}</h2>
+      <p className="fine">{r.settings.approvedNote}</p>
+      <textarea rows={3} aria-label={r.settings.approved} value={text} onChange={(event) => setText(event.target.value)} />
       <button
         type="button"
         className="btn on-paper"
@@ -936,7 +899,7 @@ export function ApprovedList() {
           )
         }
       >
-        Save version list
+        {r.settings.save}
       </button>
     </section>
   );
@@ -945,31 +908,30 @@ export function ApprovedList() {
 /* ---------- Questions ---------- */
 
 export function PersonaResults() {
+  const r = useR();
   const results = personaFixtures.map((fixture) => ({
     ...fixture,
     result: assessTeachback(fixture.promptId, fixture.response, teachPrompts, fixture.speaker),
     topic: teachPrompts.find((prompt) => prompt.id === fixture.promptId)?.topic ?? fixture.promptId,
   }));
   const matched = results.filter((item) => item.result.label === item.expect).length;
+  const label = (value: string) => r.understanding[value] ?? value;
   return (
     <section id="personas">
-      <h2>Starter-sheet personas</h2>
-      <p className="fine">
-        Five practice replies, one per persona the starter sheet names, run through the same check participants use. {matched} of {results.length} get the expected result.
-      </p>
+      <h2>{r.personas.title}</h2>
+      <p className="fine">{r.personas.note(matched, results.length)}</p>
       <ul className="stack">
         {results.map((item) => (
           <li key={item.id} className={item.result.label === item.expect ? "pass" : "fail"}>
             <strong>
-              {item.persona} · {item.topic} · {item.result.label}
+              {r.personas.names[item.persona] ?? item.persona} · <span lang="en">{item.topic}</span> · {label(item.result.label)}
             </strong>
             <p>“{item.response}”</p>
             <small>
-              Expected: {item.expect}.{item.result.misconception ? ` Misunderstanding found: ${item.result.misconception}.` : ""}
-              {item.speaker === "caregiver" ? " Answered as a caregiver." : ""}
-              {item.result.language && item.result.language !== "en"
-                ? ` Checked against the ${languageInfo[item.result.language].english} answer key; the handoff offers an interpreter.`
-                : ""}
+              {r.personas.expected(label(item.expect))}
+              {item.result.misconception ? r.personas.misunderstanding(item.result.misconception) : ""}
+              {item.speaker === "caregiver" ? r.personas.caregiver : ""}
+              {item.result.language && item.result.language !== "en" ? r.personas.key(r.languageName[item.result.language]) : ""}
             </small>
           </li>
         ))}
@@ -979,6 +941,8 @@ export function PersonaResults() {
 }
 
 export function StoredHandoffs() {
+  const r = useR();
+  const h = r.handoffs;
   const [state, setState] = useState<"loading" | "ok" | "signed-out" | "forbidden" | "offline">("loading");
   const [items, setItems] = useState<StoredHandoff[]>([]);
   useEffect(() => {
@@ -995,25 +959,25 @@ export function StoredHandoffs() {
 
   return (
     <section id="handoffs">
-      <h2>Teach-back handoffs from participants</h2>
-      {state === "loading" ? <p className="fine">Loading from the research-team service…</p> : null}
-      {state === "signed-out" ? <p className="fine">Sign in with a research-team account to read handoffs.</p> : null}
-      {state === "forbidden" ? <p className="fine">This account is not a research-team account.</p> : null}
-      {state === "offline" ? <p className="fine">The research-team service is not reachable. Start it with npm run dev:all.</p> : null}
-      {state === "ok" && items.length === 0 ? <p className="empty">No participant has sent a teach-back yet.</p> : null}
+      <h2>{h.title}</h2>
+      {state === "loading" ? <p className="fine">{h.loading}</p> : null}
+      {state === "signed-out" ? <p className="fine">{h.signedOut}</p> : null}
+      {state === "forbidden" ? <p className="fine">{h.forbidden}</p> : null}
+      {state === "offline" ? <p className="fine">{h.offline}</p> : null}
+      {state === "ok" && items.length === 0 ? <p className="empty">{h.none}</p> : null}
       {state === "ok" && items.length > 0 ? (
         <ul className="stack">
           {items.map((item) => (
             <li key={item.id} className={item.label === "Understands the key concept" ? "pass" : "fail"}>
               <strong>
-                {item.participant} · {item.topic} · {item.label}
+                {item.participant} · <span lang="en">{item.topic}</span> · {r.understanding[item.label] ?? item.label}
               </strong>
               <p>“{item.response}”</p>
               <small>
-                {item.document_id} {item.version} · {new Date(`${item.created_at}Z`).toLocaleString()}
-                {item.speaker === "caregiver" ? " · answered by a caregiver" : ""}
-                {item.language !== "en" && isLanguage(item.language) ? ` · in ${languageInfo[item.language].english}, needs an interpreter` : ""}
-                {item.misconception ? ` · misunderstanding: ${item.misconception}` : ""}
+                {item.document_id} {item.version} · {new Date(`${item.created_at}Z`).toLocaleString(r.locale)}
+                {item.speaker === "caregiver" ? ` · ${h.caregiver}` : ""}
+                {item.language !== "en" && isLanguage(item.language) ? ` · ${h.interpreter(r.languageName[item.language])}` : ""}
+                {item.misconception ? ` · ${h.misunderstanding(item.misconception)}` : ""}
               </small>
             </li>
           ))}

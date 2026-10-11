@@ -49,6 +49,31 @@ describe("Annex V lay summary from NCT03238781 results", () => {
     expect(lab.falseAlarms).toBe(0);
   });
 
+  it("writes French and Mandarin drafts whose numbers all trace to the record, with translated headings", () => {
+    for (const audience of ["lay-fr", "lay-zh"] as const) {
+      const sections = laySummary(facts, audience);
+      const text = layText(sections);
+      expect(traceNumbers(text, facts).filter((item) => item.facts.length === 0), audience).toEqual([]);
+      expect(sections[0].element).not.toBe(annexElements[0].element);
+    }
+    expect(layText(laySummary(facts, "lay-fr"))).toContain("137 personnes ont reçu le placebo");
+    expect(layText(laySummary(facts, "lay-zh"))).toContain("137 人使用安慰剂");
+  });
+
+  it("catches planted errors in the French and Mandarin drafts", () => {
+    const fails = (text: string) => checkLay(text, facts).filter((check) => !check.passed).map((check) => check.id);
+    const fr = layText(laySummary(facts, "lay-fr"));
+    const zh = layText(laySummary(facts, "lay-zh"));
+    expect(fails(fr.replace("137 personnes ont reçu le placebo", "173 personnes ont reçu le placebo"))).toContain("numbers");
+    expect(fails(zh.replace("137 人使用安慰剂", "173 人使用安慰剂"))).toContain("numbers");
+    expect(fails(`AMG 301 est un médicament révolutionnaire. ${fr}`)).toContain("neutral");
+    expect(fails(`AMG 301 是一项突破。${zh}`)).toContain("neutral");
+    expect(fails(`${fr} Les personnes sous AMG 301 ont eu moins de jours de migraine que sous placebo.`)).toContain("claim");
+    expect(fails(`${zh}AMG 301 比安慰剂更能减少偏头痛天数。`)).toContain("claim");
+    expect(fails(fr.replace("une réaction allergique (hypersensitivity)", "un problème"))).toContain("serious");
+    expect(fails(zh.replace("过敏反应（hypersensitivity）", "问题"))).toContain("serious");
+  });
+
   it("regenerates with a corrected source value", () => {
     const corrected = layFacts(trial.study, trial.retrieved, {
       path: "resultsSection.participantFlowModule.periods[0].milestones[COMPLETED].FG000",

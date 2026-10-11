@@ -1,6 +1,7 @@
 // Starter-sheet work on one real public trial, NCT03238781 (Amgen AMG 301, migraine prevention).
 // Everything here is computed from the files saved under public/trials/NCT03238781/.
 import { useEffect, useMemo, useState } from "react";
+import { languageInfo, type Language } from "../lib/languages";
 import { coverageScore } from "../lib/protocolCheck";
 import { readability } from "../lib/plainLab";
 import {
@@ -42,8 +43,9 @@ import {
   type TrialBlockId,
   type TrialData,
 } from "../lib/publicTrial";
-import { useSession, type CommentTarget, type ReviewerComment } from "../state/Session";
-import { ChecklistTable, Comments, download, FindingList } from "./SheetPanels";
+import { useR } from "../lib/researchI18n";
+import { useSession } from "../state/Session";
+import { blockerFor, ChecklistTable, Comments, download, FindingList, PlantedCases } from "./SheetPanels";
 
 type TrialState = { trial: TrialData | null; error: string };
 
@@ -61,32 +63,34 @@ export function useTrial(): TrialState {
   return state;
 }
 
-const day = (iso: string) => new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+function useDay() {
+  const r = useR();
+  return (iso: string) => new Date(iso).toLocaleDateString(r.locale, { year: "numeric", month: "long", day: "numeric" });
+}
 
 function Provenance({ trial }: { trial: TrialData }) {
+  const r = useR();
+  const day = useDay();
   return (
     <p className="fine">
-      Real public data for {trial.nctId}, retrieved {day(trial.retrieved)} from{" "}
+      {r.trial.retrieved(day(trial.retrieved), trial.protocol.pages.length, trial.sap.pages.length)}{" "}
       <a href={`https://clinicaltrials.gov/study/${trial.nctId}`} target="_blank" rel="noreferrer">
         ClinicalTrials.gov
-      </a>{" "}
-      (registry record, the posted protocol PDF with {trial.protocol.pages.length} pages, and the posted SAP with {trial.sap.pages.length} pages). Refresh with{" "}
-      <code>npm run fetch-trial</code>.
+      </a>
     </p>
   );
 }
 
 function Loading({ state }: { state: TrialState }) {
-  return state.error ? (
-    <p className="notice">The {publicNct} files could not be loaded ({state.error}). Run npm run fetch-trial and reload.</p>
-  ) : (
-    <p className="fine">Loading the {publicNct} files…</p>
-  );
+  const r = useR();
+  return state.error ? <p className="notice">{r.trial.error(state.error)}</p> : <p className="fine">{r.trial.loading}</p>;
 }
 
 /* ---------- Protocol Pre-Flight on the real protocol ---------- */
 
 export function TrialPreFlight() {
+  const r = useR();
+  const t = r.trial;
   const state = useTrial();
   const trial = state.trial;
   const computed = useMemo(() => {
@@ -109,48 +113,30 @@ export function TrialPreFlight() {
 
   return (
     <section id="nct-pre-flight">
-      <h2>Pre-flight on a real protocol: {publicNct}</h2>
+      <h2>{t.preflight}</h2>
       {!trial || !computed ? (
         <Loading state={state} />
       ) : (
         <>
-          <p>
-            {trial.study.protocolSection.identificationModule.officialTitle}. {computed.meta.documentId}, {computed.meta.version}, dated {computed.meta.date}.
-          </p>
+          <p lang="en">{trial.study.protocolSection.identificationModule.officialTitle}</p>
+          <p className="fine">{t.dated(computed.meta.documentId ?? "", computed.meta.version ?? "", computed.meta.date ?? "")}</p>
           <Provenance trial={trial} />
-          <p className="notice">This checks a protocol’s text. It does not approve a protocol, and its marks are not a regulatory review.</p>
 
           <article className="fact">
-            <h3>Checklist coverage: {computed.score.value} of 100</h3>
-            <p>
-              ({computed.score.present} present + 0.5 × {computed.score.thin} thin) ÷ {computed.score.total} items × 100 = {computed.score.value}
-            </p>
-            <p className="fine">ICH M11 and SPIRIT 2025 headings, read from the protocol body (pages 1–{protocolBody(trial.protocol).length}). Each mark shows the page it came from.</p>
+            <h3>{r.preflight.coverage(computed.score.value)}</h3>
+            <p>{r.preflight.formula(computed.score.present, computed.score.thin, computed.score.total, computed.score.value)}</p>
+            <p className="fine">{r.preflight.notApproval}</p>
           </article>
           <ChecklistTable rows={computed.rows} />
 
-          <h3>Inside the protocol, and against the SAP and registry</h3>
+          <h3>{t.against}</h3>
           <FindingList findings={computed.findings} />
 
-          <h3>Planted-error test on the real protocol</h3>
-          <p>
-            Caught {computed.plants.caught} of {computed.plants.planted} planted errors, with {computed.plants.falseAlarms} false alarm{computed.plants.falseAlarms === 1 ? "" : "s"} on the unedited control.
-          </p>
-          <ul className="stack">
-            {computed.plants.cases.map((item) => (
-              <li key={item.id} className={item.missed.length === 0 && item.falseAlarms.length === 0 ? "pass" : "fail"}>
-                <strong>{item.label}</strong>
-                <p>
-                  Expected: {item.expected.join(", ") || "no flags"}. Found: {item.found.join(", ") || "nothing"}.
-                  {item.missed.length ? ` Missed: ${item.missed.join(", ")}.` : ""}
-                  {item.falseAlarms.length ? ` False alarms: ${item.falseAlarms.join(", ")}.` : ""}
-                </p>
-              </li>
-            ))}
-          </ul>
+          <h3>{r.plantedTitle}</h3>
+          <p>{r.planted(computed.plants.caught, computed.plants.planted, computed.plants.falseAlarms)}</p>
+          <PlantedCases cases={computed.plants.cases} withExpected />
 
-          <h3>What the sponsor actually amended</h3>
-          <p className="fine">Read from the amendment summaries at the end of the posted protocol PDF. Shown beside the risk flags; the flags were not tuned to match them.</p>
+          <h3>{t.amended}</h3>
           {computed.amendments.map((amendment) => {
             const counts = amendment.changes.reduce<Record<string, number>>((map, change) => ({ ...map, [change.category]: (map[change.category] ?? 0) + 1 }), {});
             return (
@@ -158,24 +144,27 @@ export function TrialPreFlight() {
                 <summary>
                   {amendment.name} · {amendment.date} ·{" "}
                   {amendment.changes.length > 0
-                    ? `${amendment.changes.length} changed sections · ${Object.entries(counts)
-                        .map(([category, count]) => `${category} ${count}`)
-                        .join(", ")}`
-                    : `section list not posted (page ${amendment.pagesPosted} of ${amendment.pagesTotal} of this summary is in the PDF); rationale shown`}
+                    ? t.changed(
+                        amendment.changes.length,
+                        Object.entries(counts)
+                          .map(([category, count]) => `${category} ${count}`)
+                          .join(", "),
+                      )
+                    : t.notPosted(amendment.pagesPosted, amendment.pagesTotal)}
                 </summary>
-                <h4>Why (PDF p. {amendment.page})</h4>
-                <ul>
+                <h4>{t.why(amendment.page)}</h4>
+                <ul lang="en">
                   {amendment.rationale.map((line) => (
                     <li key={line}>{line}</li>
                   ))}
                 </ul>
-                <h4>Sections changed</h4>
+                <h4>{t.sections}</h4>
                 <ul className="stack">
                   {amendment.changes.map((change, index) => (
                     <li key={`${change.section}-${index}`}>
-                      <strong>{change.category}</strong>
+                      <strong lang="en">{change.category}</strong>
                       <p>
-                        {change.section} · PDF p. {change.page}
+                        <span lang="en">{change.section}</span> · {t.page(change.page)}
                       </p>
                     </li>
                   ))}
@@ -184,23 +173,22 @@ export function TrialPreFlight() {
             );
           })}
 
-          <h3>Against {computed.peers.count} similar completed trials</h3>
-          <p className="fine">{trial.peerSource}</p>
+          <h3>{t.peers(computed.peers.count)}</h3>
           <table className="data-table">
             <thead>
               <tr>
-                <th>Measure</th>
+                <th>{t.measure}</th>
                 <th>{publicNct}</th>
-                <th>Similar trials</th>
-                <th>Why it matters</th>
+                <th>{t.similar}</th>
+                <th>{t.matters}</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody lang="en">
               {computed.peers.rows.map((row) => (
                 <tr key={row.id} className={row.flag ? "flag-row" : ""}>
                   <td>
                     {row.label}
-                    {row.flag ? " · flagged" : ""}
+                    {row.flag ? ` · ${t.flagged}` : ""}
                   </td>
                   <td>{row.ours}</td>
                   <td>{row.peers}</td>
@@ -210,29 +198,32 @@ export function TrialPreFlight() {
             </tbody>
           </table>
 
-          <h3>Participant burden</h3>
+          <h3>{t.burden}</h3>
           <p>
-            {computed.burden.visits.length} visits in the Schedule of Activities (Table 2-1, p. {computed.burden.page}) over {computed.burden.weeks} weeks, {computed.burden.dosingVisits} with a dose. About{" "}
-            {computed.burden.visitHours} hours in clinic and {computed.burden.diaryHours} hours of daily diary ({computed.burden.diaryDays} days).
+            {t.burdenLine(
+              computed.burden.visits.length,
+              computed.burden.page,
+              computed.burden.weeks,
+              computed.burden.dosingVisits,
+              computed.burden.visitHours,
+              computed.burden.diaryHours,
+              computed.burden.diaryDays,
+            )}
           </p>
           <ul className="fine">
             {burdenAssumptions.map((item) => (
-              <li key={item.id}>
-                Assumption: {item.label}, {item.minutes} minutes
-              </li>
+              <li key={item.id}>{t.assumption(item.label, item.minutes)}</li>
             ))}
           </ul>
-          <p className="fine">{computed.burden.note}</p>
 
-          <h3>Amendment-risk areas</h3>
-          <p className="fine">Each flag names its evidence. Categories follow the starter sheet’s summary of Tufts CSDD amendment research; no amendment rate is predicted.</p>
+          <h3>{r.preflight.risks}</h3>
           <ul className="stack">
             {computed.spots.map((spot) => (
               <li key={spot.id}>
-                <strong>{spot.category}</strong>
-                <p>{spot.why}</p>
+                <strong lang="en">{spot.category}</strong>
+                <p lang="en">{spot.why}</p>
                 <small>
-                  Where: {spot.where}. Fix: {spot.fix} Evidence: {spot.evidence}.
+                  {r.where}{r.colon}<span lang="en">{spot.where}</span>. {r.fix}{r.colon}<span lang="en">{spot.fix}</span> {r.evidence}{r.colon}<span lang="en">{spot.evidence}</span>.
                 </small>
               </li>
             ))}
@@ -245,9 +236,9 @@ export function TrialPreFlight() {
 
 /* ---------- Write Once across protocol, SAP, and registry ---------- */
 
-const statusLabel = { same: "Same", differs: "Differs", explained: "Differs, explained", partial: "Partly stated" } as const;
-
 export function TrialWriteOnce() {
+  const r = useR();
+  const t = r.trial;
   const state = useTrial();
   const trial = state.trial;
   const { trialProposals, addTrialProposal, decideTrialLine } = useSession();
@@ -266,49 +257,49 @@ export function TrialWriteOnce() {
 
   return (
     <section id="nct-write-once">
-      <h2>Write Once on a real trial: {publicNct}</h2>
+      <h2>{t.writeOnce}</h2>
       {!trial || !computed ? (
         <Loading state={state} />
       ) : (
         <>
           <Provenance trial={trial} />
-          <h3>The same fact in three documents</h3>
+          <h3>{t.oneFact}</h3>
           <table className="data-table">
             <thead>
               <tr>
-                <th>Fact</th>
-                <th>Protocol</th>
-                <th>SAP</th>
-                <th>Registry</th>
-                <th>Result</th>
+                <th>{t.fact}</th>
+                <th>{t.protocol}</th>
+                <th>{t.sap}</th>
+                <th>{t.registry}</th>
+                <th>{t.result}</th>
               </tr>
             </thead>
             <tbody>
               {computed.rows.map((row) => (
                 <tr key={row.id} className={row.status === "differs" ? "flag-row" : ""}>
-                  <td>{row.label}</td>
+                  <td lang="en">{row.label}</td>
                   {(["Protocol", "SAP", "Registry"] as const).map((doc) => {
                     const cell = row.values.find((item) => item.doc === doc);
                     return (
-                      <td key={doc} title={cell?.quote}>
-                        {cell?.value ?? "not stated"}
+                      <td key={doc} title={cell?.quote} lang="en">
+                        {cell?.value ?? t.notStated}
                         <br />
                         <small>{cell?.where}</small>
                       </td>
                     );
                   })}
                   <td>
-                    <strong>{statusLabel[row.status]}</strong>
+                    <strong>{t.status[row.status]}</strong>
                     <br />
-                    <small>{row.note}</small>
+                    <small lang="en">{row.note}</small>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
           <details>
-            <summary>Show the quoted sentences</summary>
-            <ul className="stack">
+            <summary>{t.quotes}</summary>
+            <ul className="stack" lang="en">
               {computed.rows.flatMap((row) =>
                 row.values
                   .filter((cell) => cell.quote)
@@ -324,35 +315,24 @@ export function TrialWriteOnce() {
             </ul>
           </details>
 
-          <h3>Planted-error test</h3>
+          <h3>{r.plantedTitle}</h3>
           <p>
-            Caught {computed.plants.caught} of {computed.plants.planted} known differences, with {computed.plants.falseAlarms} false alarm{computed.plants.falseAlarms === 1 ? "" : "s"}. The real QM / Q4W wording difference counts as known in every case.
+            {r.planted(computed.plants.caught, computed.plants.planted, computed.plants.falseAlarms)} {t.qm}
           </p>
-          <ul className="stack">
-            {computed.plants.cases.map((item) => (
-              <li key={item.id} className={item.missed.length === 0 && item.falseAlarms.length === 0 ? "pass" : "fail"}>
-                <strong>{item.label}</strong>
-                <p>
-                  Expected: {item.expected.join(", ")}. Found: {item.found.join(", ") || "nothing"}.
-                  {item.missed.length ? ` Missed: ${item.missed.join(", ")}.` : ""}
-                  {item.falseAlarms.length ? ` False alarms: ${item.falseAlarms.join(", ")}.` : ""}
-                </p>
-              </li>
-            ))}
-          </ul>
+          <PlantedCases cases={computed.plants.cases} withExpected />
 
-          <h3>Block library</h3>
+          <h3>{t.library}</h3>
           <table className="data-table">
             <thead>
               <tr>
-                <th>Block</th>
-                <th>Value</th>
-                <th>Owner</th>
-                <th>Version</th>
-                <th>Read from</th>
+                <th>{t.block}</th>
+                <th>{t.value}</th>
+                <th>{t.owner}</th>
+                <th>{t.version}</th>
+                <th>{t.readFrom}</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody lang="en">
               {computed.blocks.map((item) => (
                 <tr key={item.id}>
                   <td>
@@ -369,20 +349,22 @@ export function TrialWriteOnce() {
             </tbody>
           </table>
 
-          <h3>Documents assembled from the blocks</h3>
+          <h3>{t.assembled}</h3>
           <ul className="stack">
             {computed.assembled.map((item) => {
               const matches = item.compareTo ? item.compareTo.text.replace(/\s+/g, " ").includes(item.text.replace(/\s+/g, " ")) : null;
               return (
                 <li key={item.id}>
                   <strong>
-                    {item.document} · {item.place} · {item.owner}
-                    {item.adapted ? " · adapted wording" : ""}
+                    <span lang="en">
+                      {item.document} · {item.place} · {item.owner}
+                    </span>
+                    {item.adapted ? ` · ${t.adapted}` : ""}
                   </strong>
-                  <p>{item.text}</p>
+                  <p lang="en">{item.text}</p>
                   {item.compareTo ? (
                     <small>
-                      {matches ? "Matches" : "Compare with"} {item.compareTo.where}: “{item.compareTo.text}”
+                      {matches ? t.matches(item.compareTo.where) : t.compare(item.compareTo.where)}{r.colon}<span lang="en">“{item.compareTo.text}”</span>
                     </small>
                   ) : null}
                 </li>
@@ -390,14 +372,15 @@ export function TrialWriteOnce() {
             })}
           </ul>
 
-          <h3>Change request</h3>
-          <p className="fine">Change one block. Every assembled sentence that changes, and every protocol or SAP page that states the old value, is listed with its owner. The posted documents are never edited.</p>
+          <h3>{t.change}</h3>
+          <p className="fine">{t.changeNote}</p>
           <div className="action-row">
             {trialChanges.map((change) => (
               <button
                 key={change.id}
                 type="button"
                 className="btn on-paper"
+                lang="en"
                 onClick={() => {
                   const from = computed.blocks.find((item) => item.id === change.block)!.value;
                   addTrialProposal({ block: change.block, from, to: change.to, label: change.label });
@@ -408,14 +391,14 @@ export function TrialWriteOnce() {
             ))}
           </div>
           <div className="sheet-form">
-            <select aria-label="Block to change" value={block} onChange={(event) => setBlock(event.target.value as TrialBlockId)}>
+            <select aria-label={t.blockToChange} value={block} onChange={(event) => setBlock(event.target.value as TrialBlockId)}>
               {computed.blocks.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {item.label} (now {item.value})
+                  {t.now(item.label, item.value)}
                 </option>
               ))}
             </select>
-            <input aria-label="New value" value={value} onChange={(event) => setValue(event.target.value)} />
+            <input aria-label={t.newValue} value={value} onChange={(event) => setValue(event.target.value)} />
             <button
               type="button"
               className="btn on-paper"
@@ -425,37 +408,53 @@ export function TrialWriteOnce() {
                 addTrialProposal({ block, from, to: value.trim(), label: changeFor(trial, block, value.trim()).label });
               }}
             >
-              Propose this change
+              {t.proposeThis}
             </button>
           </div>
-          {trialProposals.length === 0 ? <p className="empty">No change requests yet.</p> : null}
+          {trialProposals.length === 0 ? <p className="empty">{t.none}</p> : null}
           {trialProposals.map((proposal, index) => {
             const lines = changeImpact(trial, changeFor(trial, proposal.block, proposal.to));
             const decided = lines.filter((line) => proposal.decisions[line.id]).length;
             return (
               <details key={proposal.id} open={index === 0}>
                 <summary>
-                  {proposal.id} · {proposal.label} · {lines.length} places · {decided} decided · {new Date(proposal.createdAt).toLocaleString()}
+                  {proposal.id} · <span lang="en">{proposal.label}</span> · {t.places(lines.length, decided)} · {new Date(proposal.createdAt).toLocaleString(r.locale)}
                 </summary>
                 <ul className="stack">
-                  {lines.map((line) => (
-                    <li key={line.id} className={proposal.decisions[line.id] === "accepted" ? "pass" : proposal.decisions[line.id] === "rejected" ? "fail" : ""}>
-                      <strong>
-                        {line.document} · {line.place} · owner: {line.owner}
-                        {proposal.decisions[line.id] ? ` · ${proposal.decisions[line.id]}` : ""}
-                      </strong>
-                      <p>Before: “{line.before}”</p>
-                      <p>{line.kind === "assembled" ? `After: “${line.after}”` : line.after}</p>
-                      <div className="action-row">
-                        <button type="button" className="btn on-paper" onClick={() => decideTrialLine(proposal.id, line.id, "accepted")}>
-                          Accept line
-                        </button>
-                        <button type="button" className="btn on-paper" onClick={() => decideTrialLine(proposal.id, line.id, "rejected")}>
-                          Reject line
-                        </button>
-                      </div>
-                    </li>
-                  ))}
+                  {lines.map((line) => {
+                    const decision = proposal.decisions[line.id];
+                    return (
+                      <li key={line.id} className={decision === "accepted" ? "pass" : decision === "rejected" ? "fail" : ""}>
+                        <strong>
+                          <span lang="en">
+                            {line.document} · {line.place}
+                          </span>{" "}
+                          · {t.ownerIs(line.owner)}
+                          {decision ? ` · ${r.states[decision]}` : ""}
+                        </strong>
+                        <p>
+                          {t.before}{r.colon}<span lang="en">“{line.before}”</span>
+                        </p>
+                        <p>
+                          {line.kind === "assembled" ? (
+                            <>
+                              {t.after}{r.colon}<span lang="en">“{line.after}”</span>
+                            </>
+                          ) : (
+                            <span lang="en">{line.after}</span>
+                          )}
+                        </p>
+                        <div className="action-row">
+                          <button type="button" className="btn on-paper" onClick={() => decideTrialLine(proposal.id, line.id, "accepted")}>
+                            {r.writeOnce.acceptLine}
+                          </button>
+                          <button type="button" className="btn on-paper" onClick={() => decideTrialLine(proposal.id, line.id, "rejected")}>
+                            {r.writeOnce.rejectLine}
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               </details>
             );
@@ -469,6 +468,8 @@ export function TrialWriteOnce() {
 /* ---------- Design brief: fill from the registry, and precedent ---------- */
 
 export function TrialPrecedent() {
+  const r = useR();
+  const t = r.trial;
   const state = useTrial();
   const trial = state.trial;
   const { setBrief } = useSession();
@@ -476,13 +477,12 @@ export function TrialPrecedent() {
   if (!trial) return <Loading state={state} />;
   return (
     <div id="nct-precedent">
-      <h3>Precedent from ClinicalTrials.gov</h3>
+      <h3>{t.precedent}</h3>
       <Provenance trial={trial} />
       <button type="button" className="btn on-paper" onClick={() => setBrief(briefFromRegistry(trial))}>
-        Fill the brief from {publicNct}
+        {t.fill}
       </button>
-      <p className="fine">Fills each field from the registry record. Every M11 section above is then drafted only from those fields.</p>
-      <h4>Similar completed migraine-prevention trials with posted results</h4>
+      <h4>{t.similarTrials}</h4>
       <ul className="stack">
         {rows.map((row) => (
           <li key={row.nctId}>
@@ -492,10 +492,8 @@ export function TrialPrecedent() {
               </a>{" "}
               · {row.sponsor}
             </strong>
-            <p>{row.title}</p>
-            <small>
-              Ages {row.ages}. Primary outcome: {row.primary}
-            </small>
+            <p lang="en">{row.title}</p>
+            <small>{t.ages(row.ages, row.primary)}</small>
           </li>
         ))}
       </ul>
@@ -505,32 +503,28 @@ export function TrialPrecedent() {
 
 /* ---------- Say It Plainly: lay summary of results ---------- */
 
-const glspSteps = ["Plan", "Write", "Review", "Share"] as const;
+const draftNotice: Record<Exclude<Language, "en">, string> = {
+  es: "Traducción automática, no revisada. Un traductor médico calificado debe revisarla.",
+  fr: "Traduction automatique, non révisée. Un traducteur médical qualifié doit la relire.",
+  zh: "机器翻译，未经审核。须由合格的医学译员审核。",
+};
 
-function blockerFor(audience: CommentTarget, comments: ReviewerComment[], holds: boolean) {
-  const mine = comments.filter((comment) => comment.audience === audience);
-  const approves = mine.filter((comment) => comment.stance === "approve");
-  const changes = mine.filter((comment) => comment.stance === "change");
-  const names = (list: ReviewerComment[]) => [...new Set(list.map((item) => item.reviewer))].join(" and ");
-  if (!holds) return "A check below fails.";
-  if (approves.length > 0 && changes.length > 0) return `Reviewers disagree. Approves: ${names(approves)}. Asks for a change: ${names(changes)}. Resolve it before accepting.`;
-  if (changes.length > 0) return `Asks for a change: ${names(changes)}. Resolve it before accepting.`;
-  return "";
-}
+const draftLanguageName: Record<Exclude<Language, "en">, string> = { es: "Spanish", fr: "French", zh: "Mandarin Chinese" };
 
 function FactTrace({ text, facts }: { text: string; facts: LayFact[] }) {
+  const r = useR();
   const trace = traceNumbers(text, facts);
   return (
     <details>
-      <summary>Where each number comes from ({trace.length})</summary>
+      <summary>{r.lay.trace(trace.length)}</summary>
       <ul className="stack">
         {trace.map((item) => (
           <li key={item.value} className={item.facts.length ? "" : "fail"}>
             <strong>{item.value}</strong>
-            <p>
+            <p lang={item.facts.length ? "en" : undefined}>
               {item.facts.length
                 ? item.facts.map((fact) => `${fact.label} = ${fact.value}${fact.derived ? ` (${fact.derived})` : ""} · ${fact.path}`).join(" | ")
-                : "Not in the registry record. Remove it or cite it."}
+                : r.lay.notInRecord}
             </p>
           </li>
         ))}
@@ -540,10 +534,13 @@ function FactTrace({ text, facts }: { text: string; facts: LayFact[] }) {
 }
 
 export function TrialLaySummary() {
+  const r = useR();
+  const l = r.lay;
   const state = useTrial();
   const trial = state.trial;
   const { layEdits, layState, layHistory, layCorrection, layHandoff, comments, setLayEdit, setLayState, setLayCorrection, setLayHandoff } = useSession();
   const [handoffNote, setHandoffNote] = useState("");
+  const [handoffDraft, setHandoffDraft] = useState<Exclude<Language, "en">>("es");
   const facts = useMemo(() => (trial ? layFacts(trial.study, trial.retrieved, layCorrection) : []), [trial, layCorrection]);
   const generated = useMemo(
     () => Object.fromEntries(layAudiences.map((audience) => [audience.id, laySummary(facts, audience.id)])) as Record<LayAudience, ReturnType<typeof laySummary>>,
@@ -553,7 +550,7 @@ export function TrialLaySummary() {
   if (!trial || !lab) {
     return (
       <section id="lay-summary">
-        <h2>Lay summary of results: {publicNct}</h2>
+        <h2>{l.title}</h2>
         <Loading state={state} />
       </section>
     );
@@ -567,30 +564,22 @@ export function TrialLaySummary() {
   const accepted = results.filter((item) => layState[item.audience.id] === "accepted" && item.holds);
   const reviewed = layAudiences.filter((audience) => comments.some((comment) => comment.audience === audience.id) || layState[audience.id]).length;
   const stepDone = [facts.length > 0, results.every((item) => item.text.trim()), reviewed === layAudiences.length, accepted.length > 0];
+  const stepText = [l.stepFacts(facts.length), l.stepDrafts(results.length), l.stepReviewed(reviewed, layAudiences.length), l.stepShared(accepted.length)];
   const placebo = facts.find((fact) => fact.id === "sae-placebo");
+  const when = (iso: string) => new Date(iso).toLocaleString(r.locale);
 
   return (
     <section id="lay-summary">
-      <h2>Lay summary of results: {publicNct}</h2>
+      <h2>{l.title}</h2>
       <Provenance trial={trial} />
-      <p className="fine">
-        Built only from the registry’s posted results ({facts.length} facts, each with its JSON path). The ten headings follow EU CTR 536/2014 Annex V. These are results of {publicNct}, a completed Amgen trial, not of the practice study.
-      </p>
-      <ol className="glsp-steps" aria-label="Good Lay Summary Practice steps">
-        {glspSteps.map((step, index) => (
+      <p className="fine">{l.note(facts.length)}</p>
+      <ol className="glsp-steps" aria-label="Good Lay Summary Practice">
+        {l.steps.map((step, index) => (
           <li key={step} className={stepDone[index] ? "done" : ""}>
             <strong>
               {index + 1}. {step}
             </strong>
-            <span>
-              {index === 0
-                ? `${facts.length} facts from the record`
-                : index === 1
-                  ? `${results.length} drafts`
-                  : index === 2
-                    ? `${reviewed} of ${layAudiences.length} drafts have reviewer input`
-                    : `${accepted.length} accepted and ready to share`}
-            </span>
+            <span>{stepText[index]}</span>
           </li>
         ))}
       </ol>
@@ -608,7 +597,7 @@ export function TrialLaySummary() {
               )
             }
           >
-            {layCorrection ? "Remove the practice correction" : "Apply a practice registry correction and regenerate"}
+            {layCorrection ? l.remove : l.apply}
           </button>
         ) : null}
         <button
@@ -620,7 +609,8 @@ export function TrialLaySummary() {
               `${publicNct}-lay-summaries.md`,
               accepted
                 .map((item) => {
-                  const heading = `# ${item.audience.label} (${item.audience.language === "es" ? "machine-written Spanish, not reviewed by a qualified translator" : "English"})\n\nSource: ClinicalTrials.gov ${publicNct}, retrieved ${day(trial.retrieved)}. Headings: EU CTR 536/2014 Annex V.`;
+                  const language = item.audience.language;
+                  const heading = `# ${item.audience.label} (${language === "en" ? "English" : `machine-written ${draftLanguageName[language]}, not reviewed by a qualified translator`})\n\nSource: ClinicalTrials.gov ${publicNct}, retrieved ${trial.retrieved.slice(0, 10)}. Headings: EU CTR 536/2014 Annex V.`;
                   const body = layEdits[item.audience.id] ?? generated[item.audience.id].map((section) => `## ${section.element}\n\n${section.text}`).join("\n\n");
                   return `${heading}\n\n${body}`;
                 })
@@ -629,26 +619,29 @@ export function TrialLaySummary() {
             )
           }
         >
-          Export accepted summaries ({accepted.length})
+          {l.export(accepted.length)}
         </button>
       </div>
-      {layCorrection ? <p className="notice">Practice correction applied: {layCorrection.label} {layCorrection.from} → {layCorrection.to}. This is not the posted record. Accepted drafts were marked stale.</p> : null}
+      {layCorrection ? <p className="notice">{l.correction(layCorrection.label, layCorrection.from, layCorrection.to)}</p> : null}
 
       <div className="lay-grid">
         {results.map(({ audience, text, checks, holds, ease }) => {
-          const blocker = blockerFor(audience.id, comments, holds);
+          const blocker = blockerFor(r, comments.filter((comment) => comment.audience === audience.id), holds);
           const status = layState[audience.id] ?? "draft";
+          const language = audience.language;
           return (
-            <article key={audience.id} className="fact lay-card" lang={audience.language}>
+            <article key={audience.id} className="fact lay-card" lang={languageInfo[language].html}>
               <header>
-                <h3>{audience.label}</h3>
-                <p className="flag">{status}</p>
+                <h3 lang={r.locale}>{l.audiences[audience.id]}</h3>
+                <p className="flag" lang={r.locale}>
+                  {r.states[status]}
+                </p>
               </header>
-              <p className="fine" lang="en">
-                {audience.reader}. Annex V headings covered: {new Set(generated[audience.id].map((section) => section.id)).size} of {annexElements.length}. Reading Ease {ease.readingEase}
-                {audience.language === "es" ? " (English formula; a Spanish formula such as Fernández-Huerta would differ)" : `, grade ${ease.grade}`}.
+              <p className="fine" lang={r.locale}>
+                {[l.readers[audience.id], l.annex(new Set(generated[audience.id].map((section) => section.id)).size, annexElements.length), language === "en" ? l.ease(ease.readingEase, ease.grade) : l.easeOther].join(r.stop)}
+                {r.stop.trim()}
               </p>
-              {audience.language === "es" ? <p className="notice">Traducción automática, no revisada. Un traductor médico calificado debe revisarla.</p> : null}
+              {language !== "en" ? <p className="notice">{draftNotice[language]}</p> : null}
               {layEdits[audience.id] === undefined ? (
                 <div className="lay-sections">
                   {generated[audience.id].map((section) => (
@@ -659,36 +652,44 @@ export function TrialLaySummary() {
                   ))}
                 </div>
               ) : null}
-              <details lang="en">
-                <summary>{layEdits[audience.id] === undefined ? "Edit this draft" : "Edited draft"}</summary>
-                <textarea rows={10} aria-label={`${audience.label} draft`} value={text} onChange={(event) => setLayEdit(audience.id, event.target.value)} />
+              <details lang={r.locale}>
+                <summary>{layEdits[audience.id] === undefined ? l.edit : l.edited}</summary>
+                <textarea
+                  rows={10}
+                  aria-label={l.audiences[audience.id]}
+                  lang={languageInfo[language].html}
+                  value={text}
+                  onChange={(event) => setLayEdit(audience.id, event.target.value)}
+                />
                 {layEdits[audience.id] !== undefined ? (
                   <button type="button" className="text-button" onClick={() => setLayEdit(audience.id, null)}>
-                    Discard edits
+                    {l.discard}
                   </button>
                 ) : null}
               </details>
-              <ul className="plain-list" lang="en">
+              <ul className="plain-list" lang={r.locale}>
                 {checks.map((check) => (
                   <li key={check.id}>
-                    {check.label}: {check.note}
-                    <span>{check.passed ? "Holds" : "Check"}</span>
+                    <span lang="en">
+                      {check.label}: {check.note}
+                    </span>
+                    <span>{check.passed ? r.holds : r.check}</span>
                   </li>
                 ))}
               </ul>
-              <div lang="en">
+              <div lang={r.locale}>
                 <FactTrace text={text} facts={facts} />
                 <Comments audience={audience.id} />
                 {blocker ? <p className="notice">{blocker}</p> : null}
                 <div className="action-row">
                   <button type="button" className="btn on-paper" disabled={!holds} onClick={() => setLayState(audience.id, "in-review")}>
-                    Send to review
+                    {r.sendReview}
                   </button>
                   <button type="button" className="btn solid dark" disabled={Boolean(blocker)} onClick={() => setLayState(audience.id, "accepted")}>
-                    Accept
+                    {r.accept}
                   </button>
                   <button type="button" className="btn on-paper" onClick={() => setLayState(audience.id, "rejected")}>
-                    Reject
+                    {r.reject}
                   </button>
                 </div>
               </div>
@@ -698,17 +699,17 @@ export function TrialLaySummary() {
       </div>
 
       <details>
-        <summary>Version history ({layHistory.length})</summary>
+        <summary>{r.history(layHistory.length)}</summary>
         <ul className="stack">
-          {layHistory.length === 0 ? <li>No earlier drafts yet.</li> : null}
+          {layHistory.length === 0 ? <li>{r.noHistory}</li> : null}
           {layHistory.map((item) => (
             <li key={item.id}>
               <strong>
-                {item.audience} · was {item.state} · {new Date(item.at).toLocaleString()}
+                {l.audiences[item.audience] ?? item.audience} · {r.was(r.states[item.state], when(item.at))}
               </strong>
-              <small>{item.reason}</small>
+              <small lang="en">{item.reason}</small>
               <details>
-                <summary>Show text</summary>
+                <summary>{l.showText}</summary>
                 <p>{item.text}</p>
               </details>
             </li>
@@ -716,37 +717,49 @@ export function TrialLaySummary() {
         </ul>
       </details>
 
-      <h3>Spanish translation handoff</h3>
+      <h3>{l.handoff}</h3>
       {layHandoff ? (
         <>
           <p>
-            Spanish draft marked ready for a {layHandoff.language} translation reviewer on {new Date(layHandoff.at).toLocaleString()}.
-            {layHandoff.note ? ` Note: ${layHandoff.note}` : ""}
+            {l.sentFor(r.handoffLanguages[layHandoff.language] ?? layHandoff.language, when(layHandoff.at))}
+            {layHandoff.note ? r.note(layHandoff.note) : ""}
           </p>
           <button type="button" className="btn on-paper" onClick={() => setLayHandoff(null)}>
-            Withdraw handoff
+            {r.withdraw}
           </button>
         </>
       ) : (
         <div className="sheet-form">
-          <input aria-label="Note for the translation reviewer" value={handoffNote} onChange={(event) => setHandoffNote(event.target.value)} placeholder="Note for the reviewer" />
-          <button type="button" className="btn on-paper" onClick={() => setLayHandoff({ language: "Spanish", at: new Date().toISOString(), note: handoffNote.trim() })}>
-            Send the Spanish draft to a translation reviewer
+          <select aria-label={l.draft} value={handoffDraft} onChange={(event) => setHandoffDraft(event.target.value as Exclude<Language, "en">)}>
+            {(["es", "fr", "zh"] as const).map((code) => (
+              <option key={code} value={code}>
+                {l.audiences[`lay-${code}`]}
+              </option>
+            ))}
+          </select>
+          <input aria-label={r.notePlaceholder} value={handoffNote} onChange={(event) => setHandoffNote(event.target.value)} placeholder={r.notePlaceholder} />
+          <button
+            type="button"
+            className="btn on-paper"
+            onClick={() => setLayHandoff({ language: draftLanguageName[handoffDraft], at: new Date().toISOString(), note: handoffNote.trim() })}
+          >
+            {l.send}
           </button>
         </div>
       )}
 
-      <h3>Planted-error test</h3>
+      <h3>{r.plantedTitle}</h3>
       <p>
-        Caught {lab.caught} of {lab.planted} planted errors in the adult summary, with {lab.falseAlarms} false alarm{lab.falseAlarms === 1 ? "" : "s"} on the unedited control.
+        {r.planted(lab.caught, lab.planted, lab.falseAlarms)} {l.plantedNote}
       </p>
       <ul className="stack">
         {lab.results.map((item) => (
           <li key={item.id} className={item.caught ? "pass" : "fail"}>
             <strong>
-              {item.label} · {item.caught ? (item.expect ? "caught" : "passed clean") : item.expect ? "missed" : "false alarm"}
+              <span lang="en">{item.label}</span> ·{" "}
+              {item.caught ? (item.expect ? r.plantStatus.caught : r.plantStatus.clean) : item.expect ? r.plantStatus.missed : r.plantStatus.falseAlarm}
             </strong>
-            <small>{item.failed.map((check) => check.note).join(" ") || "No check failed."}</small>
+            <small lang="en">{item.failed.map((check) => check.note).join(" ") || r.noCheckFailed}</small>
           </li>
         ))}
       </ul>
