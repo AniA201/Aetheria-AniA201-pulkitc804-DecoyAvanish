@@ -1,0 +1,576 @@
+{
+ "retrieved": "2026-10-11T00:32:27.449Z",
+ "source": "https://clinicaltrials.gov/api/v2/studies?query.cond=migraine&filter.advanced=AREA%5BPhase%5DPHASE2+AND+AREA%5BOverallStatus%5DCOMPLETED+AND+AREA%5BDesignPrimaryPurpose%5DPREVENTION+AND+AREA%5BStudyType%5DINTERVENTIONAL&pageSize=25",
+ "peers": [
+  {
+   "nctId": "NCT02275117",
+   "title": "A Multicenter Assessment of ALD403 in Chronic Migraine",
+   "sponsor": "Alder Biopharmaceuticals, Inc.",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 665,
+   "arms": 5,
+   "minimumAge": "18 Years",
+   "maximumAge": "55 Years",
+   "inclusionCount": 3,
+   "exclusionCount": 8,
+   "primaryOutcomes": [
+    {
+     "measure": "75% Migraine Responder Rate",
+     "timeFrame": "12 Weeks"
+    }
+   ],
+   "secondaryCount": 19,
+   "hasResults": true
+  },
+  {
+   "nctId": "NCT06323928",
+   "title": "A Dose-finding Trial With Lu-AG09222 in Adults With Migraine Who Have Not Been Helped by Prior Preventive Treatments",
+   "sponsor": "H. Lundbeck A/S",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 874,
+   "arms": 9,
+   "minimumAge": "18 Years",
+   "maximumAge": "65 Years",
+   "inclusionCount": 5,
+   "exclusionCount": 4,
+   "primaryOutcomes": [
+    {
+     "measure": "Change From Baseline in the Number of Monthly Migraine Days (MMDs)",
+     "timeFrame": "Baseline up to Week 12 (Weeks 1-12)"
+    }
+   ],
+   "secondaryCount": 6,
+   "hasResults": false
+  },
+  {
+   "nctId": "NCT00849511",
+   "title": "Melatonin for Migraine Prevention",
+   "sponsor": "Nordlandssykehuset HF",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 48,
+   "arms": 2,
+   "minimumAge": "18 Years",
+   "maximumAge": "65 Years",
+   "inclusionCount": 6,
+   "exclusionCount": 4,
+   "primaryOutcomes": [
+    {
+     "measure": "Migraine attack frequency",
+     "timeFrame": "8 weeks"
+    }
+   ],
+   "secondaryCount": 3,
+   "hasResults": false
+  },
+  {
+   "nctId": "NCT01952574",
+   "title": "Study to Evaluate the Efficacy and Safety of Erenumab (AMG 334) in Migraine Prevention",
+   "sponsor": "Amgen",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 483,
+   "arms": 6,
+   "minimumAge": "18 Years",
+   "maximumAge": "60 Years",
+   "inclusionCount": 4,
+   "exclusionCount": 13,
+   "primaryOutcomes": [
+    {
+     "measure": "Change From Baseline in Monthly Migraine Days at Week 12",
+     "timeFrame": "4-week baseline phase and the last 4 weeks of the 12-week double-blind treatment phase"
+    },
+    {
+     "measure": "CHU Substudy: Number of Participants Who Self-administered a Full Dose, Partial Dose, or No Dose of Erenumab",
+     "timeFrame": "CHU substudy day 29 (week 4) and day 57 (week 8)"
+    }
+   ],
+   "secondaryCount": 7,
+   "hasResults": true
+  },
+  {
+   "nctId": "NCT04845178",
+   "title": "Investigation of Safety and Efficacy of ABP-450 for Migraine Prevention in Adults",
+   "sponsor": "AEON Biopharma, Inc.",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 797,
+   "arms": 3,
+   "minimumAge": "18 Years",
+   "maximumAge": null,
+   "inclusionCount": 10,
+   "exclusionCount": 25,
+   "primaryOutcomes": [
+    {
+     "measure": "Change in Monthly Migraine Days",
+     "timeFrame": "Baseline to Weeks 21 to 24 Treatment period."
+    },
+    {
+     "measure": "Incidence of Treatment Emergent Adverse Events",
+     "timeFrame": "Baseline to Week 28 - End of Study."
+    }
+   ],
+   "secondaryCount": 9,
+   "hasResults": false
+  },
+  {
+   "nctId": "NCT00440518",
+   "title": "A Study Designed to Test the Effectiveness and Safety of Treating Patients With Lacosamide for Migraine Prophylaxis",
+   "sponsor": "UCB Pharma",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 218,
+   "arms": 3,
+   "minimumAge": "18 Years",
+   "maximumAge": "65 Years",
+   "inclusionCount": 3,
+   "exclusionCount": 8,
+   "primaryOutcomes": [
+    {
+     "measure": "Change From Baseline in Mean Migraine Headache Rates During the Entire 14-week Maintenance Period",
+     "timeFrame": "Baseline, Entire 14-week Maintenance Period"
+    }
+   ],
+   "secondaryCount": 4,
+   "hasResults": true
+  },
+  {
+   "nctId": "NCT02322333",
+   "title": "MLD10 in the Prevention of Migraine in Adults",
+   "sponsor": "Pharmalyte Solutions LLC",
+   "phase": [
+    "PHASE2",
+    "PHASE3"
+   ],
+   "enrollment": 157,
+   "arms": 2,
+   "minimumAge": "18 Years",
+   "maximumAge": "65 Years",
+   "inclusionCount": 8,
+   "exclusionCount": 17,
+   "primaryOutcomes": [
+    {
+     "measure": "Migraine Headache Days",
+     "timeFrame": "Day 1(Screening) - Day 116 (Visit 5 End of Study)"
+    }
+   ],
+   "secondaryCount": 7,
+   "hasResults": true
+  },
+  {
+   "nctId": "NCT02630459",
+   "title": "A Safety and Efficacy Study to Evaluate AMG 334 in Migraine Prevention",
+   "sponsor": "Amgen",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 475,
+   "arms": 7,
+   "minimumAge": "20 Years",
+   "maximumAge": "65 Years",
+   "inclusionCount": 7,
+   "exclusionCount": 26,
+   "primaryOutcomes": [
+    {
+     "measure": "Change From Baseline in Mean Monthly Migraine Days at Months 4, 5 and 6",
+     "timeFrame": "4-week baseline phase and months 4, 5 and 6 of DBTP."
+    },
+    {
+     "measure": "CHU Sub-Study: Participant-Reported Outcome of Attempted Full-Dose Administration at Day 29 (Week 4) and Day 57 (Week 8)",
+     "timeFrame": "CHU day 29 (week 4) and day 57 (week 8)"
+    }
+   ],
+   "secondaryCount": 10,
+   "hasResults": true
+  },
+  {
+   "nctId": "NCT05679908",
+   "title": "A Study to Evaluate the Efficacy and Safety of TNX-1900 in Patients With Chronic Migraine",
+   "sponsor": "Tonix Pharmaceuticals, Inc.",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 88,
+   "arms": 3,
+   "minimumAge": "18 Years",
+   "maximumAge": "65 Years",
+   "inclusionCount": 3,
+   "exclusionCount": 7,
+   "primaryOutcomes": [
+    {
+     "measure": "Mean Change in the Number of Monthly Migraine Headache Days",
+     "timeFrame": "Last 28 days before Visit 2 (Day 1) and last 28 days before Visit 5 (Week 12)"
+    }
+   ],
+   "secondaryCount": 6,
+   "hasResults": true
+  },
+  {
+   "nctId": "NCT04574713",
+   "title": "Candesartan for Migraine Prevention:",
+   "sponsor": "St. Olavs Hospital",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 450,
+   "arms": 3,
+   "minimumAge": "18 Years",
+   "maximumAge": "64 Years",
+   "inclusionCount": 7,
+   "exclusionCount": 19,
+   "primaryOutcomes": [
+    {
+     "measure": "change in number of migraine days per 4 weeks, from baseline",
+     "timeFrame": "20 weeks plus final visit 1 week after treatment"
+    }
+   ],
+   "secondaryCount": 0,
+   "hasResults": false
+  },
+  {
+   "nctId": "NCT03732638",
+   "title": "Efficacy and Safety Trial of Rimegepant for Migraine Prevention in Adults",
+   "sponsor": "Pfizer",
+   "phase": [
+    "PHASE2",
+    "PHASE3"
+   ],
+   "enrollment": 1590,
+   "arms": 2,
+   "minimumAge": "18 Years",
+   "maximumAge": null,
+   "inclusionCount": 8,
+   "exclusionCount": 10,
+   "primaryOutcomes": [
+    {
+     "measure": "Change From Baseline in the Mean Number of Total Migraine Days Per Month in the Last 4 Weeks of the DBT Phase",
+     "timeFrame": "OP and Weeks 9 to 12 of the DBT phase"
+    }
+   ],
+   "secondaryCount": 14,
+   "hasResults": true
+  },
+  {
+   "nctId": "NCT02021773",
+   "title": "Assessment of LBR-101 In Chronic Migraine",
+   "sponsor": "Teva Branded Pharmaceutical Products R&D, Inc.",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 264,
+   "arms": 3,
+   "minimumAge": "18 Years",
+   "maximumAge": "65 Years",
+   "inclusionCount": 5,
+   "exclusionCount": 5,
+   "primaryOutcomes": [
+    {
+     "measure": "Mean Change From Baseline in the Number of Monthly Cumulative Headache Hours of Any Severity on Headache Days Relative to the 28-day Post-treatment Period Ending With Week 12",
+     "timeFrame": "Baseline to week 12"
+    },
+    {
+     "measure": "Number of Participants With at Least One Adverse Event",
+     "timeFrame": "Baseline to week 12"
+    }
+   ],
+   "secondaryCount": 1,
+   "hasResults": true
+  },
+  {
+   "nctId": "NCT04437199",
+   "title": "Tricaprilin Phase 2 Pilot Study in Migraine",
+   "sponsor": "Cerecin",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 83,
+   "arms": 2,
+   "minimumAge": "18 Years",
+   "maximumAge": "70 Years",
+   "inclusionCount": 7,
+   "exclusionCount": 5,
+   "primaryOutcomes": [
+    {
+     "measure": "Change from baseline in the number of migraine headache days during Month 3 (ΔMDMth3)",
+     "timeFrame": "12 weeks"
+    }
+   ],
+   "secondaryCount": 4,
+   "hasResults": false
+  },
+  {
+   "nctId": "NCT01513291",
+   "title": "A Study of the Safety and Efficacy of MK-6096 for Migraine Prophylaxis in Participants With Episodic Migraine (MK-6096-020)",
+   "sponsor": "Merck Sharp & Dohme LLC",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 237,
+   "arms": 2,
+   "minimumAge": "18 Years",
+   "maximumAge": "64 Years",
+   "inclusionCount": 2,
+   "exclusionCount": 18,
+   "primaryOutcomes": [
+    {
+     "measure": "Mean Change From Baseline in Monthly Migraine Days",
+     "timeFrame": "Baseline and average over Treatment Period (Weeks 0-12)"
+    },
+    {
+     "measure": "Percentage of Participants With One or More Adverse Events",
+     "timeFrame": "Treatment Period: Weeks 0-12; Run-out Period: Weeks 13-14"
+    },
+    {
+     "measure": "Percentage of Participants Discontinued From Study Medication Due to an Adverse Event",
+     "timeFrame": "Treatment Period: Weeks 0-12; Run-out Period: Weeks 13-14"
+    }
+   ],
+   "secondaryCount": 3,
+   "hasResults": true
+  },
+  {
+   "nctId": "NCT00534560",
+   "title": "Dose Ranging Study of the Efficacy and Tolerability of Tonabersat in the Prophylaxis of Migraine Headache",
+   "sponsor": "Minster Research Ltd",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 542,
+   "arms": 3,
+   "minimumAge": "18 Years",
+   "maximumAge": "65 Years",
+   "inclusionCount": 4,
+   "exclusionCount": 16,
+   "primaryOutcomes": [
+    {
+     "measure": "Reduction in the mean monthly number of migraine attacks over the last 2 months of the treatment period.",
+     "timeFrame": "4 weeks baseline and 20 weeks DB treatment"
+    },
+    {
+     "measure": "Safety and tolerability: incidence of all AEs, serious adverse events (SAEs) and those leading to withdrawal of study medication, review of laboratory data, including hematology, biochemistry, and urinalysis, physical examinations, and vital signs.",
+     "timeFrame": "4 weeks baseline, 20 weeks DB treatment and 13 months open label extension"
+    },
+    {
+     "measure": "Assessment of population pharmacokinetics for tonabersat - blood samples will be collected from a sub-population of patients",
+     "timeFrame": "20 weeks DB treatment"
+    }
+   ],
+   "secondaryCount": 8,
+   "hasResults": false
+  },
+  {
+   "nctId": "NCT02848326",
+   "title": "Efficacy, Safety, and Tolerability of Multiple Dosing Regimens of Oral Atogepant (AGN-241689) in Episodic Migraine Prevention",
+   "sponsor": "Allergan",
+   "phase": [
+    "PHASE2",
+    "PHASE3"
+   ],
+   "enrollment": 834,
+   "arms": 6,
+   "minimumAge": "18 Years",
+   "maximumAge": "75 Years",
+   "inclusionCount": 4,
+   "exclusionCount": 8,
+   "primaryOutcomes": [
+    {
+     "measure": "Change From Baseline in Mean Monthly Migraine Days (Migraine/Probable Migraine Headache Days) Across the 12-Week Treatment Period",
+     "timeFrame": "Baseline (First 28 Days of Screening/Baseline Period) to Week 12"
+    }
+   ],
+   "secondaryCount": 3,
+   "hasResults": true
+  },
+  {
+   "nctId": "NCT00242866",
+   "title": "Use Of GW274150 In The Prophylactic Treatment Of Migraine",
+   "sponsor": "GlaxoSmithKline",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 430,
+   "arms": 2,
+   "minimumAge": "18 Years",
+   "maximumAge": "55 Years",
+   "inclusionCount": 7,
+   "exclusionCount": 19,
+   "primaryOutcomes": [
+    {
+     "measure": "Occurrence of a migraine headache day on each day during the 4-week baseline period and the 12-week treatment period.",
+     "timeFrame": "12 Weeks"
+    }
+   ],
+   "secondaryCount": 1,
+   "hasResults": false
+  },
+  {
+   "nctId": "NCT05846373",
+   "title": "Effect of Nicotinic Acid as Add on Therapy in Patients Receiving β Blocker for Prophylaxis of Moderate to Severe Migraine",
+   "sponsor": "Bangabandhu Sheikh Mujib Medical University, Dhaka, Bangladesh",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 58,
+   "arms": 3,
+   "minimumAge": "18 Years",
+   "maximumAge": "65 Years",
+   "inclusionCount": 6,
+   "exclusionCount": 5,
+   "primaryOutcomes": [
+    {
+     "measure": "Migraine days/4 weeks",
+     "timeFrame": "Baseline to week 12"
+    }
+   ],
+   "secondaryCount": 4,
+   "hasResults": false
+  },
+  {
+   "nctId": "NCT00055484",
+   "title": "A Study to Measure the Safety and Effectiveness of Zonisamide in Subjects With Migraine Headache",
+   "sponsor": "Elan Pharmaceuticals",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 204,
+   "arms": null,
+   "minimumAge": "18 Years",
+   "maximumAge": "65 Years",
+   "inclusionCount": 25,
+   "exclusionCount": 0,
+   "primaryOutcomes": [],
+   "secondaryCount": 0,
+   "hasResults": false
+  },
+  {
+   "nctId": "NCT00311662",
+   "title": "Efficacy and Tolerability of Tonabersat in the Prophylaxis of Migraine Headache",
+   "sponsor": "Minster Research Ltd",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 124,
+   "arms": 2,
+   "minimumAge": "18 Years",
+   "maximumAge": "55 Years",
+   "inclusionCount": 2,
+   "exclusionCount": 17,
+   "primaryOutcomes": [
+    {
+     "measure": "Change in the mean monthly number of migraine headache days from the baseline period to Month 3.",
+     "timeFrame": "weeks 8 to 12 compared to weeks -4 to 0"
+    },
+    {
+     "measure": "Incidence of all adverse events (AEs), serious AEs and AEs leading to withdrawal of trial medication, clinical laboratory tests, vital signs and physical examination",
+     "timeFrame": "12 weeks"
+    }
+   ],
+   "secondaryCount": 10,
+   "hasResults": false
+  },
+  {
+   "nctId": "NCT03488563",
+   "title": "Study to Determine Safety and Efficacy of B244 in Subjects With Episodic Migraine",
+   "sponsor": "AOBiome LLC",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 313,
+   "arms": 3,
+   "minimumAge": "18 Years",
+   "maximumAge": "65 Years",
+   "inclusionCount": 7,
+   "exclusionCount": 19,
+   "primaryOutcomes": [
+    {
+     "measure": "Number of Participants With Treatment-related Adverse Events as Assessed by CTCAE v4.0",
+     "timeFrame": "Baseline to Day 112"
+    }
+   ],
+   "secondaryCount": 8,
+   "hasResults": true
+  },
+  {
+   "nctId": "NCT00332007",
+   "title": "Tonabersat in the Prophylaxis of Migraine With Aura",
+   "sponsor": "Minster Research Ltd",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 39,
+   "arms": 2,
+   "minimumAge": "18 Years",
+   "maximumAge": "65 Years",
+   "inclusionCount": 3,
+   "exclusionCount": 14,
+   "primaryOutcomes": [
+    {
+     "measure": "Difference in the mean number of aura attacks experienced between treatment groups",
+     "timeFrame": "12 week treatment period"
+    },
+    {
+     "measure": "Difference in the mean number of migraine headache days between treatment groups",
+     "timeFrame": "12 week treatment period"
+    },
+    {
+     "measure": "Incidence of adverse events",
+     "timeFrame": "12 week treatment period"
+    }
+   ],
+   "secondaryCount": 9,
+   "hasResults": false
+  },
+  {
+   "nctId": "NCT00301665",
+   "title": "Efficacy and Safety Study of Dysport® Used for Migraine Prophylaxis",
+   "sponsor": "Ipsen",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 138,
+   "arms": null,
+   "minimumAge": "18 Years",
+   "maximumAge": "65 Years",
+   "inclusionCount": 4,
+   "exclusionCount": 4,
+   "primaryOutcomes": [
+    {
+     "measure": "Significant decrease of the number of migraine attacks with Dysport® compared to placebo.",
+     "timeFrame": "3 months"
+    }
+   ],
+   "secondaryCount": 4,
+   "hasResults": false
+  },
+  {
+   "nctId": "NCT00781456",
+   "title": "A Multicenter Study to Evaluate the Efficacy of a 91-Day Extended Cycle Oral Contraceptive for Menstrually-Related Migraine Headaches",
+   "sponsor": "Duramed Research",
+   "phase": [
+    "PHASE2"
+   ],
+   "enrollment": 109,
+   "arms": 2,
+   "minimumAge": "18 Years",
+   "maximumAge": "34 Years",
+   "inclusionCount": 4,
+   "exclusionCount": 3,
+   "primaryOutcomes": [
+    {
+     "measure": "Percentage of Participants With ≥ 50% Reduction in Migraine Frequency During the Treatment Period",
+     "timeFrame": "Baseline (25-35 days before Day 1) and Days 1-91"
+    }
+   ],
+   "secondaryCount": 7,
+   "hasResults": true
+  }
+ ]
+}

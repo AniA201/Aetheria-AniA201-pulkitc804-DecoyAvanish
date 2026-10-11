@@ -12,7 +12,8 @@
     "test": "vitest run",
     "demo": "vitest run src/lib/demo.test.ts",
     "secret:set": "dotenvx set -f .env.team",
-    "secret:get": "dotenvx get -f .env.team"
+    "secret:get": "dotenvx get -f .env.team",
+    "fetch-trial": "node scripts/fetch-public-trial.mjs NCT03238781"
   },
   "dependencies": {
     "pdfjs-dist": "^5.6.205",
