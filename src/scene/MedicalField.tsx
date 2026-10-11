@@ -104,8 +104,8 @@ export function MedicalField({
     // A deliberately simple two-panel navy folder. The front is hinged on
     // the right so it visibly swings open to the left before fading away.
     const folder = new THREE.Group();
-    const navyBack = track(new THREE.MeshBasicMaterial({ color: "#102b4d", toneMapped: false, transparent: true }));
-    const navyFront = track(new THREE.MeshBasicMaterial({ color: "#173d67", toneMapped: false, transparent: true }));
+    const navyBack = track(new THREE.MeshBasicMaterial({ color: "#061a35", toneMapped: false, transparent: true }));
+    const navyFront = track(new THREE.MeshBasicMaterial({ color: "#08254a", toneMapped: false, transparent: true }));
     const folderBack = new THREE.Mesh(track(new THREE.BoxGeometry(2.04, 2.32, 0.075)), navyBack);
     folderBack.position.set(0, 0.05, -0.12);
     const folderFrontHinge = new THREE.Group();
@@ -197,10 +197,13 @@ export function MedicalField({
       folio.scale.setScalar(narrow ? 0.7 : 0.92);
       folio.rotation.set(sway.y * 0.04, yaw + sway.x * 0.06, 0);
 
-      // Keep the right edge fixed and swing the front panel to the left,
-      // just like opening a physical folder. Once the pages are visible, the
-      // whole empty folder simply recedes and fades.
-      folderFrontHinge.rotation.y = folderOpen * Math.PI * 0.62;
+      // Unfold the two covers to the left of the papers. Keeping them in
+      // their own lane prevents either navy panel from cutting through the
+      // document stack while still making the opening direction obvious.
+      folderBack.position.x = -folderOpen * 1.32;
+      folderBack.rotation.z = -folderOpen * 0.05;
+      folderFrontHinge.position.x = 1.02 - folderOpen * 3.24;
+      folderFrontHinge.rotation.set(0, 0, -folderOpen * 0.1);
       folder.position.set(0, folderExit * 0.08, -folderExit * 0.58);
       folder.rotation.set(0, 0, 0);
       folder.scale.setScalar(0.74 * (1 - folderExit * 0.08));
