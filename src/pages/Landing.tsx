@@ -86,7 +86,7 @@ export function Landing() {
       setChapter((current) => (current === next ? current : next));
       // Keep the whole title intact at rest, then begin the shatter from the
       // first intentional scroll while the word is still in the viewport.
-      const shatterDistance = window.innerHeight * 0.68;
+      const shatterDistance = window.innerHeight * 0.42;
       const nextShatter = quiet || window.scrollY < 6
         ? 0
         : Math.min(1, (window.scrollY - 6) / shatterDistance);
