@@ -239,7 +239,7 @@ export function Shell({ mode }: { mode: Role }) {
           </span>
         </NavLink>
         <button className="rail-toggle" type="button" onClick={() => setRailCompact((value) => !value)} aria-label={railCompact ? "Expand navigation" : "Collapse navigation"} aria-pressed={railCompact}>
-          <span aria-hidden="true">{railCompact ? "→" : "←"}</span>
+          <span aria-hidden="true">←</span>
         </button>
         <nav aria-label={roleName}>
           {links.map((link, index) => (

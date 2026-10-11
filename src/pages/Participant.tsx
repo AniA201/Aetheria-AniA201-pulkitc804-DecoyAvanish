@@ -496,7 +496,15 @@ export function Ask() {
         {messages.length === 0 && (
           <div className="ask-empty-state">
             <p>What would you like to understand?</p>
-            <div className="ask-whispers" aria-label="Sample questions">
+            <div className="ask-prompt-field" aria-label="Form topics and sample questions">
+              {consent.sections.map((item) => {
+                const local = view(item);
+                return (
+                  <button key={item.id} type="button" className="ask-topic-capsule" data-label={local.title} aria-label={local.title} onClick={() => ask(local.ask)}>
+                    {local.title}
+                  </button>
+                );
+              })}
               {[
                 "How many visits are there?",
                 "Can I leave later?",
@@ -511,18 +519,10 @@ export function Ask() {
                 "Do I have to pay for anything?",
                 "What happens if I change my mind?",
               ].map((prompt) => (
-                <button key={prompt} type="button" onClick={() => setDraft(prompt)}>{prompt}</button>
+                <button key={prompt} type="button" className="ask-topic-capsule ask-sample-prompt" data-label={prompt} aria-label={prompt} onClick={() => setDraft(prompt)}>
+                  {prompt}
+                </button>
               ))}
-            </div>
-            <div className="ask-topic-prompts" aria-label="Form topics">
-              {consent.sections.slice(0, 4).map((item) => {
-                const local = view(item);
-                return (
-                  <button key={item.id} type="button" className="ask-topic-capsule" onClick={() => ask(local.ask)}>
-                    {local.title}
-                  </button>
-                );
-              })}
             </div>
           </div>
         )}

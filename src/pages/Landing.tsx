@@ -1,9 +1,16 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AetheriaMark, useTitle } from "../components/Chrome";
 import { consentDoc, facts, sections } from "../data/study";
 import { MedicalField } from "../scene/MedicalField";
+import { LandingWordShatter } from "../scene/LandingWordShatter";
 import { useSession } from "../state/Session";
+
+const wordFlights = [
+  [-0.43, -0.34, -0.54], [-0.31, 0.31, 0.37], [-0.19, -0.42, -0.32],
+  [-0.06, 0.43, 0.47], [0.15, -0.39, -0.43], [0.28, 0.29, 0.39],
+  [0.41, -0.31, -0.35], [0.52, 0.36, 0.42],
+] as const;
 
 const index = [
   { id: "read", number: "01", label: "Read" },
@@ -52,11 +59,12 @@ export function Landing() {
   const progressRef = useRef(0);
   const selectedPaperRef = useRef(-1);
   const rootRef = useRef<HTMLDivElement>(null);
+  const wordRef = useRef<HTMLParagraphElement>(null);
   const quiet = reducedMotion || textOnly;
   const [menu, setMenu] = useState(false);
   const [veil, setVeil] = useState(!quiet);
   const [chapter, setChapter] = useState(0);
-  const [heroShattered, setHeroShattered] = useState(false);
+  const [shatterProgress, setShatterProgress] = useState(0);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -73,7 +81,11 @@ export function Landing() {
       }, -1);
       selectedPaperRef.current = next;
       setChapter((current) => (current === next ? current : next));
-      setHeroShattered(!quiet && window.scrollY > root.offsetTop + window.innerHeight * 0.46);
+      const wordTop = wordRef.current?.getBoundingClientRect().top ?? window.innerHeight;
+      const start = window.innerHeight * 0.76;
+      const travel = window.innerHeight * 1.15;
+      const nextShatter = quiet ? 0 : Math.min(1, Math.max(0, (start - wordTop) / travel));
+      setShatterProgress((current) => Math.abs(current - nextShatter) < 0.003 ? current : nextShatter);
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -194,7 +206,16 @@ export function Landing() {
 
       <main id="content">
         <section className="folio-hero">
-          <p className={`folio-word${heroShattered ? " is-shattered" : ""}`} aria-hidden="true">{"Aetheria".split("").map((letter, index) => <span key={`${letter}-${index}`} style={{ "--letter-index": index } as CSSProperties}>{letter}</span>)}</p>
+          <p ref={wordRef} className="folio-word" aria-hidden="true">{"Aetheria".split("").map((letter, index) => {
+            const [dx, dy, spin] = wordFlights[index];
+            const flight = Math.max(0, Math.min(1, (shatterProgress - index * 0.025) / (1 - index * 0.025)));
+            return <span key={`${letter}-${index}`} style={quiet ? undefined : {
+              transform: `translate3d(${dx * flight * 100}vw, ${dy * flight * 100}vh, 0) rotate(${spin * flight}rad) scale(${1 - flight * 0.2})`,
+              opacity: 1 - flight * 0.92,
+              filter: `blur(${flight * 1.6}px)`,
+            }}>{letter}</span>;
+          })}</p>
+          {!quiet && <LandingWordShatter progress={shatterProgress} wordRef={wordRef} />}
           <p className="folio-kicker">Clinical study documents</p>
           <h1>Long forms. Plain words.</h1>
           <p className="folio-lede">
