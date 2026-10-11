@@ -1,9 +1,16 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AetheriaMark, useTitle } from "../components/Chrome";
 import { consentDoc, facts, sections } from "../data/study";
 import { MedicalField } from "../scene/MedicalField";
+import { LandingWordShatter } from "../scene/LandingWordShatter";
 import { useSession } from "../state/Session";
+
+const wordFlights = [
+  [-0.43, -0.34, -0.54], [-0.31, 0.31, 0.37], [-0.19, -0.42, -0.32],
+  [-0.06, 0.43, 0.47], [0.15, -0.39, -0.43], [0.28, 0.29, 0.39],
+  [0.41, -0.31, -0.35], [0.52, 0.36, 0.42],
+] as const;
 
 const index = [
   { id: "read", number: "01", label: "Read" },
@@ -40,7 +47,7 @@ function BackgroundQuotes({ quotes }: { quotes: readonly string[] }) {
 
 function SectionHighlights({ items }: { items: readonly string[] }) {
   return (
-    <ul aria-label="What you can do">
+    <ul className="section-highlights" aria-label="What you can do">
       {items.map((item) => <li key={item}>{item}</li>)}
     </ul>
   );
@@ -50,13 +57,19 @@ export function Landing() {
   useTitle("Aetheria");
   const { reducedMotion, textOnly } = useSession();
   const progressRef = useRef(0);
+  const shatterProgressRef = useRef(0);
   const selectedPaperRef = useRef(-1);
   const rootRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const wordRef = useRef<HTMLParagraphElement>(null);
+  const readInitialRef = useRef<HTMLSpanElement>(null);
   const quiet = reducedMotion || textOnly;
   const [menu, setMenu] = useState(false);
   const [veil, setVeil] = useState(!quiet);
   const [chapter, setChapter] = useState(0);
-  const [heroShattered, setHeroShattered] = useState(false);
+  const [shatterProgress, setShatterProgress] = useState(0);
+  const [shatterTarget, setShatterTarget] = useState(0);
+  const [readLetterPath, setReadLetterPath] = useState<{ x0: number; y0: number; x1: number; y1: number; size0: number; size1: number } | null>(null);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -73,16 +86,61 @@ export function Landing() {
       }, -1);
       selectedPaperRef.current = next;
       setChapter((current) => (current === next ? current : next));
-      setHeroShattered(window.scrollY > root.offsetTop + window.innerHeight * 0.46);
+      const wordTop = wordRef.current?.getBoundingClientRect().top ?? window.innerHeight;
+      const start = window.innerHeight * 0.76;
+      const travel = window.innerHeight * 1.15;
+      const nextShatter = quiet ? 0 : Math.min(1, Math.max(0, (start - wordTop) / travel));
+      setShatterTarget((current) => Math.abs(current - nextShatter) < 0.0005 ? current : nextShatter);
+      const source = wordRef.current?.querySelectorAll("span")[5];
+      const target = readInitialRef.current;
+      const main = mainRef.current;
+      if (source && target && main) {
+        const word = wordRef.current!.getBoundingClientRect();
+        const end = target.getBoundingClientRect();
+        const mainBounds = main.getBoundingClientRect();
+        const nextPath = {
+          x0: word.left + source.offsetLeft - mainBounds.left,
+          y0: word.top + source.offsetTop - mainBounds.top,
+          x1: end.left - mainBounds.left,
+          y1: end.top - mainBounds.top,
+          size0: Number.parseFloat(getComputedStyle(wordRef.current!).fontSize),
+          size1: Number.parseFloat(getComputedStyle(target).fontSize),
+        };
+        setReadLetterPath((current) => current && Object.keys(nextPath).every((key) => Math.abs(current[key as keyof typeof current] - nextPath[key as keyof typeof nextPath]) < 0.75) ? current : nextPath);
+      }
     };
     onScroll();
+    document.fonts?.ready.then(onScroll).catch(() => undefined);
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
-  }, []);
+  }, [quiet]);
+
+  useEffect(() => {
+    if (quiet) {
+      shatterProgressRef.current = 0;
+      setShatterProgress(0);
+      return;
+    }
+    let frame = 0;
+    const settle = () => {
+      const current = shatterProgressRef.current;
+      const next = current + (shatterTarget - current) * 0.105;
+      if (Math.abs(shatterTarget - next) < 0.0006) {
+        shatterProgressRef.current = shatterTarget;
+        setShatterProgress(shatterTarget);
+        return;
+      }
+      shatterProgressRef.current = next;
+      setShatterProgress(next);
+      frame = requestAnimationFrame(settle);
+    };
+    frame = requestAnimationFrame(settle);
+    return () => cancelAnimationFrame(frame);
+  }, [quiet, shatterTarget]);
 
   useEffect(() => {
     if (quiet) return;
@@ -115,6 +173,13 @@ export function Landing() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [menu]);
+
+  const transfer = shatterProgress * shatterProgress * (3 - 2 * shatterProgress);
+  const capital = Math.min(1, Math.max(0, (shatterProgress - 0.3) / 0.42));
+  const readSpace = Math.min(1, Math.max(0, (shatterProgress - 0.55) / 0.4));
+  const settledFade = Math.min(1, Math.max(0, (shatterProgress - 0.67) / 0.23));
+  const transferArc = readLetterPath ? Math.sin(Math.PI * transfer) * Math.min(110, Math.abs(readLetterPath.y1 - readLetterPath.y0) * 0.22) : 0;
+  const motionBlur = Math.sin(Math.PI * transfer) * (1 - settledFade);
 
   return (
     <div className={quiet ? "story is-quiet" : "story"} ref={rootRef}>
@@ -192,9 +257,30 @@ export function Landing() {
         </div>
       )}
 
-      <main id="content">
+      <main id="content" ref={mainRef}>
+        {!quiet && readLetterPath && <span
+          className={`folio-transfer-r${shatterProgress > 0.975 ? " is-settled" : ""}`}
+          style={{
+            left: readLetterPath.x0 + (readLetterPath.x1 - readLetterPath.x0) * transfer,
+            top: readLetterPath.y0 + (readLetterPath.y1 - readLetterPath.y0) * transfer - transferArc,
+            fontSize: readLetterPath.size0 + (readLetterPath.size1 - readLetterPath.size0) * transfer,
+            lineHeight: 0.76 + transfer * 0.28,
+            opacity: Math.min(1, shatterProgress * 12) * (1 - settledFade),
+            transform: `rotate(${(1 - transfer) * -8}deg)`,
+          }}
+          aria-hidden="true"
+        ><span className="folio-transfer-glyph"><span className="folio-transfer-lower" style={{ opacity: 1 - capital }}>r</span><span className="folio-transfer-upper" style={{ opacity: capital }}>R</span><span className="folio-transfer-trail" style={{ opacity: motionBlur * .54 }}>R</span><span className="folio-transfer-trail folio-transfer-trail-far" style={{ opacity: motionBlur * .24 }}>R</span></span></span>}
         <section className="folio-hero">
-          <p className={`folio-word${heroShattered ? " is-shattered" : ""}`} aria-hidden="true">{"Aetheria".split("").map((letter, index) => <span key={`${letter}-${index}`} style={{ "--letter-index": index } as CSSProperties}>{letter}</span>)}</p>
+          <p ref={wordRef} className="folio-word" aria-hidden="true">{"Aetheria".split("").map((letter, index) => {
+            const [dx, dy, spin] = wordFlights[index];
+            const flight = Math.max(0, Math.min(1, (shatterProgress - index * 0.025) / (1 - index * 0.025)));
+            return <span key={`${letter}-${index}`} style={quiet ? undefined : {
+              transform: `translate3d(${dx * flight * 100}vw, ${dy * flight * 100}vh, 0) rotate(${spin * flight}rad) scale(${1 - flight * 0.2})`,
+              opacity: index === 5 ? 1 - Math.min(1, flight * 12) : 1 - flight * 0.92,
+              filter: `blur(${flight * 1.6}px)`,
+            }}>{letter}</span>;
+          })}</p>
+          {!quiet && <LandingWordShatter progress={shatterProgress} wordRef={wordRef} />}
           <p className="folio-kicker">Clinical study documents</p>
           <h1>Long forms. Plain words.</h1>
           <p className="folio-lede">
@@ -231,7 +317,7 @@ export function Landing() {
         <section className="folio-split" id="read">
           <BackgroundQuotes quotes={backgroundQuotes.read} />
           <p className="folio-section-label">01 / Read</p>
-          <h2>Read.</h2>
+          {quiet ? <h2>Read.</h2> : <h2 aria-label="Read."><span ref={readInitialRef} className={`folio-read-initial-slot${shatterProgress > 0.975 ? " is-settled" : ""}`} style={{ width: `${readSpace * 0.7}em`, opacity: settledFade }} aria-hidden="true">R</span><span aria-hidden="true">ead.</span></h2>}
           <SectionHighlights items={sectionHighlights.read} />
           <p className="sr-only">Read each part of the consent form beside a shorter, plain-language explanation. The original words and page citation stay in view.</p>
         </section>

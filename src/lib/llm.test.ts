@@ -3,7 +3,7 @@ import { teachPrompts } from "../data/study";
 import { runAgent } from "./agent";
 import { assessTeachbackWithGemini } from "./coach";
 import { loadDemoConsent } from "./consent";
-import { geminiAvailable, resetEngines } from "./llm";
+import { geminiAvailable, noteGeminiFailure, resetEngines } from "./llm";
 
 const consent = loadDemoConsent();
 const assignment = teachPrompts.find((prompt) => prompt.id === "randomization")!;
@@ -25,6 +25,11 @@ afterEach(() => {
 });
 
 describe("engine fallback: Gemini → local RAG → rules", () => {
+  it("retries after a missing key so a restarted dev server can recover", () => {
+    noteGeminiFailure("no-key", 1000);
+    expect(geminiAvailable(15_999)).toBe(false);
+    expect(geminiAvailable(16_000)).toBe(true);
+  });
   it("pauses Gemini after its free limit and goes straight to the local model", async () => {
     const ollamaJudge = { covered: assignment.concepts.map((concept) => concept.id), misunderstanding: null, feedback: "You named chance and blinding." };
     const fetchMock = routes((url) =>

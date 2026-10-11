@@ -469,7 +469,7 @@ const en = {
     },
   },
   guide: {
-    launch: "Ask the Guide",
+    launch: "Ask Aetheria",
     title: "Aetheria Guide",
     checking: "Checking for Gemini…",
     onComputer: "Answering on this computer",
@@ -948,7 +948,7 @@ const es: ResearchStrings = {
     },
   },
   guide: {
-    launch: "Preguntar a la Guía",
+    launch: "Preguntar a Aetheria",
     title: "Guía de Aetheria",
     checking: "Buscando Gemini…",
     onComputer: "Respondiendo en esta computadora",
@@ -1426,7 +1426,7 @@ const fr: ResearchStrings = {
     },
   },
   guide: {
-    launch: "Demander au Guide",
+    launch: "Demander à Aetheria",
     title: "Guide Aetheria",
     checking: "Recherche de Gemini…",
     onComputer: "Réponse sur cet ordinateur",
@@ -1903,7 +1903,7 @@ const zh: ResearchStrings = {
     },
   },
   guide: {
-    launch: "问问向导",
+    launch: "问问 Aetheria",
     title: "Aetheria 向导",
     checking: "正在查找 Gemini…",
     onComputer: "在这台电脑上回答",

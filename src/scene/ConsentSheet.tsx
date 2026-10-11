@@ -32,7 +32,7 @@ export function ConsentSheet({
     const sheet = new THREE.Group();
     const paper = new THREE.Mesh(
       track(new THREE.BoxGeometry(2.2, 2.85, 0.035)),
-      track(new THREE.MeshStandardMaterial({ color: "#f4f1e8", roughness: 0.9, metalness: 0 })),
+      track(new THREE.MeshStandardMaterial({ color: "#f7f7f2", roughness: 0.9, metalness: 0 })),
     );
     sheet.add(paper);
 
@@ -52,7 +52,7 @@ export function ConsentSheet({
     }
     scene.add(sheet);
 
-    scene.add(new THREE.AmbientLight("#f4f1e8", 0.9));
+    scene.add(new THREE.AmbientLight("#f7f7f2", 0.9));
     const key = new THREE.DirectionalLight("#d7ece5", 1.15);
     key.position.set(2.2, 2.4, 4);
     scene.add(key);

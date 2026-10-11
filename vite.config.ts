@@ -41,7 +41,14 @@ function geminiProxy(key: string, models: string[]): Plugin {
       send(result.status, result.body, result.model);
     });
   };
-  return { name: "aetheria-gemini-proxy", configureServer(server) { server.middlewares.use(handler); }, configurePreviewServer(server) { server.middlewares.use(handler); } };
+  return {
+    name: "aetheria-gemini-proxy",
+    configureServer(server) {
+      if (!key) server.config.logger.warn("Gemini is unavailable in this local server: set GEMINI_API_KEY in .env.local or add DOTENV_PRIVATE_KEY_TEAM in .env.keys to decrypt .env.team, then restart Vite.");
+      server.middlewares.use(handler);
+    },
+    configurePreviewServer(server) { server.middlewares.use(handler); },
+  };
 }
 
 export default defineConfig(({ mode }) => {

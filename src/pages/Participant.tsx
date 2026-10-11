@@ -84,7 +84,7 @@ export function ParticipantHome() {
   const view = useShown(consent);
   if (!consent) {
     return (
-      <div className="page">
+      <div className="page participant-upload-page">
         <p className="kicker">{t.home.kicker}</p>
         <h1>{t.home.addTitle(displayName)}</h1>
         <p className="lede dark">{t.home.addLede}</p>
@@ -496,7 +496,15 @@ export function Ask() {
         {messages.length === 0 && (
           <div className="ask-empty-state">
             <p>What would you like to understand?</p>
-            <div className="ask-whispers" aria-label="Sample questions">
+            <div className="ask-prompt-field" aria-label="Form topics and sample questions">
+              {consent.sections.map((item) => {
+                const local = view(item);
+                return (
+                  <button key={item.id} type="button" className="ask-topic-capsule" data-label={local.title} aria-label={local.title} onClick={() => ask(local.ask)}>
+                    {local.title}
+                  </button>
+                );
+              })}
               {[
                 "How many visits are there?",
                 "Can I leave later?",
@@ -505,24 +513,11 @@ export function Ask() {
                 "How long is each visit?",
                 "Will anyone know my group?",
                 "What happens at a blood draw?",
-                "Can I bring someone with me?",
-                "What records will be kept?",
-                "Who can I contact with questions?",
-                "Do I have to pay for anything?",
-                "What happens if I change my mind?",
               ].map((prompt) => (
-                <button key={prompt} type="button" onClick={() => setDraft(prompt)}>{prompt}</button>
+                <button key={prompt} type="button" className="ask-topic-capsule ask-sample-prompt" data-label={prompt} aria-label={prompt} onClick={() => setDraft(prompt)}>
+                  {prompt}
+                </button>
               ))}
-            </div>
-            <div className="suggestions">
-              {consent.sections.slice(0, 4).map((item) => {
-                const local = view(item);
-                return (
-                  <button key={item.id} type="button" className="chip" onClick={() => ask(local.ask)}>
-                    {local.title}
-                  </button>
-                );
-              })}
             </div>
           </div>
         )}
@@ -592,11 +587,11 @@ export function Ask() {
         <label className="sr-only" htmlFor="question">Your question</label>
         <textarea id="question" value={draft} onChange={(event) => setDraft(event.target.value)} rows={1} placeholder="Ask about your study form" />
         <div className="ask-form-actions">
-          <button className="btn solid dark ask-send" type="submit" aria-label={t.ask.send}>
-            <span aria-hidden="true">↑</span>
-          </button>
           <button className="btn on-paper ask-dictate" type="button" onClick={dictation.start} aria-label={t.ask.dictate} title={t.ask.dictate}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5a3 3 0 0 0-3 3v5a3 3 0 1 0 6 0v-5a3 3 0 0 0-3-3Zm-5 7.3v.7a5 5 0 0 0 10 0v-.7M12 16.5V21M8.5 21h7" /></svg>
+          </button>
+          <button className="btn solid dark ask-send" type="submit" aria-label={t.ask.send}>
+            <span aria-hidden="true">↑</span>
           </button>
         </div>
         {dictation.note ? <p className="fine">{dictation.note}</p> : null}
