@@ -103,7 +103,43 @@ export function Login() {
     }
   }
 
-  return <main className="auth-gate auth-reference" id="content"><section className="auth-reference-layout" aria-label="Account sign in"><aside className="auth-showcase auth-showcase-minimal"><Link to="/" className="auth-showcase-brand"><AetheriaMark /><strong>Aetheria</strong></Link><p className="auth-showcase-word" aria-hidden="true">Aetheria</p><div className="auth-showcase-copy"><p className="kicker">{copy.eyebrow}</p><h1>{copy.title}</h1><p>{copy.description}</p></div><div className="auth-showcase-trust"><span className="auth-trust-icon">+</span><p><strong>{copy.trust}</strong><small>{copy.trustDetail}</small></p></div></aside><section className="auth-login-shell"><div className="auth-login-card"><div className="auth-login-icon" aria-hidden="true">+</div><div className="auth-login-title"><h2>Welcome back</h2><p>{copy.signInNote}</p></div><form className="auth-form auth-form-reference" onSubmit={signIn}><RoleSwitch value={accountType} onChange={setAccountType} /><label>Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="you@example.com" required /></label><label>Password<span className="password-field"><input type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" placeholder="Enter your password" required /><button type="button" onClick={() => setShowPassword((visible) => !visible)}>{showPassword ? "Hide" : "Show"}</button></span></label><div className="auth-remember"><label><input type="checkbox" /> Remember me</label><Link to="/forgot-password">Forgot password?</Link></div>{error && <p className="auth-error" role="alert">{error}</p>}<button className="btn auth-submit" type="submit" disabled={loading}>{loading ? "Signing in…" : "Sign in"}</button><p className="auth-signup-line">New to Aetheria? <Link to="/register">Create an account</Link></p></form></div><p className="auth-login-note">Secure access for study clients and research teams.</p></section></section></main>;
+  return <main className="auth-gate auth-reference auth-entry" id="content">
+    <section className="auth-reference-layout" aria-label="Account sign in">
+      <aside className="auth-showcase auth-showcase-minimal">
+        <Link to="/" className="auth-showcase-brand"><AetheriaMark /><strong>Aetheria</strong></Link>
+        <div className="auth-folio-art" aria-hidden="true">
+          <div className="auth-folio-back" />
+          <div className="auth-folio-middle" />
+          <div className="auth-folio-front">
+            <span className="auth-folio-overline">AETHERIA / YOUR COPY</span>
+            <strong>Understanding<br />comes first.</strong>
+            <span className="auth-folio-rule" />
+            <span className="auth-folio-line" /><span className="auth-folio-line short" />
+            <span className="auth-folio-seal">A</span>
+            <small>READ · ASK · REVIEW</small>
+          </div>
+        </div>
+        <div className="auth-showcase-copy"><p className="kicker">{copy.eyebrow}</p><h1>{copy.title}</h1><p>{copy.description}</p></div>
+        <div className="auth-showcase-trust"><span className="auth-trust-icon">+</span><p><strong>{copy.trust}</strong><small>{copy.trustDetail}</small></p></div>
+      </aside>
+      <section className="auth-login-shell">
+        <div className="auth-login-card">
+          <div className="auth-login-icon" aria-hidden="true">+</div>
+          <div className="auth-login-title"><h2>Welcome back</h2><p>{copy.signInNote}</p></div>
+          <form className="auth-form auth-form-reference" onSubmit={signIn}>
+            <RoleSwitch value={accountType} onChange={setAccountType} />
+            <label>Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="you@example.com" required /></label>
+            <label>Password<span className="password-field"><input type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" placeholder="Enter your password" required /><button type="button" onClick={() => setShowPassword((visible) => !visible)}>{showPassword ? "Hide" : "Show"}</button></span></label>
+            <div className="auth-remember"><label><input type="checkbox" /> Remember me</label><Link to="/forgot-password">Forgot password?</Link></div>
+            {error && <p className="auth-error" role="alert">{error}</p>}
+            <button className="btn auth-submit" type="submit" disabled={loading}>{loading ? "Signing in…" : "Sign in"}</button>
+            <p className="auth-signup-line">New to Aetheria? <Link to="/register">Create an account</Link></p>
+          </form>
+        </div>
+        <p className="auth-login-note">Secure access for study clients and research teams.</p>
+      </section>
+    </section>
+  </main>;
 }
 
 export function Register() {
