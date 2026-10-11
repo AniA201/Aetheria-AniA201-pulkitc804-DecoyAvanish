@@ -23,15 +23,34 @@ if configured_database_url.startswith("sqlite:///./"):
     DATABASE_URL = f"sqlite:///{base_dir / configured_database_url.removeprefix('sqlite:///./')}"
 else:
     DATABASE_URL = configured_database_url
-JWT_SECRET = os.environ.get("JWT_SECRET", "change-this-local-secret")
+APP_ENV = os.environ.get("APP_ENV", "development").lower()
+JWT_SECRET = os.environ.get("JWT_SECRET")
+placeholder_secrets = {
+    "change-this-local-secret",
+    "replace-this-with-a-long-random-secret-before-production",
+}
+if not JWT_SECRET or JWT_SECRET in placeholder_secrets:
+    if APP_ENV in {"production", "prod"}:
+        raise RuntimeError("JWT_SECRET must be set when APP_ENV is production.")
+    # A fresh development-only secret avoids accepting tokens across restarts.
+    JWT_SECRET = secrets.token_urlsafe(48)
 RESEARCHER_REGISTRATION_KEY = os.environ.get("RESEARCHER_REGISTRATION_KEY")
+
+local_origins = [
+    "http://localhost:5173", "http://127.0.0.1:5173",
+    "http://localhost:5174", "http://127.0.0.1:5174",
+    "http://localhost:5176", "http://127.0.0.1:5176",
+    "http://localhost:5177", "http://127.0.0.1:5177",
+]
+configured_origins = [origin.strip() for origin in os.environ.get("CORS_ORIGINS", "").split(",") if origin.strip()]
+CORS_ORIGINS = configured_origins or ([] if APP_ENV in {"production", "prod"} else local_origins)
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {})
 
 app = FastAPI(title="Aetheria API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174"],
+    allow_origins=CORS_ORIGINS,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
     allow_credentials=True,
