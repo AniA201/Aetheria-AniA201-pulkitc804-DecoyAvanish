@@ -4289,3 +4289,18 @@ html:not([data-contrast="high"]) .auth-form-reference input {
 @media (max-width: 900px) {
   .shell .rail-utilities .guide-launch { inset: auto 1rem 1rem auto !important; }
 }
+
+/* Bigger section names in the rail, and room at the bottom for the open Aa menu so it never
+   covers Switch role / Sign out. Rem units scale with the chosen text size. */
+@media (min-width: 901px) {
+  .shell.participant .rail,
+  .shell.researcher .rail { padding-bottom: 15.5rem; }
+  .shell.participant .rail nav .rail-link { font-size: 1.32rem; }
+  .shell.participant .rail nav .rail-link span:first-child { font-size: .8rem; }
+  .shell.researcher .rail nav .rail-link { font-size: .84rem; }
+  .shell.researcher .rail nav .rail-link span:first-child { font-size: .72rem; }
+}
+@media (min-width: 901px) {
+  .shell.participant .rail nav .rail-link,
+  .shell.researcher .rail nav .rail-link { min-height: 1.9rem; }
+}
