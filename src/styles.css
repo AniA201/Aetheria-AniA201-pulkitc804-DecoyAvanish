@@ -4045,6 +4045,25 @@ html:not([data-contrast="high"]) .auth-form-reference input {
   html:not([data-contrast="high"]) .shell .wordmark,
   html:not([data-contrast="high"]) .shell .mode-switch,
   html:not([data-contrast="high"]) .shell .page { color: #edf4ed; }
+  html:not([data-contrast="high"]) .shell :is(h1, h2, h3, h4, p, li, label, legend, small, dt, dd, th, td, summary, strong, em, a, button, .kicker, .lede, .fine, .notice, .empty, .mark, .fold-meta),
+  html:not([data-contrast="high"]) .story :is(h1, h2, h3, p, li, a, button, .kicker, .lede, .folio-index) {
+    color: #edf4ed;
+  }
+  html:not([data-contrast="high"]) .story .folio-hero h1 {
+    color: #fbfff9;
+    text-shadow: 0 1px 0 rgba(255,255,255,.12), 0 .55rem 1.2rem rgba(0,0,0,.24);
+  }
+  html:not([data-contrast="high"]) .shell :is(input, textarea, select) {
+    background: #102427;
+    color: #f5fbf5;
+    border-color: #52746e;
+  }
+  html:not([data-contrast="high"]) .shell :is(input, textarea)::placeholder { color: #a9c1ba; }
+  html:not([data-contrast="high"]) .shell :is(.rail-link[aria-current="page"], .btn.solid.dark, .mark.done, .type-dock-trigger) {
+    background: #0a383b !important;
+    color: #f5fbf5 !important;
+    border-color: #5f8e85 !important;
+  }
   html:not([data-contrast="high"]) .shell.participant .summary-page .summary-grid .mark:not(.done) {
     border-color: #6f928b;
     color: #dce8df;
