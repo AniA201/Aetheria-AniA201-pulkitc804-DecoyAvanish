@@ -514,11 +514,11 @@ export function Ask() {
                 <button key={prompt} type="button" onClick={() => setDraft(prompt)}>{prompt}</button>
               ))}
             </div>
-            <div className="suggestions">
+            <div className="ask-topic-prompts" aria-label="Form topics">
               {consent.sections.slice(0, 4).map((item) => {
                 const local = view(item);
                 return (
-                  <button key={item.id} type="button" className="chip" onClick={() => ask(local.ask)}>
+                  <button key={item.id} type="button" className="ask-topic-capsule" onClick={() => ask(local.ask)}>
                     {local.title}
                   </button>
                 );

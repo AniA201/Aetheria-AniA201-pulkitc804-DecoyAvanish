@@ -40,7 +40,7 @@ function BackgroundQuotes({ quotes }: { quotes: readonly string[] }) {
 
 function SectionHighlights({ items }: { items: readonly string[] }) {
   return (
-    <ul aria-label="What you can do">
+    <ul className="section-highlights" aria-label="What you can do">
       {items.map((item) => <li key={item}>{item}</li>)}
     </ul>
   );
@@ -73,7 +73,7 @@ export function Landing() {
       }, -1);
       selectedPaperRef.current = next;
       setChapter((current) => (current === next ? current : next));
-      setHeroShattered(window.scrollY > root.offsetTop + window.innerHeight * 0.46);
+      setHeroShattered(!quiet && window.scrollY > root.offsetTop + window.innerHeight * 0.46);
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -82,7 +82,7 @@ export function Landing() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
-  }, []);
+  }, [quiet]);
 
   useEffect(() => {
     if (quiet) return;

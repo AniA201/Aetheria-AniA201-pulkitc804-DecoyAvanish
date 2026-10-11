@@ -36,12 +36,12 @@ function makePage(texture: THREE.Texture, width: number, height: number) {
   const group = new THREE.Group();
   const face = new THREE.Mesh(
     new THREE.PlaneGeometry(width, height),
-    new THREE.MeshBasicMaterial({ map: texture, color: "#ffffff", toneMapped: false, side: THREE.DoubleSide }),
+    new THREE.MeshBasicMaterial({ map: texture, color: "#f7f7f2", toneMapped: false, side: THREE.DoubleSide }),
   );
   face.position.z = 0.02;
   const edge = new THREE.Mesh(
     new THREE.BoxGeometry(width, height, 0.028),
-    new THREE.MeshBasicMaterial({ color: "#f6f1e6", toneMapped: false }),
+    new THREE.MeshBasicMaterial({ color: "#f7f7f2", toneMapped: false }),
   );
   group.add(edge, face);
   return { group, face, edge };
@@ -88,7 +88,7 @@ export function MedicalField({
     };
 
     scene.add(new THREE.AmbientLight("#243036", 0.55));
-    const key = new THREE.SpotLight("#fff4e4", 28, 22, 0.48, 0.45, 1);
+    const key = new THREE.SpotLight("#f7f7f2", 28, 22, 0.48, 0.45, 1);
     key.position.set(0.4, 3.4, 6.2);
     scene.add(key);
     const rim = new THREE.DirectionalLight("#b7d4cc", 0.85);
