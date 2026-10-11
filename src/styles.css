@@ -2476,3 +2476,19 @@ html[data-contrast="high"] .guide-notice { background: #111; color: #fff; }
 html[data-contrast="high"] .guide-quote { border-left-color: #fff; }
 html[data-contrast="high"] .guide-quote a,
 html[data-contrast="high"] .guide-close { color: #fff; }
+
+/* Ask prompt controls: optically centered and intentionally irregular sample prompts. */
+.shell.participant .ask-form-actions { align-items: center; }
+.shell.participant .ask-form-actions .ask-dictate { display: grid; place-items: center; line-height: 0; transform: translateY(0); }
+.shell.participant .ask-form-actions .ask-dictate svg { display: block; transform: translateY(1px); }
+.shell.participant .ask-whispers { position: relative; min-height: 3rem; align-items: center; }
+.shell.participant .ask-whispers button { position: relative; }
+.shell.participant .ask-whispers button:nth-child(1) { transform: rotate(-3deg) translateY(2px); }
+.shell.participant .ask-whispers button:nth-child(2) { transform: rotate(2deg) translateY(-6px); }
+.shell.participant .ask-whispers button:nth-child(3) { transform: rotate(-1.5deg) translateY(5px); }
+.shell.participant .ask-whispers button:nth-child(4) { transform: rotate(3deg) translateY(-2px); }
+.shell.participant .ask-whispers button:nth-child(1):hover, .shell.participant .ask-whispers button:nth-child(1):focus-visible { transform: rotate(-3deg) translateY(-2px) scale(1.05); }
+.shell.participant .ask-whispers button:nth-child(2):hover, .shell.participant .ask-whispers button:nth-child(2):focus-visible { transform: rotate(2deg) translateY(-10px) scale(1.05); }
+.shell.participant .ask-whispers button:nth-child(3):hover, .shell.participant .ask-whispers button:nth-child(3):focus-visible { transform: rotate(-1.5deg) translateY(1px) scale(1.05); }
+.shell.participant .ask-whispers button:nth-child(4):hover, .shell.participant .ask-whispers button:nth-child(4):focus-visible { transform: rotate(3deg) translateY(-6px) scale(1.05); }
+@media (max-width: 700px) { .shell.participant .ask-whispers { max-width: 24rem; } }
