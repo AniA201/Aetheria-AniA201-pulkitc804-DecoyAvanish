@@ -57,6 +57,7 @@ export function Landing() {
   useTitle("Aetheria");
   const { reducedMotion, textOnly } = useSession();
   const progressRef = useRef(0);
+  const shatterProgressRef = useRef(0);
   const selectedPaperRef = useRef(-1);
   const rootRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
@@ -67,6 +68,7 @@ export function Landing() {
   const [veil, setVeil] = useState(!quiet);
   const [chapter, setChapter] = useState(0);
   const [shatterProgress, setShatterProgress] = useState(0);
+  const [shatterTarget, setShatterTarget] = useState(0);
   const [readLetterPath, setReadLetterPath] = useState<{ x0: number; y0: number; x1: number; y1: number; size0: number; size1: number } | null>(null);
 
   useEffect(() => {
@@ -88,7 +90,7 @@ export function Landing() {
       const start = window.innerHeight * 0.76;
       const travel = window.innerHeight * 1.15;
       const nextShatter = quiet ? 0 : Math.min(1, Math.max(0, (start - wordTop) / travel));
-      setShatterProgress((current) => Math.abs(current - nextShatter) < 0.003 ? current : nextShatter);
+      setShatterTarget((current) => Math.abs(current - nextShatter) < 0.0005 ? current : nextShatter);
       const source = wordRef.current?.querySelectorAll("span")[5];
       const target = readInitialRef.current;
       const main = mainRef.current;
@@ -116,6 +118,29 @@ export function Landing() {
       window.removeEventListener("resize", onScroll);
     };
   }, [quiet]);
+
+  useEffect(() => {
+    if (quiet) {
+      shatterProgressRef.current = 0;
+      setShatterProgress(0);
+      return;
+    }
+    let frame = 0;
+    const settle = () => {
+      const current = shatterProgressRef.current;
+      const next = current + (shatterTarget - current) * 0.105;
+      if (Math.abs(shatterTarget - next) < 0.0006) {
+        shatterProgressRef.current = shatterTarget;
+        setShatterProgress(shatterTarget);
+        return;
+      }
+      shatterProgressRef.current = next;
+      setShatterProgress(next);
+      frame = requestAnimationFrame(settle);
+    };
+    frame = requestAnimationFrame(settle);
+    return () => cancelAnimationFrame(frame);
+  }, [quiet, shatterTarget]);
 
   useEffect(() => {
     if (quiet) return;
@@ -154,6 +179,7 @@ export function Landing() {
   const readSpace = Math.min(1, Math.max(0, (shatterProgress - 0.55) / 0.4));
   const settledFade = Math.min(1, Math.max(0, (shatterProgress - 0.67) / 0.23));
   const transferArc = readLetterPath ? Math.sin(Math.PI * transfer) * Math.min(110, Math.abs(readLetterPath.y1 - readLetterPath.y0) * 0.22) : 0;
+  const motionBlur = Math.sin(Math.PI * transfer) * (1 - settledFade);
 
   return (
     <div className={quiet ? "story is-quiet" : "story"} ref={rootRef}>
@@ -243,7 +269,7 @@ export function Landing() {
             transform: `rotate(${(1 - transfer) * -8}deg)`,
           }}
           aria-hidden="true"
-        ><span className="folio-transfer-glyph"><span className="folio-transfer-lower" style={{ opacity: 1 - capital }}>r</span><span className="folio-transfer-upper" style={{ opacity: capital }}>R</span><span className="folio-transfer-trail" style={{ opacity: capital * (1 - transfer) * 0.32 }}>R</span></span></span>}
+        ><span className="folio-transfer-glyph"><span className="folio-transfer-lower" style={{ opacity: 1 - capital }}>r</span><span className="folio-transfer-upper" style={{ opacity: capital }}>R</span><span className="folio-transfer-trail" style={{ opacity: motionBlur * .54 }}>R</span><span className="folio-transfer-trail folio-transfer-trail-far" style={{ opacity: motionBlur * .24 }}>R</span></span></span>}
         <section className="folio-hero">
           <p ref={wordRef} className="folio-word" aria-hidden="true">{"Aetheria".split("").map((letter, index) => {
             const [dx, dy, spin] = wordFlights[index];
