@@ -36,21 +36,30 @@ import { useSession, type ReviewState } from "../state/Session";
 import { useTitle } from "../components/Chrome";
 import { TrialLaySummary, TrialPreFlight, TrialWriteOnce } from "../components/TrialPanels";
 import { TrialLookup } from "../components/TrialLookup";
+import { RegistrationOrbit3D } from "../scene/RegistrationOrbit3D";
 
 const wordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
 
 export function Overview() {
   const r = useR();
   useTitle(r.nav[0]);
-  const { reviews, saved, teach, draft, consent } = useSession();
+  const { reviews, saved, teach, draft, consent, reducedMotion } = useSession();
   const openFlags = consent?.hasProtocol
     ? facts.filter((fact) => factFlagged(fact) && isOpenReview(reviews[fact.id] ?? "open"))
     : [];
 
   return (
-    <div className="page">
-      <p className="kicker">{r.overview.kicker}</p>
-      <h1>{r.overview.title}</h1>
+    <div className="page researcher-overview">
+      <section className="researcher-overview-hero" aria-label={r.overview.title}>
+        <div>
+          <p className="kicker">{r.overview.kicker}</p>
+          <h1>{r.overview.title}</h1>
+          <p className="researcher-overview-note">A calm review desk for the study team.</p>
+        </div>
+        <div className="researcher-orbit-shell">
+          <RegistrationOrbit3D reducedMotion={reducedMotion} />
+        </div>
+      </section>
       <div className="stat-row">
         <article>
           <strong>{openFlags.length}</strong>

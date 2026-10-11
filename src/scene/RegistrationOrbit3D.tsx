@@ -18,6 +18,8 @@ export function RegistrationOrbit3D({ reducedMotion }: { reducedMotion: boolean 
     camera.position.set(0, 0, 5);
     const orbit = new THREE.Group();
     scene.add(orbit);
+    let targetX = 0;
+    let targetY = 0;
 
     const ringMaterial = new THREE.MeshBasicMaterial({ color: "#3c3f44", transparent: true, opacity: 0.72 });
     const ring = new THREE.Mesh(new THREE.TorusGeometry(1.15, 0.028, 10, 72), ringMaterial);
@@ -54,11 +56,26 @@ export function RegistrationOrbit3D({ reducedMotion }: { reducedMotion: boolean 
     observer.observe(canvas);
     resize();
 
+    const onPointerMove = (event: PointerEvent) => {
+      if (reducedMotion) return;
+      const bounds = canvas.getBoundingClientRect();
+      targetY = ((event.clientX - bounds.left) / bounds.width - 0.5) * 0.55;
+      targetX = ((event.clientY - bounds.top) / bounds.height - 0.5) * -0.28;
+    };
+    const onPointerLeave = () => {
+      targetX = 0;
+      targetY = 0;
+    };
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerleave", onPointerLeave);
+
     let frame = 0;
     const tick = () => {
       if (!reducedMotion) {
         orbit.rotation.y += 0.008;
         orbit.rotation.z += 0.0015;
+        orbit.rotation.x += (targetX - orbit.rotation.x) * 0.055;
+        orbit.rotation.y += (targetY - orbit.rotation.y) * 0.02;
       }
       renderer.render(scene, camera);
       if (!reducedMotion) frame = requestAnimationFrame(tick);
@@ -67,6 +84,8 @@ export function RegistrationOrbit3D({ reducedMotion }: { reducedMotion: boolean 
     return () => {
       cancelAnimationFrame(frame);
       observer.disconnect();
+      canvas.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("pointerleave", onPointerLeave);
       ring.geometry.dispose();
       cardGeometry.dispose();
       lineGeometry.dispose();
