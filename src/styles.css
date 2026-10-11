@@ -888,8 +888,9 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   border-top: 2px solid rgba(60, 63, 68, 0.45);
 }
 .section-highlights {
-  display: flex !important;
-  flex-wrap: wrap;
+  display: grid !important;
+  grid-template-columns: repeat(2, max-content);
+  justify-content: start;
   gap: .5rem;
   width: auto !important;
   max-width: min(28rem, 42vw) !important;
@@ -911,6 +912,10 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   color: #163f3c;
   font-size: .82rem;
   line-height: 1.15;
+}
+.section-highlights li:nth-child(3) {
+  grid-column: 1 / -1;
+  justify-self: center;
 }
 .folio-teach-demo { padding: 1.2rem; background: color-mix(in srgb, var(--powder) 93%, transparent); box-shadow: 0 10px 24px rgba(43, 57, 46, 0.08); border-top: 3px solid #155d59; }
 .folio-teach-demo strong { display: block; font-size: 1.3rem; font-weight: 500; line-height: 1.2; }
