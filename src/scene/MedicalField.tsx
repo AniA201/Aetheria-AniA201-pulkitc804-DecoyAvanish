@@ -169,9 +169,10 @@ export function MedicalField({
       const fan = reducedMotion ? 1 : smoothstep((progress - 0.1) / 0.25);
       const yaw = -0.95 + turn * 0.8;
       const heroPosition = 1 - turn;
+      const heroRightShift = parent.clientWidth < 600 ? 0.18 : 0.7;
 
       folio.position.set(
-        (narrow ? 1.15 : 0.85) - turn * (narrow ? 0.55 : 0.48) - heroPosition * (narrow ? 0.16 : 0.27),
+        (narrow ? 1.15 : 0.85) - turn * (narrow ? 0.55 : 0.48) - heroPosition * (narrow ? 0.16 : 0.27) + heroPosition * heroRightShift,
         (narrow ? -0.35 : -0.02) + heroPosition * (narrow ? 0.1 : 0.25),
         0,
       );

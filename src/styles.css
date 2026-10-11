@@ -1770,32 +1770,26 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
 .auth-entry .auth-showcase-copy { margin-top: auto; }
 .auth-entry .auth-showcase-copy h1 { font-size: clamp(3.2rem, 5vw, 5.8rem); }
 .auth-folio-art {
+  display: block;
   position: relative;
   width: min(47%, 19.5rem);
   height: min(40vh, 22rem);
   min-height: 14rem;
   margin: 1.3rem auto 1.1rem;
-  perspective: 900px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #0d5b58;
+  cursor: pointer;
   filter: drop-shadow(0 24px 20px rgba(5, 57, 54, 0.2));
 }
-.auth-folio-art > div { position: absolute; inset: 0; border: 1px solid rgba(10, 72, 68, 0.36); }
-.auth-folio-front {
-  display: flex;
-  flex-direction: column;
-  padding: 1.3rem;
-  background: #fffcf3;
-  transform: translateY(-2px) rotate(2deg) rotateX(var(--folio-tilt-x, 0deg)) rotateY(calc(-7deg + var(--folio-tilt-y, 0deg)));
-  box-shadow: var(--folio-shadow-x, 16px) var(--folio-shadow-y, 20px) 0 rgba(9, 78, 73, 0.27), 0 29px 38px rgba(5, 57, 54, 0.28);
-  transition: transform 220ms ease-out, box-shadow 220ms ease-out;
-}
-.auth-folio-overline, .auth-folio-front small { color: #0d5b58; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.16em; }
-.auth-folio-front strong { margin-top: 0.85rem; color: #083f3e; font-size: clamp(1.35rem, 1.85vw, 1.9rem); font-weight: 500; line-height: 1; }
-.auth-folio-document { margin-top: 0.65rem; color: #4f6964; font-size: 0.55rem; letter-spacing: 0.09em; }
-.auth-folio-rule { width: 100%; height: 1px; margin: 0.75rem 0 0.65rem; background: rgba(13, 91, 88, 0.52); }
-.auth-folio-section { color: #0d5b58; font-size: 0.62rem; font-weight: 700; line-height: 1.15; letter-spacing: 0.07em; text-transform: uppercase; }
-.auth-folio-front p { margin: 0.65rem 0 0; color: #2e4540; font-size: clamp(0.82rem, 1.1vw, 1rem); line-height: 1.22; }
-.auth-folio-seal { position: absolute; right: 1.2rem; bottom: 1.1rem; display: grid; place-items: center; width: 2.3rem; height: 2.3rem; border: 1px solid #0d5b58; border-radius: 50%; color: #0d5b58; font-size: 1.3rem; font-style: italic; }
-.auth-folio-front small { position: absolute; right: 4rem; bottom: 1.1rem; left: 1.3rem; font-size: 0.48rem; line-height: 1.15; letter-spacing: 0.08em; }
+.auth-folio-art:focus-visible { outline: 2px solid #0d5b58; outline-offset: 4px; }
+.auth-folio-3d canvas { display: block; width: 100%; height: 100%; }
+.auth-folio-turn-hint { position: absolute; left: 0; right: 0; bottom: -0.5rem; color: #0d5b58; font-size: 0.64rem; font-weight: 700; letter-spacing: 0.11em; line-height: 1.2; text-align: center; text-transform: uppercase; white-space: nowrap; }
+.auth-folio-3d:hover .auth-folio-turn-hint, .auth-folio-3d:focus-visible .auth-folio-turn-hint { text-decoration: underline; text-underline-offset: 0.22em; }
+.auth-folio-fallback { display: flex; flex-direction: column; width: 100%; height: 100%; padding: 1.2rem; overflow: hidden; border: 1px solid #8ba9a0; background: #fffcf3; text-align: left; }
+.auth-folio-fallback strong { font-size: 1.5rem; font-weight: 500; }
+.auth-folio-fallback > span { margin-top: 1.2rem; font-size: 0.95rem; line-height: 1.25; }
 .auth-entry .auth-login-shell { padding: clamp(1.5rem, 3vw, 3.2rem); }
 .auth-entry .auth-login-card { padding: clamp(1.7rem, 3vw, 2.7rem); }
 .auth-entry .auth-login-icon { margin-bottom: 1.1rem; }
@@ -1812,24 +1806,18 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
 }
 @media (max-width: 700px) {
   .auth-entry .auth-folio-art { width: 10rem; height: 14rem; }
-  .auth-entry .auth-folio-section, .auth-entry .auth-folio-front p, .auth-entry .auth-folio-seal { display: none; }
+  .auth-folio-turn-hint { font-size: 0.55rem; }
 }
 @media (max-width: 600px) {
   .auth-entry .auth-showcase.auth-showcase-minimal { min-height: 35rem; padding: 1.5rem 6vw; }
   .auth-entry .auth-showcase-copy { max-width: 100%; }
   .auth-entry .auth-showcase-copy h1 { font-size: clamp(2.35rem, 8.5vw, 3.6rem); }
   .auth-entry .auth-showcase-copy > p:last-child { font-size: 0.85rem; }
-  .auth-entry .auth-folio-art { top: 6.2rem; right: 6%; width: 8.5rem; height: 11.8rem; }
-  .auth-entry .auth-folio-front { padding: 0.8rem; }
-  .auth-entry .auth-folio-front strong { font-size: 1.12rem; }
-  .auth-entry .auth-folio-document { font-size: 0.42rem; }
-  .auth-entry .auth-folio-section, .auth-entry .auth-folio-front p { display: none; }
-  .auth-entry .auth-folio-seal { display: none; }
-  .auth-entry .auth-folio-front small { position: absolute; right: 0.8rem; bottom: 0.55rem; left: 0.8rem; font-size: 0.34rem; line-height: 1.2; letter-spacing: 0.07em; }
+  .auth-entry .auth-folio-art { top: 4rem; right: 6%; width: 8.5rem; height: 11.8rem; }
+  .auth-folio-turn-hint { bottom: -0.65rem; font-size: 0.48rem; }
   .auth-entry .auth-login-shell { padding: 2.2rem 6vw; }
   .auth-entry .auth-login-card { padding: 1.5rem; }
 }
-@media (prefers-reduced-motion: reduce) { .auth-folio-front { transition: none; } }
 .shell.participant .mark {
   flex: 0 0 auto;
   letter-spacing: 0.08em;
