@@ -4231,3 +4231,27 @@ html:not([data-contrast="high"]) .auth-form-reference input {
 .kicker-file { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 .chapter-nav a span.clamp-3, .chapter-nav a.current span.clamp-3 { color: inherit; font: inherit; letter-spacing: inherit; }
+
+/* Aa reading-preferences dock: the old hover-only participant rules shrank the dock to a clipped
+   2.55rem circle with a painted "Aa", hiding the real button and its menu. Undo them here so the
+   button is clickable/tappable and the menu opens above it. */
+.shell.participant .rail-utilities .type-dock,
+.shell.researcher .rail-utilities .type-dock,
+.shell.participant .rail-utilities .type-dock:hover,
+.shell.participant .rail-utilities .type-dock:focus-within {
+  display: block;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  max-width: none;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.shell.participant .rail-utilities .type-dock::before,
+.shell.researcher .rail-utilities .type-dock::before { content: none; display: none; }
+.shell.participant .rail-utilities .type-dock .type-dock-options { opacity: 0; visibility: hidden; pointer-events: none; }
+.shell.participant .rail-utilities .type-dock.is-open .type-dock-options { opacity: 1; visibility: visible; pointer-events: auto; }
