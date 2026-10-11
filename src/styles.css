@@ -1934,16 +1934,17 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
 /* Registration gets a single blurred mark in the open left field, rather
    than the former stack of animated pages. */
 .auth-reference:not(.auth-entry) .auth-showcase.auth-showcase-minimal::after {
-  top: 32%;
-  right: 50%;
-  width: min(23rem, 46%);
+  top: 25%;
+  left: 50%;
+  right: auto;
+  width: min(29rem, 60%);
   aspect-ratio: 1;
   border: 0;
   background: url("/aetheria-mark.svg") center / contain no-repeat;
   box-shadow: none;
   filter: blur(7px);
   opacity: .28;
-  transform: translateX(50%);
+  transform: translateX(-50%);
 }
 .auth-reference:not(.auth-entry) { overflow-x: hidden; }
 .auth-reference:not(.auth-entry) .auth-reference-layout {
@@ -3192,10 +3193,11 @@ html:not([data-contrast="high"]) .shell.participant .ask-studio textarea:focus {
 .auth-showcase-word { left: clamp(.75rem, 3vw, 2.75rem); color: rgba(13, 91, 88, .42); text-shadow: 2px 5px 10px rgba(13, 91, 88, .14); }
 .auth-reference:not(.auth-entry) .auth-showcase.auth-showcase-minimal { container-type: inline-size; }
 .auth-reference:not(.auth-entry) .auth-showcase-word {
-  left: 5%;
-  right: 5%;
+  left: 50%;
+  right: auto;
   max-width: none;
   font-size: clamp(4.5rem, 13cqi, 11rem);
+  transform: translateX(-50%);
 }
 .registration-orbit-3d { position: absolute; z-index: 2; top: 17%; right: 8%; width: min(30vw, 19rem); aspect-ratio: 1; pointer-events: none; filter: drop-shadow(0 14px 18px rgba(60, 63, 68, .2)); }
 .auth-login-shell::before { display: none; }
