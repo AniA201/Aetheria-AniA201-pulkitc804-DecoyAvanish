@@ -104,24 +104,55 @@ export function MedicalField({
     // A deliberately simple two-panel navy folder. The front is hinged on
     // the right so it visibly swings open to the left before fading away.
     const folder = new THREE.Group();
-    const navyBack = track(new THREE.MeshBasicMaterial({ color: "#061a35", toneMapped: false, transparent: true }));
-    const navyFront = track(new THREE.MeshBasicMaterial({ color: "#08254a", toneMapped: false, transparent: true }));
-    const folderBack = new THREE.Mesh(track(new THREE.BoxGeometry(2.04, 2.32, 0.075)), navyBack);
-    folderBack.position.set(0, 0.05, -0.12);
+    const makeFolderPanel = (color: string, marked = false) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 584;
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Unable to draw folder cover");
+      context.fillStyle = color;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      if (marked) {
+        context.strokeStyle = "#cfeedd";
+        context.lineWidth = 14;
+        context.lineCap = "round";
+        context.beginPath();
+        context.moveTo(138, 160);
+        context.quadraticCurveTo(200, 196, 224, 202);
+        context.lineTo(224, 376);
+        context.quadraticCurveTo(188, 380, 138, 410);
+        context.closePath();
+        context.stroke();
+        context.beginPath();
+        context.moveTo(374, 160);
+        context.quadraticCurveTo(312, 196, 288, 202);
+        context.lineTo(288, 376);
+        context.quadraticCurveTo(324, 380, 374, 410);
+        context.closePath();
+        context.stroke();
+        context.beginPath();
+        context.moveTo(166, 250); context.lineTo(204, 250);
+        context.moveTo(166, 292); context.lineTo(204, 292);
+        context.moveTo(308, 250); context.lineTo(346, 250);
+        context.moveTo(308, 292); context.lineTo(346, 292);
+        context.stroke();
+      }
+      const texture = track(new THREE.CanvasTexture(canvas));
+      texture.colorSpace = THREE.SRGBColorSpace;
+      const material = track(new THREE.SpriteMaterial({ map: texture, transparent: true, toneMapped: false }));
+      const panel = new THREE.Sprite(material);
+      panel.scale.set(2.04, 2.32, 1);
+      return { panel, material };
+    };
+    // One physical cover is enough for this short reveal. A second panel was
+    // reading as a loose vertical bar once perspective and motion blur were
+    // applied, so the cover itself supplies the entire opening gesture.
     const folderFrontHinge = new THREE.Group();
     folderFrontHinge.position.set(1.02, 0.04, 0.08);
-    const folderFront = new THREE.Mesh(track(new THREE.BoxGeometry(2.04, 2.32, 0.075)), navyFront);
+    const { panel: folderFront, material: navyFront } = makeFolderPanel("#063f4a", true);
     folderFront.position.x = -1.02;
-    const folderMarkTexture = track(new THREE.TextureLoader().load("/aetheria-mark.svg"));
-    folderMarkTexture.colorSpace = THREE.SRGBColorSpace;
-    const folderMark = new THREE.Mesh(
-      track(new THREE.PlaneGeometry(0.52, 0.52)),
-      track(new THREE.MeshBasicMaterial({ map: folderMarkTexture, transparent: true, toneMapped: false })),
-    );
-    folderMark.position.set(0, 0, 0.046);
-    folderFront.add(folderMark);
     folderFrontHinge.add(folderFront);
-    folder.add(folderBack, folderFrontHinge);
+    folder.add(folderFrontHinge);
     folio.add(folder);
 
     const pages = folioTextures.pages.map((sheet) => makePage(sheet.texture, 1.56, 2.02));
@@ -192,7 +223,7 @@ export function MedicalField({
       // Have the full stack in view as the chapter list enters the viewport.
       const fan = reducedMotion ? 1 : smoothstep((progress - 0.1) / 0.25);
       const folderOpen = reducedMotion ? 1 : smoothstep((progress - 0.04) / 0.3);
-      const folderExit = reducedMotion ? 1 : smoothstep((progress - 0.38) / 0.26);
+      const folderExit = reducedMotion ? 1 : smoothstep((progress - 0.2) / 0.2);
       const yaw = -0.95 + turn * 0.8;
       const heroPosition = 1 - turn;
       const heroRightShift = parent.clientWidth < 600 ? 0.18 : 1.35;
@@ -205,19 +236,16 @@ export function MedicalField({
       folio.scale.setScalar(narrow ? 0.7 : 0.92);
       folio.rotation.set(sway.y * 0.04, yaw + sway.x * 0.06, 0);
 
-      // Unfold the two covers to the left of the papers. Keeping them in
-      // their own lane prevents either navy panel from cutting through the
-      // document stack while still making the opening direction obvious.
-      folderBack.position.x = -folderOpen * 1.32;
-      folderBack.rotation.z = -folderOpen * 0.05;
-      folderFrontHinge.position.x = 1.02 - folderOpen * 3.24;
-      folderFrontHinge.rotation.set(0, 0, -folderOpen * 0.1);
+      // Slide the closed cover out to the left as the papers fan into view.
+      // It stays in its own lane throughout the reveal, never through a page.
+      folderFrontHinge.position.x = 0.88 - folderOpen * 2.8;
+      folderFrontHinge.rotation.set(0, 0, -folderOpen * 0.08);
       folder.position.set(0, folderExit * 0.08, -folderExit * 0.58);
-      folder.rotation.set(0, 0, 0);
-      folder.scale.setScalar(0.74 * (1 - folderExit * 0.08));
-      [navyBack, navyFront].forEach((material) => {
-        material.opacity = Math.max(0, 1 - folderExit * 1.12);
-      });
+      // The folio itself is angled for the paper depth. Counter that angle for
+      // the folder so its closed front remains a clear, square navy panel.
+      folder.rotation.set(0, -yaw - sway.x * 0.06, 0);
+      folder.scale.setScalar(0.68 * (1 - folderExit * 0.08));
+      navyFront.opacity = Math.max(0, 1 - folderExit * 1.12);
 
       const spacing = narrow ? 0.12 : 0.47;
       const lanes = [
@@ -236,7 +264,7 @@ export function MedicalField({
         );
         page.group.rotation.set(0, 0, [-0.018, 0.016, -0.014, 0.02][index] * fan);
         page.group.scale.setScalar(1);
-        const pageReveal = reducedMotion ? 1 : smoothstep((folderOpen - 0.22) / 0.6);
+        const pageReveal = reducedMotion ? 1 : smoothstep((folderOpen - 0.08) / 0.42);
         (page.face.material as THREE.MeshBasicMaterial).opacity = pageReveal;
         (page.edge.material as THREE.MeshBasicMaterial).opacity = pageReveal;
       });

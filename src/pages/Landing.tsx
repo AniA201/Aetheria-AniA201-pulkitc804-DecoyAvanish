@@ -3,13 +3,12 @@ import { Link } from "react-router-dom";
 import { AetheriaMark, useTitle } from "../components/Chrome";
 import { consentDoc, facts, sections } from "../data/study";
 import { MedicalField } from "../scene/MedicalField";
-import { LandingWordShatter } from "../scene/LandingWordShatter";
 import { useSession } from "../state/Session";
 
 const wordFlights = [
-  [-0.43, -0.34, -0.54], [-0.31, 0.31, 0.37], [-0.19, -0.42, -0.32],
-  [-0.06, 0.43, 0.47], [0.15, -0.39, -0.43], [0.28, 0.29, 0.39],
-  [0.41, -0.31, -0.35], [0.52, 0.36, 0.42],
+  [-0.16, -0.12, -0.12], [-0.12, 0.1, 0.1], [-0.08, -0.14, -0.08],
+  [-0.03, 0.13, 0.12], [0.05, -0.12, -0.1], [0.09, 0.1, 0.1],
+  [0.13, -0.09, -0.08], [0.17, 0.1, 0.1],
 ] as const;
 
 const index = [
@@ -66,6 +65,7 @@ export function Landing() {
   const [chapter, setChapter] = useState(0);
   const [shatterProgress, setShatterProgress] = useState(0);
   const [shatterTarget, setShatterTarget] = useState(0);
+  const [wordHovered, setWordHovered] = useState(false);
   const [letterPaths, setLetterPaths] = useState<Partial<Record<TransferKey, LetterPath>>>({});
   const [letterProgress, setLetterProgress] = useState<Partial<Record<TransferKey, number>>>({});
 
@@ -304,7 +304,7 @@ export function Landing() {
           ><span className="folio-transfer-glyph"><span className="folio-transfer-lower" style={{ opacity: 1 - capital }}>{spec.lower}</span><span className="folio-transfer-upper" style={{ opacity: capital }}>{spec.upper}</span><span className="folio-transfer-trail" style={{ opacity: motionBlur * .54 }}>{spec.upper}</span><span className="folio-transfer-trail folio-transfer-trail-far" style={{ opacity: motionBlur * .24 }}>{spec.upper}</span></span></span>;
         })}
         <section className="folio-hero">
-          <p ref={wordRef} className="folio-word" aria-hidden="true">{"Aetheria".split("").map((letter, index) => {
+          <p ref={wordRef} className={`folio-word${wordHovered ? " is-hovered" : ""}`} aria-hidden="true" onPointerEnter={() => setWordHovered(true)} onPointerLeave={() => setWordHovered(false)}>{"Aetheria".split("").map((letter, index) => {
             const [dx, dy, spin] = wordFlights[index];
             const flight = Math.max(0, Math.min(1, (shatterProgress - index * 0.025) / (1 - index * 0.025)));
             return <span key={`${letter}-${index}`} style={quiet ? undefined : {
@@ -313,7 +313,6 @@ export function Landing() {
               filter: `blur(${flight * 1.6}px)`,
             }}>{letter}</span>;
           })}</p>
-          {!quiet && <LandingWordShatter progress={shatterProgress} wordRef={wordRef} />}
           <p className="folio-kicker">Clinical study documents</p>
           <h1><span>Long forms.</span><span>Plain words.</span></h1>
           <p className="folio-lede">
