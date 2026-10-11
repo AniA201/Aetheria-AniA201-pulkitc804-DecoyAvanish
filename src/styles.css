@@ -689,7 +689,7 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   line-height: 1.04;
   letter-spacing: -0.085em;
   text-shadow: 2px 6px 4px rgba(7, 58, 56, 0.3), 9px 17px 19px rgba(4, 44, 44, 0.2);
-  transition: left 620ms cubic-bezier(.22,.8,.23,1), top 620ms cubic-bezier(.22,.8,.23,1), font-size 620ms cubic-bezier(.22,.8,.23,1), line-height 620ms ease, opacity 260ms ease, transform 620ms ease;
+  transition: left 230ms cubic-bezier(.22,.8,.23,1), top 230ms cubic-bezier(.22,.8,.23,1), font-size 230ms cubic-bezier(.22,.8,.23,1), line-height 230ms ease, opacity 320ms ease, transform 230ms ease;
   will-change: left, top, font-size;
 }
 .folio-transfer-glyph { position: relative; display: inline-block; }
@@ -697,7 +697,7 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
 .folio-transfer-upper, .folio-transfer-trail { position: absolute; top: 0; left: 0; }
 .folio-transfer-trail { transform: translate(-.18em, .07em); filter: blur(.12em); }
 .folio-transfer-r.is-settled .folio-transfer-glyph { animation: read-letter-hover 3.2s ease-in-out infinite; }
-.folio-read-initial-slot { display: inline-block; opacity: 0; overflow: hidden; white-space: nowrap; transition: width 620ms cubic-bezier(.22,.8,.23,1); }
+.folio-read-initial-slot { display: inline-block; vertical-align: baseline; opacity: 0; white-space: nowrap; transition: width 620ms cubic-bezier(.22,.8,.23,1), opacity 360ms ease; }
 .folio-read-initial-slot.is-settled { animation: read-letter-hover 3.2s ease-in-out infinite; }
 @keyframes read-letter-hover { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-.07em); } }
 .story.has-motion-reveal #read h2,

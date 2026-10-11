@@ -152,7 +152,7 @@ export function Landing() {
   const transfer = shatterProgress * shatterProgress * (3 - 2 * shatterProgress);
   const capital = Math.min(1, Math.max(0, (shatterProgress - 0.3) / 0.42));
   const readSpace = Math.min(1, Math.max(0, (shatterProgress - 0.55) / 0.4));
-  const settledFade = Math.min(1, Math.max(0, (shatterProgress - 0.84) / 0.16));
+  const settledFade = Math.min(1, Math.max(0, (shatterProgress - 0.67) / 0.23));
   const transferArc = readLetterPath ? Math.sin(Math.PI * transfer) * Math.min(110, Math.abs(readLetterPath.y1 - readLetterPath.y0) * 0.22) : 0;
 
   return (
