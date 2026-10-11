@@ -2026,14 +2026,15 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
 .shell.participant .ask-studio .suggestions { margin-top: 1.15rem; }
 .shell.participant .ask-studio .thread { grid-column: 1 / -1; padding: 1.3rem clamp(1.1rem, 4vw, 4.2rem); overflow: auto; background: rgba(255,253,248,.24); }
 .shell.participant .ask-studio .empty { max-width: 30rem; margin: 0; color: #4d6660; font-size: 1.2rem; }
-.shell.participant .ask-studio .ask-form { grid-column: 1 / -1; display: grid; grid-template-rows: auto minmax(13rem, 1fr) auto; gap: 0; padding: 1.4rem clamp(1.1rem, 4vw, 4.2rem) 2rem; border-top: 1px solid rgba(13, 91, 88, 0.32); background: #fffcf3; box-shadow: 0 -18px 45px rgba(13, 91, 88, 0.08); }
-.shell.participant .ask-form-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding-bottom: 0.7rem; color: #0d5b58; }
+.shell.participant .ask-studio .ask-form { position: relative; grid-column: 1 / -1; display: grid; grid-template-rows: auto minmax(13rem, 1fr) auto; gap: 0; padding: 1.8rem clamp(1.4rem, 4vw, 4.2rem) 1.55rem; border: 1px solid rgba(13, 91, 88, 0.22); border-radius: 2.2rem 2.2rem 0.7rem 0.7rem; background: radial-gradient(circle at 93% 5%, rgba(155, 231, 199, .7), transparent 15rem), #fffcf3; box-shadow: 0 -12px 0 rgba(13, 91, 88, 0.1), 0 -28px 60px rgba(13, 91, 88, 0.17); overflow: hidden; }
+.shell.participant .ask-orb { position: absolute; top: -2.7rem; right: clamp(1rem, 5vw, 5rem); width: 10rem; height: 10rem; pointer-events: none; filter: drop-shadow(0 17px 11px rgba(5, 57, 54, 0.22)); }
+.shell.participant .ask-form-heading { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; max-width: 72%; padding-bottom: 0.8rem; color: #0d5b58; }
 .shell.participant .ask-form-heading label { font-family: var(--serif); font-size: clamp(1.8rem, 3vw, 3rem); line-height: 1; }
 .shell.participant .ask-form-heading span { color: #59726b; font-size: 0.8rem; }
-.shell.participant .ask-studio textarea { width: 100%; min-height: 13rem; resize: vertical; box-sizing: border-box; padding: 1rem 0; border: 0; border-top: 1px solid rgba(13, 91, 88, 0.35); border-radius: 0; background: transparent; color: #173a35; font-family: var(--serif); font-size: clamp(1.25rem, 2vw, 1.8rem); line-height: 1.35; outline: none; }
-.shell.participant .ask-studio textarea:focus { border-top-color: #0d5b58; box-shadow: inset 0 3px 0 #0d5b58; }
+.shell.participant .ask-studio textarea { position: relative; z-index: 1; width: 100%; min-height: 13rem; resize: vertical; box-sizing: border-box; padding: 1.15rem 1.25rem; border: 1px solid rgba(13, 91, 88, 0.22); border-radius: 1.25rem; background: rgba(255,255,255,.68); color: #173a35; font-family: var(--serif); font-size: clamp(1.25rem, 2vw, 1.8rem); line-height: 1.35; outline: none; box-shadow: inset 0 1px 0 #fff, 0 12px 24px rgba(13,91,88,.08); }
+.shell.participant .ask-studio textarea:focus { border-color: #0d5b58; box-shadow: 0 0 0 4px rgba(13,91,88,.12), inset 0 1px 0 #fff, 0 12px 24px rgba(13,91,88,.08); }
 .shell.participant .ask-studio textarea::placeholder { color: #79918a; }
-.shell.participant .ask-form-actions { display: flex; justify-content: space-between; gap: 0.8rem; padding-top: 0.8rem; }
+.shell.participant .ask-form-actions { position: relative; z-index: 1; display: flex; justify-content: space-between; gap: 0.8rem; padding-top: 1rem; }
 .shell.participant .ask-form-actions .btn { min-width: 9rem; justify-content: center; }
 @media (max-width: 900px) {
   .shell.participant .ask-studio { min-height: auto; grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
@@ -2049,7 +2050,40 @@ html[data-contrast="high"] .missing { background: #000; color: #fff; }
   .shell.participant .ask-studio .thread { padding: 1rem; }
   .shell.participant .ask-studio .ask-form { min-height: 22rem; padding: 1.1rem 1rem 1.35rem; }
   .shell.participant .ask-form-heading { align-items: flex-start; flex-direction: column; gap: 0.25rem; }
+  .shell.participant .ask-form-heading { max-width: 65%; }
+  .shell.participant .ask-orb { top: -1.1rem; right: 0.15rem; width: 7.2rem; height: 7.2rem; }
   .shell.participant .ask-studio textarea { min-height: 11rem; }
+}
+.shell.participant .check-studio .panel-head { max-width: 48rem; padding: 1.5rem 0 1.25rem; border-bottom: 1px solid rgba(13,91,88,.28); }
+.shell.participant .check-studio .panel-head h1 { font-size: clamp(2.7rem, 5vw, 5rem); color: #083f3e; text-shadow: 3px 4px 0 rgba(255,253,248,.75); }
+.shell.participant .check-studio .teach-form { position: relative; overflow: hidden; padding: clamp(1.4rem, 3vw, 2.5rem); border: 1px solid rgba(13,91,88,.22); border-radius: 1.5rem; background: #fffcf3; box-shadow: 12px 14px 0 rgba(13,91,88,.11), 0 24px 46px rgba(13,91,88,.1); }
+.shell.participant .check-studio .teach-form::before { content: "Check it in your own words."; display: block; margin-bottom: 0.8rem; color: #0d5b58; font-family: var(--serif); font-size: clamp(1.6rem, 3vw, 2.5rem); line-height: 1; }
+.shell.participant .check-studio .teach-form textarea { border-radius: 1rem; background: #fff; box-shadow: inset 0 1px 0 #fff, 0 8px 17px rgba(13,91,88,.06); }
+.shell.participant .type-dock {
+  left: 1.15rem;
+  bottom: 1.15rem;
+  max-width: 15rem;
+  padding: 0.34rem;
+  gap: 0.16rem;
+  border: 1px solid rgba(13, 91, 88, 0.2);
+  border-radius: 1.35rem;
+  background: rgba(255, 252, 243, 0.9);
+  box-shadow: 0 12px 32px rgba(13, 91, 88, 0.16), inset 0 1px 0 rgba(255,255,255,.8);
+  backdrop-filter: blur(12px);
+}
+.shell.participant .type-dock [role="radiogroup"] { gap: 0.16rem; }
+.shell.participant .type-dock button {
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 50%;
+  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+.shell.participant .type-dock button:hover { transform: translateY(-2px); background: rgba(13,91,88,.1); }
+.shell.participant .type-dock button[aria-checked="true"],
+.shell.participant .type-dock button[aria-pressed="true"] { background: #0d5b58; box-shadow: 0 4px 9px rgba(6,62,60,.25); }
+@media (max-width: 540px) {
+  .shell.participant .type-dock { left: 0.75rem; bottom: 0.75rem; max-width: 12.5rem; }
+  .shell.participant .type-dock button { width: 1.9rem; height: 1.9rem; font-size: .85rem; }
 }
 @media (min-width: 1180px) {
   .shell.participant .ask-page { grid-template-columns: minmax(0, 1fr) minmax(270px, 330px); }
