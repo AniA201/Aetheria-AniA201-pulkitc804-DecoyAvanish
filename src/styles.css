@@ -2867,3 +2867,13 @@ html[data-contrast="high"] .guide-close { color: #fff; }
 @media (max-width: 900px) { .registration-orbit-3d { width: 11rem; top: 14%; right: 8%; } }
 @media (max-width: 600px) { .registration-orbit-3d { width: 8rem; top: 13%; right: 6%; } }
 @media (prefers-reduced-motion: reduce) { .registration-orbit-3d { filter: none; } }
+
+/* Long titles from uploaded consent forms: smaller, wrapped, and never wider than the page */
+.title-fit { overflow-wrap: anywhere; hyphens: auto; }
+.shell.participant .page h1.title-long, .shell.participant .reading h1.title-long, .shell.participant .participant-home h1.title-long { font-size: clamp(1.45rem, 2vw, 2rem); line-height: 1.12; max-width: 26em; letter-spacing: -0.015em; }
+.shell.participant .page h1.title-xlong, .shell.participant .reading h1.title-xlong, .shell.participant .participant-home h1.title-xlong { font-size: clamp(1.2rem, 1.6vw, 1.55rem); line-height: 1.2; max-width: 34em; letter-spacing: -0.01em; }
+.shell.participant h2.title-long { font-size: 1.15rem; line-height: 1.2; }
+.shell.participant h2.title-xlong { font-size: 1rem; line-height: 1.25; }
+.kicker-file { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.chapter-nav a span.clamp-3, .chapter-nav a.current span.clamp-3 { color: inherit; font: inherit; letter-spacing: inherit; }
