@@ -815,7 +815,7 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
 .folio-sheet-mark {
   position: absolute;
   z-index: 2;
-  left: 59.8vw;
+  left: 69.8vw;
   top: 19vh;
   width: min(8.5rem, 12vw);
   aspect-ratio: 1;
