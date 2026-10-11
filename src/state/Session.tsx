@@ -8,15 +8,47 @@ import {
 } from "react";
 import type { Passage } from "../data/documents";
 import { setExtraPassages } from "../data/documents";
+import type { BlockId } from "../lib/blocks";
+import { practiceBrief, type Brief } from "../lib/brief";
 import type { SubmittedConsent } from "../lib/consent";
 import type { TeachResult } from "../lib/teachback";
-import { audienceDrafts } from "../lib/workbook";
+import { readingSource } from "../lib/workbook";
 
 export type ReviewState = "open" | "under-review" | "resolved" | "dismissed";
 export type DraftState = "draft" | "accepted" | "rejected";
 export type AudienceState = DraftState | "in-review" | "stale";
 export type LineDecision = "accepted" | "rejected";
 export type Role = "participant" | "researcher";
+export type Audience = "adult" | "caregiver";
+
+export type Proposal = {
+  id: string;
+  blockId: BlockId;
+  from: string;
+  to: string;
+  createdAt: string;
+  decisions: Record<string, LineDecision>;
+};
+
+export type ReviewerComment = {
+  id: string;
+  audience: Audience;
+  reviewer: "Medical" | "Legal" | "Patient advocate";
+  stance: "approve" | "change";
+  text: string;
+  at: string;
+};
+
+export type AudienceVersion = {
+  id: string;
+  audience: Audience;
+  text: string;
+  state: AudienceState;
+  at: string;
+  reason: string;
+};
+
+export type TranslationHandoff = { language: string; at: string; note: string } | null;
 
 export type SavedQuestion = {
   id: string;
@@ -68,9 +100,13 @@ type SessionData = {
   audit: AuditEvent[];
   approvedVersions: string[];
   publicStudyId: string;
-  audienceText: { adult: string; caregiver: string };
-  audienceState: { adult: AudienceState; caregiver: AudienceState };
-  lineDecisions: Record<string, LineDecision>;
+  audienceText: Record<Audience, string>;
+  audienceState: Record<Audience, AudienceState>;
+  audienceHistory: AudienceVersion[];
+  comments: ReviewerComment[];
+  translationHandoff: TranslationHandoff;
+  proposals: Proposal[];
+  brief: Brief;
   briefDecisions: Record<string, LineDecision>;
   lastSpoken: string;
 };
@@ -95,9 +131,15 @@ type SessionApi = SessionData & {
   addImport: (document: ImportedDocument) => void;
   setApprovedVersions: (versions: string[]) => void;
   setPublicStudyId: (id: string) => void;
-  setAudienceText: (audience: "adult" | "caregiver", text: string) => void;
-  setAudienceState: (audience: "adult" | "caregiver", state: AudienceState) => void;
-  decideLine: (id: string, decision: LineDecision) => void;
+  setAudienceText: (audience: Audience, text: string) => void;
+  setAudienceState: (audience: Audience, state: AudienceState) => void;
+  regenerateReadings: (reason: string) => void;
+  addComment: (comment: Omit<ReviewerComment, "id" | "at">) => void;
+  removeComment: (id: string) => void;
+  setTranslationHandoff: (handoff: TranslationHandoff) => void;
+  addProposal: (blockId: BlockId, from: string, to: string) => void;
+  decideLine: (proposalId: string, lineId: string, decision: LineDecision) => void;
+  setBrief: (brief: Brief) => void;
   decideBrief: (id: string, decision: LineDecision) => void;
   setLastSpoken: (text: string) => void;
   reset: () => void;
@@ -126,12 +168,59 @@ const empty: SessionData = {
   audit: [],
   approvedVersions: [],
   publicStudyId: "",
-  audienceText: { adult: audienceDrafts.adult, caregiver: audienceDrafts.caregiver },
+  audienceText: { adult: readingSource(null).adult, caregiver: readingSource(null).caregiver },
   audienceState: { adult: "draft", caregiver: "draft" },
-  lineDecisions: {},
+  audienceHistory: [],
+  comments: [
+    {
+      id: "seed-medical",
+      audience: "adult",
+      reviewer: "Medical",
+      stance: "approve",
+      text: "Practice comment: the figures match the consent clause.",
+      at: "practice",
+    },
+    {
+      id: "seed-medical-caregiver",
+      audience: "caregiver",
+      reviewer: "Medical",
+      stance: "approve",
+      text: "Practice comment: the figures match the consent clause.",
+      at: "practice",
+    },
+    {
+      id: "seed-patient",
+      audience: "caregiver",
+      reviewer: "Patient advocate",
+      stance: "change",
+      text: "Practice comment: say who “the person in the study” is the first time it appears.",
+      at: "practice",
+    },
+  ],
+  translationHandoff: null,
+  proposals: [],
+  brief: practiceBrief,
   briefDecisions: {},
   lastSpoken: "",
 };
+
+function regenerated(current: SessionData, consent: SubmittedConsent | null, reason: string) {
+  const source = readingSource(consent);
+  const at = new Date().toISOString();
+  const history: AudienceVersion[] = (["adult", "caregiver"] as const).map((audience) => ({
+    id: crypto.randomUUID(),
+    audience,
+    text: current.audienceText[audience],
+    state: current.audienceState[audience],
+    at,
+    reason,
+  }));
+  return {
+    audienceText: { adult: source.adult, caregiver: source.caregiver },
+    audienceState: { adult: "draft", caregiver: "draft" } as Record<Audience, AudienceState>,
+    audienceHistory: [...history, ...current.audienceHistory].slice(0, 20),
+  };
+}
 
 const SessionContext = createContext<SessionApi | null>(null);
 
@@ -156,7 +245,11 @@ function load(): SessionData {
       publicStudyId: parsed.publicStudyId ?? "",
       audienceText: parsed.audienceText ?? empty.audienceText,
       audienceState: parsed.audienceState ?? empty.audienceState,
-      lineDecisions: parsed.lineDecisions ?? {},
+      audienceHistory: parsed.audienceHistory ?? [],
+      comments: parsed.comments ?? empty.comments,
+      translationHandoff: parsed.translationHandoff ?? null,
+      proposals: parsed.proposals ?? [],
+      brief: { ...practiceBrief, ...parsed.brief },
       briefDecisions: parsed.briefDecisions ?? {},
       lastSpoken: parsed.lastSpoken ?? "",
     };
@@ -221,16 +314,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           teach: [],
           draft: "draft",
           draftText: "",
-          audienceState: {
-            adult: current.audienceState.adult === "accepted" || current.audienceState.adult === "in-review" ? "stale" : "draft",
-            caregiver: current.audienceState.caregiver === "accepted" || current.audienceState.caregiver === "in-review" ? "stale" : "draft",
-          },
+          ...regenerated(current, consent, `Source changed to ${consent.filename} · ${consent.documentId} ${consent.version}`),
           reviews: {},
           reviewNotes: {},
           audit: pushAudit(
             current,
             "Consent submitted",
-            `${consent.filename} · ${consent.documentId} ${consent.version}. ${consent.hasProtocol ? "Sample file includes a paired protocol." : "No paired protocol was submitted."}`,
+            `${consent.filename} · ${consent.documentId} ${consent.version}. ${consent.hasProtocol ? "Sample file includes a paired protocol." : "No paired protocol was submitted."} Plain readings were regenerated from it; earlier readings are in the version history.`,
           ),
         })),
       clearConsent: () =>
@@ -316,16 +406,49 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             `${audience} → ${state}. The source clause was not changed.`,
           ),
         })),
-      decideLine: (id, decision) =>
+      regenerateReadings: (reason) =>
         setData((current) => ({
           ...current,
-          lineDecisions: { ...current.lineDecisions, [id]: decision },
+          ...regenerated(current, current.consent, reason),
+          audit: pushAudit(current, "Plain readings regenerated", `${reason}. Earlier readings are in the version history.`),
+        })),
+      addComment: (comment) =>
+        setData((current) => ({
+          ...current,
+          comments: [...current.comments, { ...comment, id: crypto.randomUUID(), at: new Date().toISOString() }],
+          audit: pushAudit(current, "Reviewer comment", `${comment.reviewer} on the ${comment.audience} reading: ${comment.stance}.`),
+        })),
+      removeComment: (id) => setData((current) => ({ ...current, comments: current.comments.filter((item) => item.id !== id) })),
+      setTranslationHandoff: (translationHandoff) =>
+        setData((current) => ({
+          ...current,
+          translationHandoff,
           audit: pushAudit(
             current,
-            "Block change",
-            `${id} → ${decision}. The source files were not edited.`,
+            "Translation handoff",
+            translationHandoff
+              ? `Marked ready for a ${translationHandoff.language} translation reviewer. No translation was generated.`
+              : "Handoff withdrawn.",
           ),
         })),
+      addProposal: (blockId, from, to) =>
+        setData((current) => ({
+          ...current,
+          proposals: [
+            { id: `practice-${current.proposals.length + 2}`, blockId, from, to, createdAt: new Date().toISOString(), decisions: {} },
+            ...current.proposals,
+          ].slice(0, 12),
+          audit: pushAudit(current, "Block change proposed", `${blockId}: ${from} → ${to}. The source files were not edited.`),
+        })),
+      decideLine: (proposalId, lineId, decision) =>
+        setData((current) => ({
+          ...current,
+          proposals: current.proposals.map((proposal) =>
+            proposal.id === proposalId ? { ...proposal, decisions: { ...proposal.decisions, [lineId]: decision } } : proposal,
+          ),
+          audit: pushAudit(current, "Block change", `${proposalId} · ${lineId} → ${decision}. The source files were not edited.`),
+        })),
+      setBrief: (brief) => setData((current) => ({ ...current, brief })),
       decideBrief: (id, decision) =>
         setData((current) => ({
           ...current,

@@ -8,9 +8,9 @@ from uuid import uuid4
 import bcrypt
 import jwt
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, Header, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import IntegrityError
 
@@ -46,6 +46,20 @@ class RegisterRequest(BaseModel):
     researcher_key: Optional[str] = None
 
 
+class HandoffRequest(BaseModel):
+    prompt_id: str = Field(max_length=80)
+    topic: str = Field(max_length=200)
+    label: Literal["Understands the key concept", "Partially understands", "Needs clarification", "Requires human follow-up"]
+    response: str = Field(max_length=2000)
+    feedback: str = Field(max_length=2000)
+    speaker: Literal["participant", "caregiver"] = "participant"
+    misconception: Optional[str] = Field(default=None, max_length=300)
+    language: Literal["en", "es"] = "en"
+    document_id: str = Field(max_length=80)
+    version: str = Field(max_length=40)
+    engine: Optional[Literal["gemini", "ollama", "local"]] = None
+
+
 def initialise_database():
     with engine.begin() as connection:
         connection.execute(text("""
@@ -60,6 +74,25 @@ def initialise_database():
             )
         """))
         connection.execute(text("CREATE INDEX IF NOT EXISTS users_email_idx ON users (email)"))
+        connection.execute(text("""
+            CREATE TABLE IF NOT EXISTS handoffs (
+              id TEXT PRIMARY KEY,
+              user_id TEXT NOT NULL REFERENCES users (id),
+              prompt_id TEXT NOT NULL,
+              topic TEXT NOT NULL,
+              label TEXT NOT NULL,
+              response TEXT NOT NULL,
+              feedback TEXT NOT NULL,
+              speaker TEXT NOT NULL DEFAULT 'participant',
+              misconception TEXT,
+              language TEXT NOT NULL DEFAULT 'en',
+              document_id TEXT NOT NULL,
+              version TEXT NOT NULL,
+              engine TEXT,
+              created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        connection.execute(text("CREATE INDEX IF NOT EXISTS handoffs_created_idx ON handoffs (created_at)"))
 
 
 @app.on_event("startup")
@@ -92,6 +125,43 @@ def login(payload: LoginRequest):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Those details do not match an account of that type.")
         connection.execute(text("UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = :id"), {"id": user["id"]})
     return {"access_token": token_for(user), "token_type": "bearer", "user": {"id": user["id"], "email": user["email"], "name": user["full_name"], "role": user["role"]}}
+
+
+def current_user(authorization: Optional[str] = Header(default=None)):
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Sign in first.")
+    try:
+        claims = jwt.decode(authorization.split(" ", 1)[1], JWT_SECRET, algorithms=["HS256"])
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Your sign-in has expired. Please sign in again.")
+    return {"id": claims.get("sub"), "role": claims.get("role")}
+
+
+@app.post("/api/handoffs", status_code=status.HTTP_201_CREATED)
+def create_handoff(payload: HandoffRequest, user=Depends(current_user)):
+    if user["role"] != "client":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only participant accounts send teach-back handoffs.")
+    row = {"id": str(uuid4()), "user_id": user["id"], **payload.model_dump()}
+    with engine.begin() as connection:
+        connection.execute(text("""
+            INSERT INTO handoffs (id, user_id, prompt_id, topic, label, response, feedback, speaker, misconception, language, document_id, version, engine)
+            VALUES (:id, :user_id, :prompt_id, :topic, :label, :response, :feedback, :speaker, :misconception, :language, :document_id, :version, :engine)
+        """), row)
+    return {"id": row["id"]}
+
+
+@app.get("/api/handoffs")
+def list_handoffs(user=Depends(current_user)):
+    if user["role"] != "researcher":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only research-team accounts can read handoffs.")
+    with engine.begin() as connection:
+        rows = connection.execute(text("""
+            SELECT h.id, h.prompt_id, h.topic, h.label, h.response, h.feedback, h.speaker, h.misconception,
+                   h.language, h.document_id, h.version, h.engine, h.created_at, u.full_name AS participant
+            FROM handoffs h JOIN users u ON u.id = h.user_id
+            ORDER BY h.created_at DESC LIMIT 100
+        """)).mappings().all()
+    return {"handoffs": [dict(row) for row in rows]}
 
 
 @app.post("/api/auth/register", status_code=status.HTTP_201_CREATED)

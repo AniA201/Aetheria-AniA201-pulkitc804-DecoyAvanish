@@ -466,6 +466,25 @@ body:has(.story.is-quiet) { background: #d0f0dc; color: #000; }
   color: #000;
   font: inherit;
 }
+.sheet-work details > summary { cursor: pointer; font-weight: 600; padding: 0.4rem 0; }
+.sheet-work h4 { margin: 1rem 0 0.4rem; font-size: 0.95rem; }
+.sheet-form { display: flex; flex-wrap: wrap; gap: 0.5rem 0.8rem; align-items: center; margin: 0.6rem 0; }
+.sheet-form label { flex-basis: 100%; }
+.sheet-form input,
+.sheet-form select,
+.brief-grid input {
+  min-width: 10rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid rgba(0, 0, 0, 0.28);
+  background: #fff;
+  color: #000;
+  font: inherit;
+}
+.sheet-form input { flex: 1; }
+.brief-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.6rem 1rem; margin: 0.8rem 0; }
+.brief-grid label { display: grid; gap: 0.25rem; font-size: 0.9rem; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.check-row { display: flex; gap: 0.5rem; align-items: center; margin: 0.6rem 0; }
 .type-dock button:disabled { opacity: 0.45; cursor: not-allowed; }
 .type-dock [role="radiogroup"] { display: flex; gap: 2px; }
 .type-dock button {

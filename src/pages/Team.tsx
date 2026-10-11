@@ -18,7 +18,18 @@ import { probeOllama, type OllamaProbe } from "../lib/ollama";
 import { auditNumbers, auditPlainText, longSentenceCount } from "../lib/plain";
 import { isOpenReview, reviewLabel } from "../lib/preflight";
 import { assessTeachback } from "../lib/teachback";
-import { ApprovedList, CompareWorkbook, PlainWorkbook, RegistryCard, VersionStanding } from "../components/SheetPanels";
+import {
+  ApprovedList,
+  CompareWorkbook,
+  ConsentElements,
+  DesignBrief,
+  PersonaResults,
+  PlainWorkbook,
+  PreFlight,
+  RegistryCard,
+  StoredHandoffs,
+  VersionStanding,
+} from "../components/SheetPanels";
 import { useSession, type ReviewState } from "../state/Session";
 import { useTitle } from "../components/Chrome";
 
@@ -79,7 +90,11 @@ export function Integrity() {
       <div className="page">
         <p className="kicker">Evidence</p>
         <h1>Protocol against consent.</h1>
-        <p className="lede dark">No consent form has been submitted in this browser yet.</p>
+        <p className="lede dark">No consent form has been submitted in this browser yet. The protocol checks below run on the practice protocol or a file you add.</p>
+        <div className="sheet-work">
+          <PreFlight />
+          <DesignBrief />
+        </div>
       </div>
     );
   }
@@ -88,7 +103,11 @@ export function Integrity() {
       <div className="page">
         <p className="kicker">Evidence</p>
         <h1>Protocol against consent.</h1>
-        <p className="lede dark">This file has no protocol next to it, so there is nothing to compare.</p>
+        <p className="lede dark">This file has no protocol next to it, so there is nothing to compare. The protocol checks below run on the practice protocol or a file you add.</p>
+        <div className="sheet-work">
+          <PreFlight />
+          <DesignBrief />
+        </div>
       </div>
     );
   }
@@ -195,6 +214,10 @@ export function Insights() {
           </li>
         ))}
       </ul>
+      <div className="sheet-work">
+        <StoredHandoffs />
+        <PersonaResults />
+      </div>
       <h2>Questions saved in this browser</h2>
       <p className="fine">
         {saved.length === 0
@@ -300,7 +323,7 @@ export function Studio() {
           Return to draft
         </button>
       </div>
-      {consent.hasProtocol ? <PlainWorkbook /> : null}
+      <PlainWorkbook />
     </div>
   );
 }
@@ -453,7 +476,8 @@ export function Documents() {
           </li>
         ))}
       </ul>
-      <VersionStanding version={consentDoc.version} />
+      <VersionStanding version={consent?.version ?? consentDoc.version} />
+      <ConsentElements />
       <RegistryCard />
       <p className="pack-line">
         Write Once: v2.1 is the form in the reader. v2.0 is outdated and is not offered as the current
@@ -515,7 +539,9 @@ export function Settings() {
         </li>
         <li>
           <strong>Retention</strong>
-          <p>Review marks, saved questions, and teach-back replies stay in this browser session only.</p>
+          <p>
+            Review marks and saved questions stay in this browser session only. A teach-back reply from a signed-in participant is also stored by the local FastAPI service (SQLite) so the research team can read it on Questions.
+          </p>
         </li>
         <li>
           <strong>Roles</strong>

@@ -276,7 +276,7 @@ function toParagraphs(lines: string[]): string {
 
 export function promptsFor(consent: SubmittedConsent): TeachPrompt[] {
   if (consent.source === "demo") return teachPrompts;
-  return consent.sections.slice(0, 4).map((section) => {
+  return consent.sections.map((section) => {
     const sentence = section.original.split(/(?<=[.!?])\s+/)[0] ?? section.original;
     const phrase = sentence.toLowerCase().slice(0, 48);
     return {

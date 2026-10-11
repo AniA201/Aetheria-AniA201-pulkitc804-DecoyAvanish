@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
+import { versionStanding } from "../lib/workbook";
 import { useSession, type Role } from "../state/Session";
 import { AgentPanel } from "./AgentPanel";
 
@@ -184,8 +185,9 @@ function TypeDock() {
 }
 
 export function Shell({ mode }: { mode: Role }) {
-  const { setRole } = useSession();
+  const { setRole, consent, approvedVersions } = useSession();
   const links = mode === "participant" ? participantNav : researcherNav;
+  const blocked = mode === "participant" && consent !== null && versionStanding(consent.version, approvedVersions) === "not-listed";
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
@@ -254,7 +256,7 @@ export function Shell({ mode }: { mode: Role }) {
           <Outlet />
         </main>
       </div>
-      <AgentPanel role={mode} />
+      {blocked ? null : <AgentPanel role={mode} />}
       <CornerMark />
       <TypeDock />
     </div>

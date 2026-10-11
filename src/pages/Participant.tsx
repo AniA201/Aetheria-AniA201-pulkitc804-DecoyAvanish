@@ -6,10 +6,12 @@ import { runAgent, type AgentReply } from "../lib/agent";
 import { assessTeachbackWithGemini, localBriefing, writeBriefingWithGemini, type Briefing } from "../lib/coach";
 import type { SubmittedConsent } from "../lib/consent";
 import { cachedGeminiStatus, type GeminiContent } from "../lib/gemini";
+import { sendHandoff, type SendState } from "../lib/handoff";
 import { type TeachResult } from "../lib/teachback";
+import { versionStanding } from "../lib/workbook";
 import { useSession } from "../state/Session";
 import { ListenButton, useTitle } from "../components/Chrome";
-import { VersionStanding } from "../components/SheetPanels";
+import { VersionGate, VersionStanding } from "../components/SheetPanels";
 import { ConsentFile } from "../components/ConsentFile";
 import { ConsentSheet } from "../scene/ConsentSheet";
 
@@ -116,9 +118,10 @@ export function MyStudy() {
 export function Explore() {
   useTitle("Explore Consent");
   const params = useParams();
-  const { consent, textOnly, markReviewed, reviewed, reducedMotion } = useSession();
+  const { consent, textOnly, markReviewed, reviewed, reducedMotion, approvedVersions } = useSession();
   const [showOriginal, setShowOriginal] = useState(false);
   if (!consent) return <NeedFile title="Read" />;
+  if (versionStanding(consent.version, approvedVersions) === "not-listed") return <VersionGate version={consent.version} title="Read" />;
   const sections = consent.sections;
   const known = !params.sectionId || sections.some((section) => section.id === params.sectionId);
   const requested = (known ? params.sectionId : undefined) ?? sections[0].id;
@@ -274,19 +277,46 @@ type SpeechRecognizer = {
   start: () => void;
 };
 
+function useDictation(onText: (text: string) => void, sendLabel: string) {
+  const [note, setNote] = useState("");
+  const start = () => {
+    const host = window as Window & {
+      SpeechRecognition?: new () => SpeechRecognizer;
+      webkitSpeechRecognition?: new () => SpeechRecognizer;
+    };
+    const Recognizer = host.SpeechRecognition ?? host.webkitSpeechRecognition;
+    if (!Recognizer) {
+      setNote("Dictation is unavailable in this browser. Type instead.");
+      return;
+    }
+    const recognition = new Recognizer();
+    recognition.lang = "en-US";
+    recognition.onresult = (event) => {
+      const transcript = event.results[0]?.[0]?.transcript ?? "";
+      if (transcript) onText(transcript);
+      setNote(`The transcript is in the box. Nothing is sent until you press ${sendLabel}.`);
+    };
+    recognition.onerror = () => setNote("Dictation stopped. Type instead.");
+    setNote("Listening in English.");
+    recognition.start();
+  };
+  return { note, start };
+}
+
 export function Ask() {
   useTitle("Ask Aetheria");
-  const { consent, saveQuestion } = useSession();
+  const { consent, saveQuestion, approvedVersions } = useSession();
   const [params] = useSearchParams();
   const starter = params.get("q") ?? "";
   const [draft, setDraft] = useState(starter);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [dictateNote, setDictateNote] = useState("");
+  const dictation = useDictation(setDraft, "Ask");
   const [savedId, setSavedId] = useState<string | null>(null);
   const request = useRef(0);
   const history = useRef<GeminiContent[]>([]);
   const model = useGeminiModel();
   if (!consent) return <NeedFile title="Ask" />;
+  if (versionStanding(consent.version, approvedVersions) === "not-listed") return <VersionGate version={consent.version} title="Ask" />;
 
   const ask = async (question: string) => {
     const clean = question.trim();
@@ -332,27 +362,6 @@ export function Ask() {
           : item,
       ),
     );
-  };
-
-  const dictate = () => {
-    const host = window as Window & {
-      SpeechRecognition?: new () => SpeechRecognizer;
-      webkitSpeechRecognition?: new () => SpeechRecognizer;
-    };
-    const Recognizer = host.SpeechRecognition ?? host.webkitSpeechRecognition;
-    if (!Recognizer) {
-      setDictateNote("Dictation is unavailable in this browser. Type the question instead.");
-      return;
-    }
-    const recognition = new Recognizer();
-    recognition.lang = "en-US";
-    recognition.onresult = (event) => {
-      const transcript = event.results[0]?.[0]?.transcript ?? "";
-      if (transcript) setDraft(transcript);
-      setDictateNote("The transcript is in the box. It is not sent until you press Ask.");
-    };
-    recognition.onerror = () => setDictateNote("Dictation stopped. Type the question instead.");
-    recognition.start();
   };
 
   return (
@@ -436,10 +445,10 @@ export function Ask() {
         <button className="btn solid dark" type="submit">
           Ask
         </button>
-        <button className="btn on-paper" type="button" onClick={dictate}>
+        <button className="btn on-paper" type="button" onClick={dictation.start}>
           Dictate
         </button>
-        {dictateNote ? <p className="fine">{dictateNote}</p> : null}
+        {dictation.note ? <p className="fine">{dictation.note}</p> : null}
       </form>
     </div>
   );
@@ -447,22 +456,29 @@ export function Ask() {
 
 export function Teach() {
   useTitle("Teach-Back");
-  const { consent, recordTeach } = useSession();
+  const { consent, recordTeach, approvedVersions } = useSession();
   const prompts = consent ? promptsFor(consent) : [];
   const [promptId, setPromptId] = useState(prompts[0]?.id ?? "");
   const [response, setResponse] = useState("");
+  const [caregiver, setCaregiver] = useState(false);
   const [result, setResult] = useState<TeachResult | null>(null);
   const [checking, setChecking] = useState(false);
+  const [sent, setSent] = useState<{ state: SendState; detail: string } | null>(null);
+  const dictation = useDictation(setResponse, "Check this explanation");
   if (!consent || prompts.length === 0) return <NeedFile title="Check" />;
+  if (versionStanding(consent.version, approvedVersions) === "not-listed") return <VersionGate version={consent.version} title="Check" />;
   const prompt = prompts.find((item) => item.id === promptId) ?? prompts[0];
 
   const submit = async () => {
     if (checking) return;
     setChecking(true);
-    const next = await assessTeachbackWithGemini(prompt, response, consent);
+    setSent(null);
+    const speaker = caregiver ? "caregiver" : "participant";
+    const next = { ...(await assessTeachbackWithGemini(prompt, response, consent, speaker)), response };
     setChecking(false);
     setResult(next);
-    recordTeach({ ...next, response });
+    recordTeach(next);
+    setSent(await sendHandoff(next, prompt.topic));
   };
 
   return (
@@ -506,13 +522,24 @@ export function Teach() {
           onChange={(event) => setResponse(event.target.value)}
           placeholder="Write what you understood. A short yes is not enough."
         />
-        <button className="btn solid dark" type="submit" disabled={checking}>
-          {checking ? "Checking…" : "Check this explanation"}
-        </button>
+        <label className="check-row">
+          <input type="checkbox" checked={caregiver} onChange={(event) => setCaregiver(event.target.checked)} />
+          I am a caregiver answering for the participant
+        </label>
+        <div className="action-row">
+          <button className="btn solid dark" type="submit" disabled={checking}>
+            {checking ? "Checking…" : "Check this explanation"}
+          </button>
+          <button className="btn on-paper" type="button" onClick={dictation.start}>
+            Dictate
+          </button>
+        </div>
+        {dictation.note ? <p className="fine">{dictation.note}</p> : null}
       </form>
       {result && (
         <article className="result" aria-live="polite">
           <p className="kicker">{result.label}</p>
+          {result.misconception ? <p><strong>Worth clearing up:</strong> {result.misconception}.</p> : null}
           <p>{result.feedback}</p>
           {result.matched.length > 0 && (
             <ul>
@@ -547,7 +574,9 @@ export function Teach() {
               : result.engine === "ollama"
                 ? "Checked on this computer. It reads for meaning, not exact words."
                 : (result.note ?? "Checked against the form’s key ideas.")}
+            {result.speaker === "caregiver" ? " Read as a caregiver's answer." : ""}
           </p>
+          {sent ? <p className="fine">{sent.detail}</p> : null}
           <Link to={`/participant/explore-consent/${prompt.sectionId}`}>Reread {prompt.topic.toLowerCase()}</Link>
         </article>
       )}
@@ -563,6 +592,7 @@ export function Summary() {
   const [writing, setWriting] = useState(false);
   const openTopics = useMemo(() => teach, [teach]);
   if (!consent) return <NeedFile title="Summary" />;
+  const prompts = promptsFor(consent);
 
   return (
     <div className="page summary-page">
@@ -658,8 +688,11 @@ export function Summary() {
             {openTopics.map((item) => (
               <li key={item.promptId}>
                 <strong>
-                  {item.label} · {consent.version}
+                  {prompts.find((prompt) => prompt.id === item.promptId)?.topic ?? item.promptId} · {item.label} · {consent.version}
                 </strong>
+                {item.speaker === "caregiver" ? <small>Answered by a caregiver.</small> : null}
+                {item.language === "es" ? <small>Answered in Spanish. Needs a Spanish speaker or interpreter.</small> : null}
+                {item.misconception ? <small>Misunderstanding: {item.misconception}.</small> : null}
                 {item.response ? <p>Their words: {item.response}</p> : null}
                 <p>
                   {item.label === "Understands the key concept"

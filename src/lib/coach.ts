@@ -5,7 +5,7 @@ import type { SavedQuestion } from "../state/Session";
 import { figuresOutside } from "./agent";
 import { promptsFor, type SubmittedConsent } from "./consent";
 import { structured, type Engine } from "./llm";
-import { assessTeachback, isNonAnswer, type TeachResult } from "./teachback";
+import { assessTeachback, isNonAnswer, type Speaker, type TeachResult } from "./teachback";
 
 const forbidden = /\b(you (have )?consented|you passed|you failed|score|certificate|you should (join|enroll|take part))\b/i;
 
@@ -23,14 +23,19 @@ export function checkTeachJson(value: unknown, prompt: TeachPrompt, source: stri
   return { covered: [...new Set(draft.covered)], misunderstanding, feedback: draft.feedback.trim() };
 }
 
-export async function assessTeachbackWithGemini(prompt: TeachPrompt, response: string, consent: SubmittedConsent): Promise<TeachResult> {
+export async function assessTeachbackWithGemini(
+  prompt: TeachPrompt,
+  response: string,
+  consent: SubmittedConsent,
+  speaker: Speaker = "participant",
+): Promise<TeachResult> {
   const local: TeachResult = {
-    ...assessTeachback(prompt.id, response, [prompt]),
+    ...assessTeachback(prompt.id, response, [prompt], speaker),
     documentId: consent.documentId,
     version: consent.version,
     engine: "local",
   };
-  if (isNonAnswer(response) || prompt.concepts.length === 0) return local;
+  if (isNonAnswer(response) || prompt.concepts.length === 0 || local.language === "es") return local;
   const source =
     consent.passages.find((passage) => passage.sectionId === prompt.sectionId)?.text ??
     consent.sections.find((section) => section.id === prompt.sectionId)?.original ??
@@ -48,10 +53,15 @@ export async function assessTeachbackWithGemini(prompt: TeachPrompt, response: s
     ].join("\n"),
     prompt: [
       `Question asked: ${prompt.question}`,
+      speaker === "caregiver"
+        ? "A caregiver is answering about the participant, so she, he, or they means the participant. Judge the ideas the same way."
+        : "",
       `Passage (${consent.documentId} ${consent.version}):\n${source}`,
       `Ideas to look for:\n${prompt.concepts.map((concept) => `- ${concept.id}: ${concept.label}`).join("\n")}`,
       `Person's explanation:\n${response.trim()}`,
-    ].join("\n\n"),
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
     schema: {
       type: "object",
       properties: {
@@ -64,10 +74,15 @@ export async function assessTeachbackWithGemini(prompt: TeachPrompt, response: s
   }, (value) => checkTeachJson(value, prompt, source));
   if (result.engine === "local") return { ...local, note: result.note };
   const checked = result.value;
+  const misunderstanding =
+    checked.misunderstanding ?? (local.misconception ? `This reply suggests ${local.misconception}. ${prompt.reexplain}` : null);
 
-  const matched = prompt.concepts.filter((concept) => checked.covered.includes(concept.id));
-  const missing = prompt.concepts.filter((concept) => !checked.covered.includes(concept.id));
-  const label: TeachResult["label"] = checked.misunderstanding
+  const covered = local.misconception
+    ? prompt.concepts.filter((concept) => local.matched.includes(concept.label)).map((concept) => concept.id)
+    : checked.covered;
+  const matched = prompt.concepts.filter((concept) => covered.includes(concept.id));
+  const missing = prompt.concepts.filter((concept) => !covered.includes(concept.id));
+  const label: TeachResult["label"] = misunderstanding
     ? "Needs clarification"
     : missing.length === 0
       ? "Understands the key concept"
@@ -81,7 +96,7 @@ export async function assessTeachbackWithGemini(prompt: TeachPrompt, response: s
     missing: missing.map((concept) => concept.label),
     feedback: [
       checked.feedback,
-      checked.misunderstanding ? `Worth checking: ${checked.misunderstanding}` : "",
+      misunderstanding ? `Worth checking: ${misunderstanding}` : "",
       label === "Understands the key concept" ? "You can still ask the coordinator to walk through it with you." : "",
     ]
       .filter(Boolean)
@@ -89,6 +104,8 @@ export async function assessTeachbackWithGemini(prompt: TeachPrompt, response: s
     documentId: consent.documentId,
     version: consent.version,
     engine: result.engine,
+    speaker,
+    misconception: local.misconception ?? (checked.misunderstanding ? "a stated misunderstanding" : undefined),
   };
 }
 
