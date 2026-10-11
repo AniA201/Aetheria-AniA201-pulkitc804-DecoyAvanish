@@ -206,7 +206,8 @@ export function MedicalField({
 
     let disposed = false;
     let frame = 0;
-    const focusLevels = pages.map(() => 0);
+    // Each page's depth in the deck: 0 is the front page, 1-3 sit behind it in order.
+    const deckDepth = pages.map((_, index) => index);
     let previousProgress = progressRef.current ?? 0;
     let blurVelocity = 0;
     let scrollDirection = 1;
@@ -248,45 +249,37 @@ export function MedicalField({
       folder.scale.setScalar(0.68);
       navyFront.opacity = Math.max(0, 1 - folderExit * 1.04);
 
-      const spacing = narrow ? 0.12 : 0.47;
       const lanes = [
-        { restX: 0, restY: 0, restZ: 0.1, outX: 0, outY: 0, outZ: 0.1 },
-        { restX: -0.16, restY: 0.04, restZ: 0.04, outX: spacing, outY: 0.07, outZ: 0.04 },
-        { restX: -0.32, restY: 0.08, restZ: -0.02, outX: spacing * 2, outY: 0.14, outZ: -0.02 },
-        { restX: -0.48, restY: 0.12, restZ: -0.08, outX: spacing * 3, outY: 0.21, outZ: -0.08 },
+        { restX: 0, restY: 0, restZ: 0.1 },
+        { restX: -0.16, restY: 0.04, restZ: 0.04 },
+        { restX: -0.32, restY: 0.08, restZ: -0.02 },
+        { restX: -0.48, restY: 0.12, restZ: -0.08 },
       ];
-      const visibleIndex = selectedPaperRef.current < 0 ? 0 : selectedPaperRef.current;
+      // The open section's page is always in front. The others keep a fixed order behind it:
+      // the page just read moves to the back of the deck, so every step looks the same.
+      const selectedIndex = selectedPaperRef.current < 0 ? 0 : selectedPaperRef.current;
+      const front = { x: narrow ? 0 : 1.12, y: -0.28, z: 1.52 };
+      const step = { x: narrow ? -0.06 : -0.2, y: 0.05, z: -0.34, scale: 0.05 };
       pages.forEach((page, index) => {
         const lane = lanes[index];
+        const target = (index - selectedIndex + pages.length) % pages.length;
+        deckDepth[index] += (target - deckDepth[index]) * (reducedMotion ? 1 : 0.095);
+        const depth = deckDepth[index];
         const t = smoothstep(Math.min(1, Math.max(0, (fan - index * 0.1) / (1 - index * 0.1))));
+        // Before the fan, the sheets rest as a tidy stack; afterwards they take their deck slot.
         page.group.position.set(
-          lane.restX + (lane.outX - lane.restX) * t,
-          lane.restY + (lane.outY - lane.restY) * t,
-          lane.restZ + (lane.outZ - lane.restZ) * t,
+          lane.restX + (front.x + step.x * depth - lane.restX) * t,
+          lane.restY + (front.y + step.y * depth - lane.restY) * t,
+          lane.restZ + (front.z + step.z * depth - lane.restZ) * t,
         );
-        page.group.rotation.set(0, 0, [-0.018, 0.016, -0.014, 0.02][index] * fan);
-        page.group.scale.setScalar(1);
-        // A readable first document anchors the landing stage from the first
-        // frame. Scrolling then fans the rest of the stack outward.
-        const pageReveal = 1;
-        (page.face.material as THREE.MeshBasicMaterial).opacity = pageReveal;
-        (page.edge.material as THREE.MeshBasicMaterial).opacity = pageReveal;
-        // Start with a real overlapping stack, then fan the same sheets out
-        // as the reader begins scrolling.
-        page.group.visible = pageReveal > 0.01;
-      });
-
-      const selectedIndex = visibleIndex;
-      pages.forEach((page, index) => {
-        focusLevels[index] += ((index === selectedIndex ? 1 : 0) - focusLevels[index]) * (reducedMotion ? 1 : 0.095);
-        page.group.position.x += focusLevels[index] * fan * (narrow ? -index * spacing : [1.12, 0.72, 0.45, 0.18][index]);
-        page.group.position.y -= focusLevels[index] * fan * 0.28;
-        page.group.position.z += focusLevels[index] * fan * 1.42;
-        page.group.scale.setScalar(1 + focusLevels[index] * fan * 0.31);
-        page.group.rotation.y -= focusLevels[index] * fan * 0.085;
-        page.group.rotation.z -= focusLevels[index] * fan * 0.025;
-        page.face.renderOrder = index === selectedIndex ? 2 : 0;
-        page.edge.renderOrder = index === selectedIndex ? 1 : 0;
+        page.group.scale.setScalar(1 + (0.31 - step.scale * depth) * t);
+        page.group.rotation.set(0, -0.085 * t, ([-0.025, 0.016, -0.014, 0.02][Math.min(3, Math.round(depth))]) * fan);
+        (page.face.material as THREE.MeshBasicMaterial).opacity = 1;
+        (page.edge.material as THREE.MeshBasicMaterial).opacity = 1;
+        page.group.visible = true;
+        // Draw back-to-front so the front page is never hidden by a page behind it.
+        page.face.renderOrder = 10 - Math.round(depth) * 2;
+        page.edge.renderOrder = 9 - Math.round(depth) * 2;
       });
 
       camera.position.set(0.15 + sway.x * 0.2, 0.06 - sway.y * 0.08, 7.35 - turn * 0.35);
