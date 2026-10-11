@@ -12,6 +12,25 @@ const index = [
   { id: "review", number: "04", label: "Review" },
 ];
 
+const backgroundQuotes = {
+  read: ["Keep the original close.", "Read it twice.", "The source stays with you."],
+  ask: ["Ask before you sign.", "Pause for the answer.", "A question can wait."],
+  feedback: ["Say it in your words.", "Make room to clarify.", "Your words count."],
+  review: ["Check the differences.", "Notice what changed.", "Compare before deciding."],
+};
+
+function BackgroundQuotes({ quotes }: { quotes: readonly string[] }) {
+  return (
+    <div className="folio-background-quotes" aria-hidden="true">
+      {quotes.map((quote) => (
+        <span className="folio-background-quote" key={quote}>
+          “{quote}”
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function Landing() {
   useTitle("Aetheria");
   const { reducedMotion, textOnly } = useSession();
@@ -194,32 +213,32 @@ export function Landing() {
         </section>
 
         <section className="folio-split" id="read">
+          <BackgroundQuotes quotes={backgroundQuotes.read} />
           <p className="folio-section-label">01 / Read</p>
           <h2>Read.</h2>
-          <p className="folio-motto">“Keep the original close.”</p>
           <p className="sr-only">The sample consent form says six clinic visits. The study plan says eight. Compare the original wording before relying on either number.</p>
         </section>
 
         <section className="folio-chapters" id="ask">
+          <BackgroundQuotes quotes={backgroundQuotes.ask} />
           <div className="folio-chapter-head">
             <p className="folio-section-label">02 / Ask</p>
             <h2>Ask.</h2>
           </div>
-          <p className="folio-motto">“Ask before you sign.”</p>
           <p className="sr-only">{sections.map((section) => `${section.ask} ${section.plain} Source: ${section.citation}, ${section.page}.`).join(" ")}</p>
         </section>
 
         <section className="folio-split folio-teach" id="teach">
+          <BackgroundQuotes quotes={backgroundQuotes.feedback} />
           <p className="folio-section-label">03 / Feedback</p>
           <h2>Feedback.</h2>
-          <p className="folio-motto">“Say it in your words.”</p>
           <p className="sr-only">You cannot choose your study group. The sample form says chance assigns Aetherol or placebo. Neither you nor the study doctor knows your group during the study. Source: {sections[0].citation}, {sections[0].page}.</p>
         </section>
 
         <section className="folio-review" id="review">
+          <BackgroundQuotes quotes={backgroundQuotes.review} />
           <p className="folio-section-label">04 / Review</p>
           <h2>Review.</h2>
-          <p className="folio-motto">“Check the differences.”</p>
           <p className="sr-only">{facts.filter((fact) => fact.kind === "confirmed-textual-difference").map((fact) => `${fact.label}: consent says ${fact.consentValue}; study plan says ${fact.protocolValue}.`).join(" ")}</p>
         </section>
 
