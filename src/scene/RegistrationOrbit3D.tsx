@@ -21,11 +21,6 @@ export function RegistrationOrbit3D({ reducedMotion }: { reducedMotion: boolean 
     let targetX = 0;
     let targetY = 0;
 
-    const ringMaterial = new THREE.MeshBasicMaterial({ color: "#3c3f44", transparent: true, opacity: 0.72 });
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.15, 0.028, 10, 72), ringMaterial);
-    ring.rotation.x = Math.PI * 0.36;
-    orbit.add(ring);
-
     const cardGeometry = new THREE.BoxGeometry(0.46, 0.6, 0.08);
     const cardMaterial = new THREE.MeshBasicMaterial({ color: "#0d5b58" });
     const accentMaterial = new THREE.MeshBasicMaterial({ color: "#3c3f44" });
@@ -86,10 +81,8 @@ export function RegistrationOrbit3D({ reducedMotion }: { reducedMotion: boolean 
       observer.disconnect();
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerleave", onPointerLeave);
-      ring.geometry.dispose();
       cardGeometry.dispose();
       lineGeometry.dispose();
-      ringMaterial.dispose();
       cardMaterial.dispose();
       accentMaterial.dispose();
       lineMaterial.dispose();
