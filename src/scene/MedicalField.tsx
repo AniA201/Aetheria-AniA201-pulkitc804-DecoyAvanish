@@ -112,6 +112,14 @@ export function MedicalField({
     folderFrontHinge.position.set(1.02, 0.04, 0.08);
     const folderFront = new THREE.Mesh(track(new THREE.BoxGeometry(2.04, 2.32, 0.075)), navyFront);
     folderFront.position.x = -1.02;
+    const folderMarkTexture = track(new THREE.TextureLoader().load("/aetheria-mark.svg"));
+    folderMarkTexture.colorSpace = THREE.SRGBColorSpace;
+    const folderMark = new THREE.Mesh(
+      track(new THREE.PlaneGeometry(0.52, 0.52)),
+      track(new THREE.MeshBasicMaterial({ map: folderMarkTexture, transparent: true, toneMapped: false })),
+    );
+    folderMark.position.set(0, 0, 0.046);
+    folderFront.add(folderMark);
     folderFrontHinge.add(folderFront);
     folder.add(folderBack, folderFrontHinge);
     folio.add(folder);
