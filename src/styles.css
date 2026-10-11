@@ -2537,7 +2537,7 @@ html[data-contrast="high"] .guide-close { color: #fff; }
 .shell.participant.rail-compact .rail-mark,
 .shell.participant.rail-compact .rail nav,
 .shell.participant.rail-compact .mode-switch { display: none; }
-.shell.participant.rail-compact .rail-toggle { position: fixed; left: .65rem; top: 1rem; right: auto; }
+.shell.participant.rail-compact .rail-toggle { position: fixed !important; left: 1rem !important; top: 1rem !important; right: auto !important; z-index: 100 !important; opacity: 1 !important; pointer-events: auto !important; }
 .shell.participant .rail-toggle { width:2.8rem; height:2.8rem; right:-1.35rem; font-size:1.35rem; transition:transform 240ms cubic-bezier(.16,1,.3,1), box-shadow 180ms cubic-bezier(.16,1,.3,1); }
 .shell.participant .rail-toggle span { display:block; transition:transform 240ms cubic-bezier(.16,1,.3,1); }
 .shell.participant .rail-toggle:hover { transform:scale(1.08); box-shadow:0 10px 20px rgba(16,43,53,.24); }
